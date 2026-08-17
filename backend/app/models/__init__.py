@@ -11,10 +11,20 @@ from app.models.subscription import (
     SubscriptionConversion,
     SubscriptionRequest,
 )
+from app.models.treasury import (
+    BankMovement,
+    CapitalCall,
+    Contribution,
+    Distribution,
+)
 from app.models.user import User
 
 __all__ = [
+    "BankMovement",
     "Base",
+    "CapitalCall",
+    "Contribution",
+    "Distribution",
     "Investor",
     "InvestorDocument",
     "Subscription",
