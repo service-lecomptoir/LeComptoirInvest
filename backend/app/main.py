@@ -44,8 +44,10 @@ async def health():
 
 from app.api.v1.auth import router as auth_router  # noqa: E402
 from app.api.v1.investors import router as investors_router  # noqa: E402
+from app.api.v1.subscriptions import router as subscriptions_router  # noqa: E402
 from app.api.v1.treasury import router as treasury_router  # noqa: E402
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(investors_router, prefix="/api/v1")
+app.include_router(subscriptions_router, prefix="/api/v1")
 app.include_router(treasury_router, prefix="/api/v1")
