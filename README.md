@@ -4,9 +4,9 @@ Un fonds d'investissement : des investisseurs y placent de l'argent, le fonds le
 dans des projets, les projets rapportent, les investisseurs sont payés. L'outil n'a qu'un
 vrai travail — que ces quatre mouvements se recoupent **toujours**.
 
-> État au 18 août 2026 : **le domaine, la base et le rapprochement.** Dix tables, une
-> migration qui va jusqu'à head contre une base vide, 24 gardes vertes. Pas encore d'API ni
-> d'écran.
+> État au 18 août 2026 : **le backend complet.** Treize tables, deux migrations, 15 routes,
+> 56 gardes vertes. Les quatre mouvements d'argent existent et l'invariant de trésorerie est
+> vérifié de bout en bout. Pas encore d'écran.
 
 ---
 
@@ -64,8 +64,10 @@ l'air juste puisqu'il additionne des montants réels.
 | `app/core/references.py` | la référence que l'investisseur recopie : alphabet sans ambiguïté, **caractère de contrôle**, extraction d'un libellé bancaire, QR EPC |
 | `app/core/matching.py` | **à qui appartient ce virement** : les quatre indices par ordre de ce qu'ils prouvent, et le refus de deviner |
 | `app/models/` | 10 tables : investisseurs, pièces, comptes, souscriptions, demandes, conversions, mouvements, appels, contributions, distributions |
-| `alembic/versions/0001_baseline.py` | tout le schéma, vérifié contre une base vide |
-| `tests_unit/` | 24 gardes sur les règles qui décident où va l'argent |
+| `app/services/` | rapprochement, portefeuille dérivé, résultat par projet |
+| `app/api/v1/` | 15 routes : connexion, registre, KYC, demandes, conversion, trésorerie, portefeuille |
+| `alembic/versions/` | **0001** le socle, **0002** les projets. La chaîne va jusqu'à head contre une base vide |
+| `tests_unit/` + `tests/` | 56 gardes, dont la **base de test bâtie par les migrations** |
 
 ## Le rapprochement, par ordre de ce que chaque indice prouve
 
@@ -85,8 +87,8 @@ ressemblait n'est pas un gain de temps.
 
 ## Ce qui n'existe pas encore
 
-L'API, les écrans, l'enregistrement dans Alice, le déploiement. Et les tranches 3 et 4 :
-**projets et allocation**, puis **reporting investisseur**.
+Les écrans, l'enregistrement dans Alice, le déploiement. Et le **relevé fiscal** de chaque
+investisseur, qui découle des distributions déjà scindées capital / revenu.
 
 ---
 

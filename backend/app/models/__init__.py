@@ -6,6 +6,7 @@ autogenerate proposes to DROP. One import list, in one place.
 
 from app.models.base import Base
 from app.models.investor import Investor, InvestorDocument
+from app.models.project import Deployment, Project, ProjectReturn
 from app.models.subscription import (
     Subscription,
     SubscriptionConversion,
@@ -24,9 +25,12 @@ __all__ = [
     "Base",
     "CapitalCall",
     "Contribution",
+    "Deployment",
     "Distribution",
     "Investor",
     "InvestorDocument",
+    "Project",
+    "ProjectReturn",
     "Subscription",
     "SubscriptionConversion",
     "SubscriptionRequest",
