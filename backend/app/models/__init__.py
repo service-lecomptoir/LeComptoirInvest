@@ -16,7 +16,6 @@ from app.models.treasury import (
     CapitalCall,
     Contribution,
     Distribution,
-    ProviderPayment,
 )
 from app.models.user import User
 
@@ -28,7 +27,6 @@ __all__ = [
     "Distribution",
     "Investor",
     "InvestorDocument",
-    "ProviderPayment",
     "Subscription",
     "SubscriptionConversion",
     "SubscriptionRequest",

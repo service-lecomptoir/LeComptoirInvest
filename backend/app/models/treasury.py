@@ -1,22 +1,28 @@
 """The money: what was asked, what the bank says arrived, and what was paid back.
 
-TWO RAILS, AND THEY ARE NOT THE SAME KIND OF FACT (user, 17 August 2026). Bank transfer is
-the main one, because the amounts are large: an executed transfer is IRREVOCABLE, carries no
-ceiling and costs almost nothing. Online payment runs alongside it, and everything below
-exists to stop the two being confused.
+BANK TRANSFER, AND ONLY BANK TRANSFER (user, 18 August 2026). The fund learns that money
+exists from its BANK STATEMENT, and the whole difficulty is attribution: a transfer carries
+an amount, a date, a label and the name of whoever ordered it, and none of those is an
+investor identifier.
 
-  * A TRANSFER IS FINAL. The fund learns of it from its BANK STATEMENT, and the whole
-    difficulty is attribution: a transfer carries an amount, a date, a label and the name of
-    whoever ordered it, and none of those is an investor identifier.
-  * AN ONLINE PAYMENT IS PROVISIONAL. A card payment is charged back, a direct debit is
-    revoked by a consumer within eight weeks with no reason given. Money the fund has
-    already deployed into a project can leave again. Units issued against it are issued
-    against something that may be withdrawn, and the model has to be able to say so.
+⛔ ONLINE PAYMENT WAS MODELLED AND THEN REMOVED, deliberately. The reasoning is kept
+because it is the expensive part, and because the question comes back:
 
-⚠️ AND A PROVIDER DOES NOT PAY THE PAYMENTS, IT PAYS A BATCH. What lands on the bank
-statement is a payout: several investors at once, net of commission, on a later date. The
-statement line will therefore NEVER equal any one subscription, and a model that attributed
-contributions straight to it would be short by the fees and wrong about who paid what.
+  * a TRANSFER IS IRREVOCABLE once executed. A card payment is charged back; a SEPA direct
+    debit is revoked by a consumer within eight weeks, with no reason given. On sums the
+    fund may already have deployed into a project, that window is a risk nothing
+    compensates: the units would be issued against money that can still go home;
+  * the FEES are wrong at this scale. 1.4 % to 2.9 % on a card is 1 400 to 2 900 euros lost
+    on a single 100 000 euro subscription, and card ceilings do not reach these amounts;
+  * and a provider does not pay the payments, it pays a BATCH: several investors at once,
+    net of commission, on a later date. The statement line would never equal any one
+    subscription, so a contribution could not be anchored on it without being short by the
+    fees and wrong about who paid what.
+
+WHAT ONLINE PAYMENT WOULD REALLY HAVE BOUGHT is not the payment but the RECONCILIATION, and
+all of it is obtainable on this rail: a virtual IBAN per investor removes label matching
+entirely, a pre-filled transfer (EPC QR code, or payment initiation) removes the mistyped
+reference, and a statement import removes the keying. None of them changes how money travels.
 
 🔴 A MOVEMENT IS NOT A CONTRIBUTION, and this is the same distinction the portal forced
 between a request and an engagement. `BankMovement` is what the bank says. `Contribution` is
@@ -39,17 +45,7 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import (
-    Boolean,
-    CheckConstraint,
-    Date,
-    ForeignKey,
-    Index,
-    Numeric,
-    String,
-    Text,
-    text,
-)
+from sqlalchemy import Boolean, Date, ForeignKey, Index, Numeric, String, Text, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -111,70 +107,6 @@ class BankMovement(Base, TimestampMixin):
         return f"<BankMovement {self.direction} {self.amount} {self.currency} {self.value_date}>"
 
 
-class ProviderPayment(Base, TimestampMixin):
-    """An online payment, as the provider reports it. The other kind of evidence money exists.
-
-    SEPARATE FROM `BankMovement` BECAUSE IT IS A DIFFERENT FACT, not a different channel for
-    the same one. A statement line is what the bank says moved; this is what a provider says
-    an investor authorised. The two meet later, and only in aggregate: one payout settles
-    many payments, net of commission.
-
-    🔴 `reversed_on` IS THE FIELD THAT MATTERS. It has no equivalent on a transfer, and
-    forgetting it is how a fund keeps units issued against money that went home. A payment
-    is not final on the day it succeeds; it becomes final when the reversal window closes.
-    """
-
-    __tablename__ = "provider_payments"
-    __table_args__ = (
-        #: One payment, once. Webhooks are re-delivered by design, and a re-processed
-        #: payment would credit an investor twice.
-        Index("uq_provider_payment_external", "provider", "external_id", unique=True),
-    )
-
-    id: Mapped[uuid.UUID] = uuid_pk()
-    #: Which provider reported it. Named rather than assumed: a fund changes provider, and
-    #: the old payments do not stop existing.
-    provider: Mapped[str] = mapped_column(String(40), nullable=False)
-    #: The provider's own identifier — the only reliable key for idempotency.
-    external_id: Mapped[str] = mapped_column(String(120), nullable=False)
-    #: 'carte', 'prelevement_sepa', 'virement_instantane'… The revocation window depends on
-    #: it, so it is stored rather than derived from the provider's name.
-    method: Mapped[str] = mapped_column(String(30), nullable=False)
-
-    #: WHAT THE INVESTOR PAID, gross. Not what the fund received.
-    amount: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False)
-    #: The provider's commission, held apart. ⚠️ THE INVESTOR IS CREDITED THE GROSS: they
-    #: committed that sum and receive units for it. The fee is a cost of the fund, never a
-    #: silent haircut on somebody's holding — netting it into `amount` would give an
-    #: investor fewer units than they paid for and nothing on screen would explain it.
-    fee_amount: Mapped[Decimal] = mapped_column(
-        Numeric(18, 4), nullable=False, default=Decimal("0")
-    )
-    currency: Mapped[str] = mapped_column(String(3), nullable=False, index=True)
-
-    authorised_on: Mapped[date] = mapped_column(Date, nullable=False)
-    #: When the provider actually paid it out to the fund's account.
-    settled_on: Mapped[date | None] = mapped_column(Date, nullable=True)
-    #: 🔴 When it was charged back or revoked. Set means the money left again, whatever the
-    #: contribution attached to it says.
-    reversed_on: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
-    reversal_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-
-    #: The bank line that carried the payout containing this payment. Many payments share
-    #: one, and that is exactly why it cannot be the contribution's anchor.
-    payout_movement_id: Mapped[uuid.UUID | None] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("bank_movements.id", ondelete="SET NULL"), nullable=True, index=True
-    )
-
-    @property
-    def is_final(self) -> bool:
-        """Settled and not reversed. What « the fund really has this » means for this rail."""
-        return self.settled_on is not None and self.reversed_on is None
-
-    def __repr__(self) -> str:
-        return f"<ProviderPayment {self.provider} {self.amount} {self.currency}>"
-
-
 class CapitalCall(Base, TimestampMixin):
     """What the fund ASKED an investor to pay, and by when.
 
@@ -213,43 +145,25 @@ class CapitalCall(Base, TimestampMixin):
 
 
 class Contribution(Base, TimestampMixin):
-    """Money RECEIVED and attributed: this part of that payment, against this subscription.
+    """Money RECEIVED and attributed: this part of that transfer, against this subscription.
 
-    🔴 NEVER KEYED IN ALONE, AND THAT RULE SURVIVED THE SECOND RAIL. A contribution exists
-    only as the attribution of EXTERNAL EVIDENCE that money changed hands — a bank statement
-    line, or a payment a provider reports. Exactly one of the two, enforced by the database
-    rather than by whoever writes the next endpoint.
+    🔴 NEVER KEYED IN ALONE. A contribution exists only as the attribution of a bank
+    movement, and `bank_movement_id` is not nullable for that reason. A contribution with no
+    movement behind it is a figure somebody typed, and on a fund it is indistinguishable
+    from money that arrived — until the account is reconciled and it is far too late to ask
+    who wrote it.
 
-    A contribution with neither is a figure somebody typed, and on a fund that is
-    indistinguishable from money that arrived, until the account is reconciled and it is far
-    too late to ask who wrote it. A contribution with BOTH would be the same money counted
-    twice, which is the failure that looks like good news.
-
-    ⚠️ THE TWO PIECES OF EVIDENCE ARE NOT WORTH THE SAME. A transfer is final; an online
-    payment can be charged back for weeks afterwards. `is_provisional` says which one this
-    is, so a screen can stop a fund deploying money that may still go home.
-
-    ⚠️ PARTIAL BOTH WAYS. `amount` is the share attributed here, so one transfer can be split
-    across several subscriptions and one call met by several transfers. Neither side is
-    one-to-one, and forcing either would make an operator round a real amount to fit.
+    ⚠️ PARTIAL BOTH WAYS. `amount` is the share of the movement attributed here, so one
+    transfer can be split across several subscriptions and one call can be met by several
+    transfers. Neither side is one-to-one, and forcing either would make an operator round
+    a real amount to fit the model.
     """
 
     __tablename__ = "contributions"
-    __table_args__ = (
-        CheckConstraint(
-            "(bank_movement_id IS NOT NULL) <> (provider_payment_id IS NOT NULL)",
-            name="ck_contribution_exactly_one_evidence",
-        ),
-    )
 
     id: Mapped[uuid.UUID] = uuid_pk()
-    #: A transfer, from the bank statement. NULL when the money came through a provider.
-    bank_movement_id: Mapped[uuid.UUID | None] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("bank_movements.id", ondelete="RESTRICT"), nullable=True, index=True
-    )
-    #: An online payment, as the provider reports it. NULL when the money came by transfer.
-    provider_payment_id: Mapped[uuid.UUID | None] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("provider_payments.id", ondelete="RESTRICT"), nullable=True, index=True
+    bank_movement_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("bank_movements.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     subscription_id: Mapped[uuid.UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("subscriptions.id", ondelete="RESTRICT"), nullable=False, index=True
@@ -275,27 +189,7 @@ class Contribution(Base, TimestampMixin):
     #: is wrong, somebody chose which investor it belonged to.
     attributed_by: Mapped[str | None] = mapped_column(String(150), nullable=True)
 
-    bank_movement: Mapped["BankMovement | None"] = relationship("BankMovement", lazy="select")
-    provider_payment: Mapped["ProviderPayment | None"] = relationship(
-        "ProviderPayment", lazy="select"
-    )
-
-    @property
-    def is_provisional(self) -> bool:
-        """Can this money still leave again?
-
-        True for an online payment that has not settled, or that has been reversed. FALSE
-        for every transfer: an executed transfer does not come back, and treating the two
-        alike would either freeze money the fund really holds or let it deploy money it may
-        have to return.
-
-        ⚠️ Answered on the evidence itself, never stored on the contribution: a copied flag
-        would go stale the day a chargeback arrives, and it would go stale silently.
-        """
-        payment = self.provider_payment
-        if payment is None:
-            return False
-        return not payment.is_final
+    bank_movement: Mapped["BankMovement"] = relationship("BankMovement", lazy="select")
 
     def __repr__(self) -> str:
         return f"<Contribution {self.amount} {self.currency}>"
