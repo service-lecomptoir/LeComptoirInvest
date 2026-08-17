@@ -19,8 +19,14 @@ Building the test schema the way production builds its own costs nothing here an
 all three. Every migration is exercised on every run; adding a column means writing a
 migration, and nothing else.
 
-ISOLATION BY SCHEMA, not by database: creating a database needs a privilege the application
-role does not have, and a dedicated schema isolates tables just as well.
+🔴 ITS OWN DATABASE, AND A SCHEMA INSIDE IT. Two levels, and both matter: the DATABASE
+separates this product from every other one — a fund's investor register does not share a
+backup, a restore or a mis-scoped dump with a property-management tool — and the SCHEMA
+separates a test run from the development data inside it.
+
+The suite refuses to start if that database is missing, rather than falling back on
+another's. A run that quietly describes the wrong place is worse than a run that does not
+happen.
 
 ⚠️ `search_path` HOLDS THE TEST SCHEMA AND NOTHING ELSE. With `test_suite,public` as a
 « safe » fallback, everything resolves against `public` — the sister product ran twenty-two
@@ -40,11 +46,25 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-_DB_USER = os.getenv("INVEST_TEST_USER", "lecomptoirimmo_user")
+#: 🔴 THIS PRODUCT HAS ITS OWN DATABASE, and the default says so. It was briefly tested in a
+#: schema of a sister product's database, for the only reason that the development role
+#: holds no CREATEDB right — a workaround that must never become the arrangement:
+#:
+#:   * a fund's investor register, its bank movements and another product's tenants would
+#:     share a backup, a restore and a mis-scoped dump;
+#:   * « isolated by schema » inside somebody else's database is one `search_path` away from
+#:     not being isolated at all, and this repository already records a suite that ran
+#:     twenty-two green tests against the wrong schema without noticing;
+#:   * and an auditor asking « where does the investors' data live » deserves an answer that
+#:     is not « in the property-management database ».
+#:
+#: `INVEST_TEST_DB` overrides it for a machine that genuinely cannot create one — knowingly,
+#: and never by default.
+_DB_USER = os.getenv("INVEST_TEST_USER", "invest_user")
 _DB_PASS = os.getenv("INVEST_TEST_PASSWORD", "devpassword123")
 _DB_HOST = os.getenv("INVEST_TEST_HOST", "localhost")
 _DB_PORT = int(os.getenv("INVEST_TEST_PORT", "5432"))
-_DB_NAME = os.getenv("INVEST_TEST_DB", "lecomptoirimmo")
+_DB_NAME = os.getenv("INVEST_TEST_DB", "lecomptoirinvest")
 
 #: Overridable so parallel runs and CI can each have their own.
 TEST_SCHEMA = os.getenv("INVEST_TEST_SCHEMA", "invest_test")
@@ -58,6 +78,50 @@ _SYNC_URL = (
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def _require_database() -> None:
+    """Refuse to run against a database that does not exist, and say how to make it.
+
+    A suite that quietly falls back on another product's database is a suite whose results
+    describe the wrong place. Failing here costs one command; not failing costs the belief
+    that the fund's data is isolated when it is not.
+    """
+    try:
+        psycopg2.connect(
+            dbname=_DB_NAME,
+            user=_DB_USER,
+            password=_DB_PASS,
+            host=_DB_HOST,
+            port=_DB_PORT,
+        ).close()
+    except Exception as exc:  # noqa: BLE001
+        # ⚠️ EVERY exception, not `psycopg2.OperationalError`. A Postgres server running
+        # under a non-English locale answers « la base n'existe pas » in its own encoding,
+        # and psycopg2 raises `UnicodeDecodeError` while reading the very message that
+        # explains the failure. Catching the narrow type turned a missing database into an
+        # INTERNALERROR with a stack trace and no instructions — which is exactly the
+        # opposite of what this function exists to produce.
+        try:
+            detail = str(exc)
+        except Exception:  # noqa: BLE001
+            detail = ""
+        pytest.exit(
+            "\n".join(
+                [
+                    f"La base « {_DB_NAME} » (rôle « {_DB_USER} ») est inaccessible.",
+                    "",
+                    "Le Comptoir Invest a SA PROPRE base : ni un schéma, ni celle d'un",
+                    "autre produit. À créer une fois, avec un rôle qui en a le droit :",
+                    "",
+                    f"    CREATE ROLE {_DB_USER} LOGIN PASSWORD '...';",
+                    f"    CREATE DATABASE {_DB_NAME} OWNER {_DB_USER};",
+                    "",
+                    f"Détail : {detail or type(exc).__name__}",
+                ]
+            ),
+            returncode=1,
+        )
+
+
 def _drop_schema(name: str) -> None:
     conn = psycopg2.connect(
         dbname=_DB_NAME, user=_DB_USER, password=_DB_PASS, host=_DB_HOST, port=_DB_PORT
@@ -68,6 +132,12 @@ def _drop_schema(name: str) -> None:
             cur.execute(f'DROP SCHEMA IF EXISTS "{name}" CASCADE')
     finally:
         conn.close()
+
+
+def pytest_sessionstart(session) -> None:
+    """Checked BEFORE collection, so a missing database gives one message and not one error
+    per test. Thirty-two identical errors bury the single line that says what to do."""
+    _require_database()
 
 
 @pytest.fixture(scope="session", autouse=True)

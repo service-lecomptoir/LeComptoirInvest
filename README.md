@@ -94,13 +94,27 @@ investisseur, qui découle des distributions déjà scindées capital / revenu.
 
 ## Démarrer
 
+**🔴 Ce produit a SA PROPRE base.** Ni un schéma dans celle d'un autre, ni une base
+partagée : le registre des investisseurs et les mouvements bancaires du fonds ne partagent
+ni sauvegarde, ni restauration, ni export avec un outil de gestion locative. À créer une
+fois, avec un rôle qui en a le droit :
+
+```sql
+CREATE ROLE invest_user LOGIN PASSWORD '...';
+CREATE DATABASE lecomptoirinvest OWNER invest_user;
+```
+
 ```
 cd backend && pip install -r requirements.txt
 export SECRET_KEY=...            # obligatoire : il dérive la clé de chiffrement des IBAN
-export DATABASE_URL=postgresql+asyncpg://.../lecomptoirinvest
+export DATABASE_URL=postgresql+asyncpg://invest_user:...@localhost:5432/lecomptoirinvest
 python -m alembic upgrade head
-python -m pytest tests_unit -q
+python -m pytest -q
 ```
+
+La suite **refuse de démarrer** si cette base est absente, plutôt que de se rabattre sur
+une autre : une exécution qui décrit silencieusement le mauvais endroit est pire qu'une
+exécution qui n'a pas lieu. `INVEST_TEST_DB` permet de passer outre, sciemment.
 
 ⚠️ `SECRET_KEY` n'a **aucune valeur par défaut**. Un repli donnerait à tout déploiement qui
 l'oublie la même clé de chiffrement, c'est-à-dire aucun chiffrement avec l'apparence du
