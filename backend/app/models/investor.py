@@ -98,6 +98,19 @@ class Investor(Base, TimestampMixin):
     #: this field is that it can be inconsistent with the rest of the file.
     source_of_funds: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    #: THE ACCOUNT THAT SIGNS IN FOR THIS INVESTOR, when there is one. NULL is a normal,
+    #: permanent state: a paper subscriber, an estate, a company whose signatory has not
+    #: been given access. Their holdings, their statements and their money all exist without
+    #: it — which is the whole reason the login is a separate row.
+    #:
+    #: ⚠️ Access is NOT the verdict. An investor may sign in, read their portfolio and see
+    #: their statements while `kyc_status` refuses their money; and one whose access has
+    #: been closed keeps every unit they hold. The two answer different questions, and
+    #: `accepts_money` is the only one that gates a contribution.
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+
     documents: Mapped[list["InvestorDocument"]] = relationship(
         "InvestorDocument", back_populates="investor", cascade="all, delete-orphan"
     )
