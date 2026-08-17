@@ -29,8 +29,19 @@ from decimal import ROUND_HALF_UP, Decimal
 #: Currencies whose minor unit is not the hundredth. Rounding a Japanese yen to two decimals
 #: invents a subdivision that does not exist, and a Kuwaiti dinar to two loses one.
 _MINOR_UNITS: dict[str, int] = {
-    "JPY": 0, "KRW": 0, "VND": 0, "XOF": 0, "XAF": 0, "XPF": 0, "CLP": 0, "ISK": 0,
-    "BHD": 3, "KWD": 3, "OMR": 3, "TND": 3, "JOD": 3,
+    "JPY": 0,
+    "KRW": 0,
+    "VND": 0,
+    "XOF": 0,
+    "XAF": 0,
+    "XPF": 0,
+    "CLP": 0,
+    "ISK": 0,
+    "BHD": 3,
+    "KWD": 3,
+    "OMR": 3,
+    "TND": 3,
+    "JOD": 3,
 }
 
 

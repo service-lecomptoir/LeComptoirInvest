@@ -76,15 +76,24 @@ def review_due_on(accepted_on: date | None, risk_level: str | None) -> date | No
     """
     if accepted_on is None:
         return None
-    months = REVIEW_MONTHS.get(risk_level or RISK_STANDARD, REVIEW_MONTHS[RISK_STANDARD])
+    months = REVIEW_MONTHS.get(
+        risk_level or RISK_STANDARD, REVIEW_MONTHS[RISK_STANDARD]
+    )
     year = accepted_on.year + (accepted_on.month - 1 + months) // 12
     month = (accepted_on.month - 1 + months) % 12 + 1
     # The 29th of February exists one year in four; clamp rather than raise.
-    day = min(accepted_on.day, [31, 29 if year % 4 == 0 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
+    day = min(
+        accepted_on.day,
+        [31, 29 if year % 4 == 0 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][
+            month - 1
+        ],
+    )
     return date(year, month, day)
 
 
-def is_stale(status: str | None, accepted_on: date | None, risk_level: str | None, today: date) -> bool:
+def is_stale(
+    status: str | None, accepted_on: date | None, risk_level: str | None, today: date
+) -> bool:
     """True when an acceptance has aged past its review date.
 
     The caller moves the investor to `REVIEW`; this function does not mutate anything. A

@@ -53,7 +53,10 @@ class SubscriptionRequest(Base, TimestampMixin):
 
     id: Mapped[uuid.UUID] = uuid_pk()
     investor_id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("investors.id", ondelete="CASCADE"), nullable=False, index=True
+        PGUUID(as_uuid=True),
+        ForeignKey("investors.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     #: `instruments.EQUITY` or `instruments.LOAN`.
     instrument: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -65,7 +68,10 @@ class SubscriptionRequest(Base, TimestampMixin):
     requested_on: Mapped[date] = mapped_column(Date, nullable=False)
 
     status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default=REQUEST_PENDING, server_default=REQUEST_PENDING
+        String(20),
+        nullable=False,
+        default=REQUEST_PENDING,
+        server_default=REQUEST_PENDING,
     )
     decided_by: Mapped[str | None] = mapped_column(String(150), nullable=True)
     decided_on: Mapped[date | None] = mapped_column(Date, nullable=True)
@@ -75,13 +81,17 @@ class SubscriptionRequest(Base, TimestampMixin):
     #: The engagement this request produced, once accepted. NULL while pending, and NULL for
     #: ever if refused — which is exactly what makes the two rows worth keeping apart.
     subscription_id: Mapped[uuid.UUID | None] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("subscriptions.id", ondelete="SET NULL"), nullable=True
+        PGUUID(as_uuid=True),
+        ForeignKey("subscriptions.id", ondelete="SET NULL"),
+        nullable=True,
     )
 
     #: WHICH VERSION OF THE INFORMATION DOCUMENT THE INVESTOR HAD IN FRONT OF THEM. Recorded
     #: at the moment of the request, not looked up later: the document changes, and « what
     #: they were shown » is only answerable if it was written down then.
-    information_document_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    information_document_version: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )
 
     def __repr__(self) -> str:
         return f"<SubscriptionRequest {self.amount} {self.currency} [{self.status}]>"
@@ -100,7 +110,10 @@ class Subscription(Base, TimestampMixin):
 
     id: Mapped[uuid.UUID] = uuid_pk()
     investor_id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("investors.id", ondelete="RESTRICT"), nullable=False, index=True
+        PGUUID(as_uuid=True),
+        ForeignKey("investors.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
     )
     #: `instruments.EQUITY` or `instruments.LOAN`. Decides everything else about this row —
     #: the terms it carries, when it is served, whether it can convert.
@@ -166,11 +179,17 @@ class SubscriptionConversion(Base, TimestampMixin):
     id: Mapped[uuid.UUID] = uuid_pk()
     #: The loan that is closing.
     from_subscription_id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("subscriptions.id", ondelete="RESTRICT"), nullable=False, index=True
+        PGUUID(as_uuid=True),
+        ForeignKey("subscriptions.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
     )
     #: The subscription that opens. Created by the conversion, never before it.
     to_subscription_id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("subscriptions.id", ondelete="RESTRICT"), nullable=False, index=True
+        PGUUID(as_uuid=True),
+        ForeignKey("subscriptions.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
     )
     converted_on: Mapped[date] = mapped_column(Date, nullable=False)
     #: The capital that carried over.

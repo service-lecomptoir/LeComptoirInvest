@@ -122,13 +122,14 @@ class CapitalCall(Base, TimestampMixin):
     """
 
     __tablename__ = "capital_calls"
-    __table_args__ = (
-        Index("uq_capital_call_reference", "reference", unique=True),
-    )
+    __table_args__ = (Index("uq_capital_call_reference", "reference", unique=True),)
 
     id: Mapped[uuid.UUID] = uuid_pk()
     subscription_id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("subscriptions.id", ondelete="RESTRICT"), nullable=False, index=True
+        PGUUID(as_uuid=True),
+        ForeignKey("subscriptions.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
     )
     #: What the investor writes in the transfer label.
     reference: Mapped[str] = mapped_column(String(35), nullable=False)
@@ -163,14 +164,23 @@ class Contribution(Base, TimestampMixin):
 
     id: Mapped[uuid.UUID] = uuid_pk()
     bank_movement_id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("bank_movements.id", ondelete="RESTRICT"), nullable=False, index=True
+        PGUUID(as_uuid=True),
+        ForeignKey("bank_movements.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
     )
     subscription_id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("subscriptions.id", ondelete="RESTRICT"), nullable=False, index=True
+        PGUUID(as_uuid=True),
+        ForeignKey("subscriptions.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
     )
     #: The call this settles, when it settles one. NULL for money paid ahead of any call.
     capital_call_id: Mapped[uuid.UUID | None] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("capital_calls.id", ondelete="SET NULL"), nullable=True, index=True
+        PGUUID(as_uuid=True),
+        ForeignKey("capital_calls.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
 
     amount: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False)
@@ -212,12 +222,18 @@ class Distribution(Base, TimestampMixin):
 
     id: Mapped[uuid.UUID] = uuid_pk()
     subscription_id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("subscriptions.id", ondelete="RESTRICT"), nullable=False, index=True
+        PGUUID(as_uuid=True),
+        ForeignKey("subscriptions.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
     )
     #: The outgoing transfer, once it has left. NULL while the distribution is decided but
     #: not yet paid — a state that exists and must not look like a payment.
     bank_movement_id: Mapped[uuid.UUID | None] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("bank_movements.id", ondelete="SET NULL"), nullable=True, index=True
+        PGUUID(as_uuid=True),
+        ForeignKey("bank_movements.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
 
     #: The investor's own money coming back. Reduces what the fund still owes them.
@@ -243,7 +259,9 @@ class Distribution(Base, TimestampMixin):
     @property
     def gross_amount(self) -> Decimal:
         """What was distributed before withholding. Derived, never stored."""
-        return (self.capital_amount or Decimal("0")) + (self.income_amount or Decimal("0"))
+        return (self.capital_amount or Decimal("0")) + (
+            self.income_amount or Decimal("0")
+        )
 
     @property
     def net_paid(self) -> Decimal:

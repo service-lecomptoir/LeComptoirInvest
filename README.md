@@ -4,9 +4,9 @@ Un fonds d'investissement : des investisseurs y placent de l'argent, le fonds le
 dans des projets, les projets rapportent, les investisseurs sont payés. L'outil n'a qu'un
 vrai travail — que ces quatre mouvements se recoupent **toujours**.
 
-> État au 17 août 2026 : **le noyau du domaine, rien d'autre.** Pas encore de base, pas
-> d'API, pas d'écran. Ce qui est écrit ici est ce qui devait l'être en premier, parce qu'un
-> modèle de domaine faux coûte bien plus cher qu'un écran raté.
+> État au 18 août 2026 : **le domaine, la base et le rapprochement.** Dix tables, une
+> migration qui va jusqu'à head contre une base vide, 24 gardes vertes. Pas encore d'API ni
+> d'écran.
 
 ---
 
@@ -60,14 +60,49 @@ l'air juste puisqu'il additionne des montants réels.
 | `app/core/instruments.py` | les deux instruments, **les deux ordres** (liquidation imposée / distribution contractuelle), la conversion à sens unique |
 | `app/core/kyc.py` | les quatre états, le verdict qui **bloque l'argent**, la péremption d'une acceptation |
 | `app/core/money.py` | `Money` indissociable de sa devise, l'arithmétique qui **refuse** de mélanger, les décimales réelles par devise |
+| `app/core/crypto.py` | chiffrement des IBAN, et l'**empreinte salée** qui permet de rapprocher sans déchiffrer |
+| `app/core/references.py` | la référence que l'investisseur recopie : alphabet sans ambiguïté, **caractère de contrôle**, extraction d'un libellé bancaire, QR EPC |
+| `app/core/matching.py` | **à qui appartient ce virement** : les quatre indices par ordre de ce qu'ils prouvent, et le refus de deviner |
+| `app/models/` | 10 tables : investisseurs, pièces, comptes, souscriptions, demandes, conversions, mouvements, appels, contributions, distributions |
+| `alembic/versions/0001_baseline.py` | tout le schéma, vérifié contre une base vide |
+| `tests_unit/` | 24 gardes sur les règles qui décident où va l'argent |
+
+## Le rapprochement, par ordre de ce que chaque indice prouve
+
+| Indice | Ce qu'il identifie | Force |
+|---|---|---|
+| **le compte d'arrivée** (IBAN virtuel) | l'investisseur, sans interprétation | le seul sans ambiguïté |
+| **la référence** dans le libellé | l'appel, donc la souscription et l'investisseur | forte, mais elle passe par un humain qui recopie |
+| **le compte émetteur** | l'investisseur, **jamais** l'appel | un prêteur paie ses quatre appels du même compte |
+| **le montant** | rien | deux investisseurs appelés à 50 000 EUR la même semaine, ce n'est pas une coïncidence |
+
+⚠️ Le nom du donneur d'ordre **n'est pas un indice, c'est un contrôle** : un nom qui ne
+correspond pas est un **paiement de tiers**, un constat en soi.
+
+🔴 **La règle propose, elle ne décide jamais.** Un humain impute, et `attributed_by`
+enregistre qui. Imputer automatiquement un virement de 200 000 EUR sur un nom qui
+ressemblait n'est pas un gain de temps.
 
 ## Ce qui n'existe pas encore
 
-Les modèles persistés, la base, les migrations, l'API, les écrans, l'enregistrement dans
-Alice, le déploiement. Dans l'ordre fixé : **registre des investisseurs → suivi de l'argent
-→ projets et allocation → reporting investisseur**.
+L'API, les écrans, l'enregistrement dans Alice, le déploiement. Et les tranches 3 et 4 :
+**projets et allocation**, puis **reporting investisseur**.
 
 ---
+
+## Démarrer
+
+```
+cd backend && pip install -r requirements.txt
+export SECRET_KEY=...            # obligatoire : il dérive la clé de chiffrement des IBAN
+export DATABASE_URL=postgresql+asyncpg://.../lecomptoirinvest
+python -m alembic upgrade head
+python -m pytest tests_unit -q
+```
+
+⚠️ `SECRET_KEY` n'a **aucune valeur par défaut**. Un repli donnerait à tout déploiement qui
+l'oublie la même clé de chiffrement, c'est-à-dire aucun chiffrement avec l'apparence du
+contraire.
 
 ## ⚠️ Le cadre réglementaire décide de colonnes, pas seulement de droit
 

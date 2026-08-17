@@ -59,14 +59,36 @@ class Investor(Base, TimestampMixin):
     #: ISO 3166-1 alpha-2. Feeds the risk assessment and the default currency, and it is a
     #: CODE, never the country written out: the sister product filled in the words on
     #: eighteen records out of eighteen and left every code-keyed rule reading « nowhere ».
-    country_code: Mapped[str | None] = mapped_column(String(2), nullable=True, index=True)
+    country_code: Mapped[str | None] = mapped_column(
+        String(2), nullable=True, index=True
+    )
 
     # ── Money out ──────────────────────────────────────────────────────────────
-    #: Where distributions are paid. ⚠️ To be encrypted at rest before this table holds a
-    #: real investor — the sister product encrypts its landlords' details and this one has
-    #: no reason to be laxer. Written plainly here so the gap is visible rather than assumed.
-    iban: Mapped[str | None] = mapped_column(String(34), nullable=True)
+    #: Where distributions are paid. ENCRYPTED AT REST: an investor table is a list of
+    #: names, addresses and IBANs, the single most useful file to steal in this product, and
+    #: a backup or a mis-scoped dump exposes all of it if it is stored in clear.
+    #:
+    #: Never written directly — use the `iban` property, which keeps the fingerprint in step.
+    iban_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: A salted, one-way fingerprint of the same IBAN, so reconciliation can ask « do we know
+    #: this payer? » WITHOUT decrypting anything. Fernet output differs on every encryption
+    #: of the same value, so an encrypted column cannot be searched — this one can, and is
+    #: indexed for it. It reveals nothing on its own, and the salt is the deployment's own
+    #: secret so a stolen table cannot be tested against a list of candidate IBANs.
+    iban_fingerprint: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True
+    )
     bic: Mapped[str | None] = mapped_column(String(11), nullable=True)
+
+    #: THE IBAN THE INVESTOR SENDS MONEY TO, when the bank issues one per counterparty.
+    #:
+    #: This is the single biggest reconciliation win available on a transfer-only rail: a
+    #: transfer arriving on this account IS this investor's, with no label to decode and no
+    #: reference to have been mistyped. Everything else in the import — matching a reference,
+    #: comparing a payer name — is what has to be done when this is empty.
+    virtual_iban: Mapped[str | None] = mapped_column(
+        String(34), nullable=True, unique=True
+    )
     #: The currency this investor is paid in. May differ from the fund's own: an investor
     #: subscribing in XOF is paid in XOF, and the treasury invariant holds per currency.
     payout_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
@@ -81,7 +103,10 @@ class Investor(Base, TimestampMixin):
     #: 'standard' or 'eleve'. Drives how long an acceptance stays current (36 months
     #: against 12) and how heavy the file has to be.
     kyc_risk_level: Mapped[str] = mapped_column(
-        String(20), nullable=False, default=kyc.RISK_STANDARD, server_default=kyc.RISK_STANDARD
+        String(20),
+        nullable=False,
+        default=kyc.RISK_STANDARD,
+        server_default=kyc.RISK_STANDARD,
     )
     #: WHO decided, and WHEN. An acceptance with no author is a value in a column, and the
     #: first question anyone reviewing the fund asks is who decided, not what was decided.
@@ -93,7 +118,9 @@ class Investor(Base, TimestampMixin):
     #: Politically exposed person. A fact recorded on its own rather than folded into the
     #: risk level, because the risk level can be raised for other causes and folding them
     #: together loses which one applied.
-    is_pep: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    is_pep: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     #: Where the money comes from, in the investor's own words. Not a dropdown: the value of
     #: this field is that it can be inconsistent with the rest of the file.
     source_of_funds: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -108,12 +135,36 @@ class Investor(Base, TimestampMixin):
     #: been closed keeps every unit they hold. The two answer different questions, and
     #: `accepts_money` is the only one that gates a contribution.
     user_id: Mapped[uuid.UUID | None] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
 
     documents: Mapped[list["InvestorDocument"]] = relationship(
         "InvestorDocument", back_populates="investor", cascade="all, delete-orphan"
     )
+
+    @property
+    def iban(self) -> str | None:
+        """The IBAN in clear, decrypted on read. None when unset or unreadable."""
+        from app.core import crypto
+
+        return crypto.decrypt(self.iban_encrypted)
+
+    @iban.setter
+    def iban(self, value: str | None) -> None:
+        """Encrypt AND fingerprint in one move.
+
+        The two are set together, always, because a fingerprint that lags behind the value
+        is worse than no fingerprint: reconciliation would match an incoming transfer to the
+        investor's OLD account and attribute somebody's money on the strength of it.
+        """
+        from app.core import crypto
+
+        cleaned = "".join((value or "").split()).upper() or None
+        self.iban_encrypted = crypto.encrypt(cleaned)
+        self.iban_fingerprint = crypto.fingerprint(cleaned)
 
     @property
     def display_name(self) -> str:
@@ -160,7 +211,10 @@ class InvestorDocument(Base, TimestampMixin):
 
     id: Mapped[uuid.UUID] = uuid_pk()
     investor_id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("investors.id", ondelete="CASCADE"), nullable=False, index=True
+        PGUUID(as_uuid=True),
+        ForeignKey("investors.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     #: What the piece IS ('piece_identite', 'justificatif_domicile', 'statuts', 'kbis'…).
     #: Free-form: the documents a foreign investor can produce are not this fund's to
