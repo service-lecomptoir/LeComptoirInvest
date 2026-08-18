@@ -27,14 +27,22 @@ import en from './locales/en.json'
 const SRC = join(__dirname, '..')
 const ACCENTED = /[àâäçéèêëîïôöùûüÿœÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸŒ]/
 
-/** Files whose accented text is data, not a label. */
-const EXEMPT = new Set(['catalogue.test.ts', 'fr.json', 'en.json', 'index.ts'])
+/** Files whose accented text is data, or a message meant for a developer.
+ *
+ *  ⚠️ TOUT FICHIER DE TEST EST EXEMPT, et c'est une règle, pas une commodité : le message
+ *  d'une assertion s'adresse à qui lit l'échec, jamais à un utilisateur. La première
+ *  version nommait les fichiers un par un, et la garde s'est déclenchée sur le test suivant
+ *  que j'ai écrit. Une liste qu'il faut allonger à chaque ajout est une liste qu'on finit
+ *  par vider. */
+const EXEMPT = new Set(['fr.json', 'en.json', 'index.ts'])
+const IS_TEST = /\.test\.tsx?$/
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
     const full = join(dir, entry)
     if (statSync(full).isDirectory()) return walk(full)
-    return /\.(ts|tsx)$/.test(entry) && !EXEMPT.has(entry) ? [full] : []
+    if (EXEMPT.has(entry) || IS_TEST.test(entry)) return []
+    return /\.(ts|tsx)$/.test(entry) ? [full] : []
   })
 }
 

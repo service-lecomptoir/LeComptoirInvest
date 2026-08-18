@@ -259,13 +259,13 @@ function AskToSubscribe({ onCancel, onDone }: { onCancel: () => void; onDone: ()
           label={t('invest.documentVersion')}
           value={documentVersion}
           onChange={(e) => setDocumentVersion(e.target.value)}
-          hint={t('invest.documentHint')}
         />
         <div className="flex gap-2">
           <Button type="submit" isLoading={busy}>{t('common.confirm')}</Button>
           <Button type="button" variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
         </div>
       </form>
+      <p className="mt-3 text-xs text-gray-500 max-w-3xl leading-relaxed">{t('invest.documentHint')}</p>
     </Card>
   )
 }

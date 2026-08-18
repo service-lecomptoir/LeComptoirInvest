@@ -122,10 +122,10 @@
     "issuedOn": "Émis le",
     "callSubscriptionHint": "Identifiant de l'engagement à appeler.",
     "basis": {
-      "virtual_iban": "Compte dédié — certain",
+      "virtual_iban": "Compte dédié : certain",
       "reference": "Référence citée",
-      "payer_iban": "Compte émetteur — identifie la personne, pas l'appel",
-      "amount": "Montant seul — ne prouve rien",
+      "payer_iban": "Compte émetteur : identifie la personne, pas l'appel",
+      "amount": "Montant seul : ne prouve rien",
       "unmatched": "Aucun indice"
     },
     "thirdParty": "Paiement de tiers"
@@ -175,8 +175,8 @@
     "added": "Investisseur ajouté. Son dossier reste à vérifier avant tout engagement.",
     "kyc": {
       "accepted": "Accepté",
-      "pending": "À vérifier — bloque",
-      "review": "À revoir — bloque",
+      "pending": "À vérifier (bloque)",
+      "review": "À revoir (bloque)",
       "refused": "Refusé"
     }
   },
@@ -376,5 +376,10 @@
     "myFile": "Mon dossier",
     "fileAccepted": "Dossier accepté : vous pouvez souscrire.",
     "filePending": "Dossier en cours de vérification."
+  },
+  "signOut": {
+    "title": "Se déconnecter ?",
+    "message": "Vous devrez saisir à nouveau vos identifiants.",
+    "messageWithAccount": "Vous quitterez la session de {{email}} et devrez saisir à nouveau vos identifiants."
   }
 }

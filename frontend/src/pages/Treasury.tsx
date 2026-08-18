@@ -114,7 +114,7 @@ export default function Treasury() {
                   <tr key={m.id}>
                     <Td className="text-gray-500 whitespace-nowrap">{day(m.value_date)}</Td>
                     <Td>
-                      <span className="text-gray-900">{m.counterparty_name || '—'}</span>
+                      <span className="text-gray-900">{m.counterparty_name || '-'}</span>
                       {m.label && <p className="mt-0.5 text-xs text-gray-500 max-w-xs truncate">{m.label}</p>}
                     </Td>
                     <Td>
@@ -252,7 +252,6 @@ function NewCall({ onDone }: { onDone: () => void }) {
           value={subscriptionId}
           onChange={(e) => setSubscriptionId(e.target.value)}
           required
-          hint={t('treasury.callSubscriptionHint')}
         />
         <Input
           label={t('common.amount')}
@@ -275,6 +274,7 @@ function NewCall({ onDone }: { onDone: () => void }) {
           <Button type="button" variant="ghost" onClick={() => setOpen(false)}>{t('common.cancel')}</Button>
         </div>
       </form>
+      <p className="mt-3 text-xs text-gray-500 max-w-3xl leading-relaxed">{t('treasury.callSubscriptionHint')}</p>
     </Card>
   )
 }
@@ -324,7 +324,6 @@ function AttributionForm({
           value={subscriptionId}
           onChange={(e) => setSubscriptionId(e.target.value)}
           required
-          hint={t('treasury.subscriptionHint')}
         />
         <Input
           label={t('treasury.imputedAmount')}
@@ -334,19 +333,18 @@ function AttributionForm({
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           required
-          hint={t('treasury.imputedAmountHint')}
         />
         <Input
           label={t('treasury.thirdPartyReason')}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          hint={t('treasury.thirdPartyReasonHint')}
         />
         <div className="flex gap-2">
           <Button type="submit" isLoading={busy}>{t('common.confirm')}</Button>
           <Button type="button" variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
         </div>
       </form>
+      <p className="mt-3 text-xs text-gray-500 max-w-3xl leading-relaxed">{t('treasury.subscriptionHint')}{' '}{t('treasury.imputedAmountHint')}{' '}{t('treasury.thirdPartyReasonHint')}</p>
     </Card>
   )
 }

@@ -134,7 +134,7 @@ export default function Investors() {
                     {!r.has_bank_details ? (
                       <span className="text-gray-400 text-xs">{t('common.none')}</span>
                     ) : bank[r.id] ? (
-                      <span className="font-mono text-xs">{bank[r.id].iban ?? '—'}</span>
+                      <span className="font-mono text-xs">{bank[r.id].iban ?? '-'}</span>
                     ) : (
                       <button
                         onClick={() => reveal(r.id)}
@@ -247,13 +247,13 @@ function KycVerdict({
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           required={needsReason}
-          hint={needsReason ? t('kyc.reasonRequired') : undefined}
         />
         <div className="flex gap-2">
           <Button type="submit" isLoading={busy}>{t('common.confirm')}</Button>
           <Button type="button" variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
         </div>
       </form>
+      <p className="mt-3 text-xs text-gray-500 max-w-3xl leading-relaxed">{needsReason ? t('kyc.reasonRequired') : undefined}</p>
     </Card>
   )
 }

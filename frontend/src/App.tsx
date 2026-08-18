@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { RouterProvider } from 'react-router-dom'
 import { router } from './router'
 import { useAuthStore } from './store/authStore'
+import { ConfirmHost } from './components/common/ConfirmHost'
 import { Toasts } from './components/common/Toasts'
 import { Spinner } from './components/ui'
 
@@ -23,6 +24,7 @@ export default function App() {
   return (
     <>
       <RouterProvider router={router} />
+      <ConfirmHost />
       <Toasts />
     </>
   )

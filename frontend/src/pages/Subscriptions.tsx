@@ -167,7 +167,6 @@ export default function Subscriptions() {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   required
-                  hint={t('subscriptions.reasonRequired')}
                 />
                 <div className="flex gap-2">
                   <Button type="submit" variant="danger" isLoading={busy}>
@@ -177,6 +176,7 @@ export default function Subscriptions() {
                     {t('common.cancel')}
                   </Button>
                 </div>
+                <p className="mt-3 text-xs text-gray-500 max-w-3xl leading-relaxed">{t('subscriptions.reasonRequired')}</p>
               </form>
             </Card>
           )}

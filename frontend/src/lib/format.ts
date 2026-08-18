@@ -22,6 +22,13 @@ import i18n from '@/i18n'
  * fige pour la session, et le sélecteur de langue ne change plus rien — le produit frère a
  * payé exactement cela.
  */
+/**
+ * ⚠️ LE TIRET CADRATIN EST INTERDIT DANS TOUT TEXTE VISIBLE, la marque de valeur vide
+ * comprise. Elle en portait un, repete a six endroits : « c'est la marque de l'IA ». Un
+ * trait d'union simple dit la meme chose, et le produit frere l'ecrit deja ainsi.
+ */
+export const EMPTY = '-'
+
 function activeLocale(): string {
   const lang = i18n.resolvedLanguage || i18n.language || 'fr'
   return lang.startsWith('en') ? 'en-GB' : 'fr-FR'
@@ -38,7 +45,7 @@ export function minorUnits(currency: string): number {
 /** An amount with its currency. `locale` follows the browser unless told otherwise. */
 export function money(amount: number | string | null | undefined, currency: string): string {
   const value = typeof amount === 'string' ? Number(amount) : (amount ?? 0)
-  if (!Number.isFinite(value)) return '—'
+  if (!Number.isFinite(value)) return '-'
   const digits = minorUnits(currency)
   try {
     return new Intl.NumberFormat(activeLocale(), {
@@ -56,20 +63,20 @@ export function money(amount: number | string | null | undefined, currency: stri
 /** A plain number, no currency. For counts and multiples. */
 export function number(value: number | string | null | undefined, digits = 2): string {
   const v = typeof value === 'string' ? Number(value) : (value ?? 0)
-  if (!Number.isFinite(v)) return '—'
+  if (!Number.isFinite(v)) return '-'
   return new Intl.NumberFormat(activeLocale(), { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(v)
 }
 
 /** A date as the user reads it. Empty rather than « Invalid Date ». */
 export function day(value: string | null | undefined): string {
-  if (!value) return '—'
+  if (!value) return '-'
   const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '-'
   return new Intl.DateTimeFormat(activeLocale(), { day: '2-digit', month: 'short', year: 'numeric' }).format(d)
 }
 
 /** A percentage from a fraction (0.08 -> « 8 % »). */
 export function percent(fraction: number | null | undefined, digits = 2): string {
-  if (fraction === null || fraction === undefined || !Number.isFinite(fraction)) return '—'
+  if (fraction === null || fraction === undefined || !Number.isFinite(fraction)) return '-'
   return `${number(fraction * 100, digits)} %`
 }

@@ -112,7 +112,6 @@ export default function Distributions() {
             type="date"
             value={asOf}
             onChange={(e) => setAsOf(e.target.value)}
-            hint={t('distributions.asOfHint')}
           />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('distributions.nature')}</label>
@@ -133,7 +132,8 @@ export default function Distributions() {
         {/* The tool does not infer this: paying out a year's profits and winding a project
             down look identical from the amount alone, and guessing would mislabel capital
             as income on somebody's tax statement. */}
-        <p className="mt-3 text-xs text-gray-500">
+        <p className="mt-3 text-xs text-gray-500 max-w-3xl">
+          {t('distributions.asOfHint')}{' '}
           {repayCapital ? t('distributions.natureCapitalHelp') : t('distributions.natureIncomeHelp')}
         </p>
       </Card>
@@ -356,7 +356,6 @@ function PayDistribution({
           type="date"
           value={paidOn}
           onChange={(e) => setPaidOn(e.target.value)}
-          hint={t('pay.explain')}
         />
         <div className="flex gap-2">
           <Button type="submit" isLoading={busy}>{t('common.confirm')}</Button>

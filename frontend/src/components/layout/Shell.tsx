@@ -7,6 +7,7 @@ import {
   Receipt, Users, Wallet, X,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
+import { confirmDialog } from '@/store/confirm'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 
 interface Item {
@@ -115,9 +116,19 @@ export function Shell() {
   const [open, setOpen] = useState(false)
   const logout = useAuthStore((s) => s.logout)
   const role = useAuthStore((s) => s.role)
+  const email = useAuthStore((s) => s.email)
   const navigate = useNavigate()
 
-  const signOut = () => {
+  // ⚠️ Une fenêtre du PRODUIT, jamais `window.confirm`. Se déconnecter d'un clic mal placé
+  // fait perdre ce qu'un formulaire ouvert contenait, et la boîte du navigateur ne sait ni
+  // nommer le compte ni distinguer « annuler » de « partir ».
+  const signOut = async () => {
+    const ok = await confirmDialog({
+      title: t('signOut.title'),
+      message: email ? t('signOut.messageWithAccount', { email }) : t('signOut.message'),
+      confirmLabel: t('common.signOut'),
+    })
+    if (!ok) return
     logout()
     navigate('/login')
   }

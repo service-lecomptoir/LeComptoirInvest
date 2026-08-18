@@ -153,7 +153,7 @@ export default function Dashboard() {
                   <tr key={m.id}>
                     <Td className="text-gray-500 whitespace-nowrap">{day(m.value_date)}</Td>
                     <Td>
-                      <span className="text-gray-900">{m.counterparty_name || '—'}</span>
+                      <span className="text-gray-900">{m.counterparty_name || '-'}</span>
                       {m.proposal?.third_party_payer && (
                         <span className="ml-2">
                           <Pill tone="warn">
@@ -207,7 +207,7 @@ export default function Dashboard() {
                       {/* None rather than 0,00x: a project that has not started has no
                           multiple, and « 0,00x » reads as one that lost everything. */}
                       {p.multiple === null ? (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-gray-400">-</span>
                       ) : (
                         `${number(p.multiple)}x`
                       )}

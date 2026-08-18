@@ -100,7 +100,7 @@ export default function Projects() {
                     {money(p.outstanding, p.currency)}
                   </Td>
                   <Td right className="font-medium">
-                    {p.multiple === null ? <span className="text-gray-400">—</span> : `${number(p.multiple)}x`}
+                    {p.multiple === null ? <span className="text-gray-400">-</span> : `${number(p.multiple)}x`}
                   </Td>
                   {seesWholeFund && (
                     <Td right>
@@ -206,13 +206,13 @@ function NewProject({ onCancel, onDone }: { onCancel: () => void; onDone: () => 
           step="0.01"
           value={target}
           onChange={(e) => setTarget(e.target.value)}
-          hint={t('projects.targetHint')}
         />
         <div className="flex gap-2">
           <Button type="submit" isLoading={busy}>{t('common.create')}</Button>
           <Button type="button" variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
         </div>
       </form>
+      <p className="mt-3 text-xs text-gray-500 max-w-3xl leading-relaxed">{t('projects.targetHint')}</p>
     </Card>
   )
 }
@@ -306,7 +306,6 @@ function ProjectAction({
             value={movementId}
             onChange={(e) => setMovementId(e.target.value)}
             required
-            hint={what === 'deploy' ? t('project.movementOut') : t('project.movementIn')}
           />
         )}
 
@@ -379,6 +378,7 @@ function ProjectAction({
           <Button type="button" variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
         </div>
       </form>
+      <p className="mt-3 text-xs text-gray-500 max-w-3xl leading-relaxed">{what === 'deploy' ? t('project.movementOut') : t('project.movementIn')}</p>
     </Card>
   )
 }

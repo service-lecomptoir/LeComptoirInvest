@@ -122,10 +122,10 @@
     "issuedOn": "Issued",
     "callSubscriptionHint": "The commitment to draw on.",
     "basis": {
-      "virtual_iban": "Dedicated account — certain",
+      "virtual_iban": "Dedicated account: certain",
       "reference": "Reference quoted",
-      "payer_iban": "Payer's account — identifies the person, not the call",
-      "amount": "Amount alone — proves nothing",
+      "payer_iban": "Payer's account: identifies the person, not the call",
+      "amount": "Amount alone: proves nothing",
       "unmatched": "No clue"
     },
     "thirdParty": "Third-party payment"
@@ -175,8 +175,8 @@
     "added": "Investor added. Their file still has to be checked before any commitment.",
     "kyc": {
       "accepted": "Accepted",
-      "pending": "To check — blocks",
-      "review": "To review — blocks",
+      "pending": "To check (blocks)",
+      "review": "To review (blocks)",
       "refused": "Refused"
     }
   },
@@ -376,5 +376,10 @@
     "myFile": "My file",
     "fileAccepted": "File accepted: you may subscribe.",
     "filePending": "File under verification."
+  },
+  "signOut": {
+    "title": "Sign out?",
+    "message": "You will have to enter your credentials again.",
+    "messageWithAccount": "You will leave the session of {{email}} and have to enter your credentials again."
   }
 }
