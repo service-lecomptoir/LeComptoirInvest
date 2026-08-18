@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Le Comptoir Invest">
+  <!-- La marque du produit, aux couleurs de la famille : le navy du Comptoir, le teal
+       propre a Invest. Un SVG plutot qu'un PNG : net a toutes les tailles, et l'onglet
+       du navigateur est precisement l'endroit ou une icone est rendue toute petite. -->
+  <rect width="64" height="64" rx="14" fill="#0D2F5C"/>
+  <path d="M41.5 22.8a13.2 13.2 0 0 0-9.4-3.8c-7.4 0-13.1 5.7-13.1 13s5.7 13 13.1 13c3.7 0 7-1.4 9.4-3.8"
+        fill="none" stroke="#0E9F8E" stroke-width="6.2" stroke-linecap="round"/>
+</svg>

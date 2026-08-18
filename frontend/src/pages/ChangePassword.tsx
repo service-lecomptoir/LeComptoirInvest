@@ -82,6 +82,7 @@ export default function ChangePassword() {
             <Input
               label={t('password.current')}
               type="password"
+              revealable
               autoComplete="current-password"
               value={current}
               onChange={(e) => setCurrent(e.target.value)}
@@ -91,6 +92,7 @@ export default function ChangePassword() {
             <Input
               label={t('password.new')}
               type="password"
+              revealable
               autoComplete="new-password"
               value={next}
               onChange={(e) => setNext(e.target.value)}
@@ -100,6 +102,7 @@ export default function ChangePassword() {
             <Input
               label={t('password.confirm')}
               type="password"
+              revealable
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}

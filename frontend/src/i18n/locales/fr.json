@@ -311,7 +311,9 @@
     "done": "Mot de passe modifié.",
     "whyCurrent": "Le mot de passe actuel est demandé même lorsque le changement est imposé : sans lui, un jeton dérobé suffirait à s'approprier le compte définitivement.",
     "mustTitle": "Un mot de passe à remplacer",
-    "optionalTitle": "Votre mot de passe"
+    "optionalTitle": "Votre mot de passe",
+    "reveal": "Afficher le mot de passe",
+    "hide": "Masquer le mot de passe"
   },
   "kyc": {
     "decide": "Rendre un verdict",

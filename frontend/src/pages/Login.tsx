@@ -86,6 +86,7 @@ export default function Login() {
             <Input
               label={t('login.password')}
               type="password"
+              revealable
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

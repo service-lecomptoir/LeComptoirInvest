@@ -311,7 +311,9 @@
     "done": "Password changed.",
     "whyCurrent": "The current password is asked for even when the change is imposed: without it, a stolen token would be enough to take the account over for good.",
     "mustTitle": "A password to replace",
-    "optionalTitle": "Your password"
+    "optionalTitle": "Your password",
+    "reveal": "Show the password",
+    "hide": "Hide the password"
   },
   "kyc": {
     "decide": "Record a verdict",
