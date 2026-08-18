@@ -22,14 +22,14 @@ from dataclasses import dataclass
 from datetime import date
 
 #: Never reviewed. The state every investor starts in.
-PENDING = "a_verifier"
+PENDING = "pending"
 #: Reviewed and accepted. The only state that lets money in.
-ACCEPTED = "accepte"
+ACCEPTED = "accepted"
 #: Reviewed and refused. Money stays out, and the reason is recorded.
-REFUSED = "refuse"
+REFUSED = "refused"
 #: Was accepted, and is no longer current — an expired document, a stale periodic review.
 #: NOT the same as `PENDING`: somebody did say yes once, and that is worth knowing.
-REVIEW = "a_revoir"
+REVIEW = "review"
 
 STATUSES: tuple[str, ...] = (PENDING, ACCEPTED, REFUSED, REVIEW)
 
@@ -37,7 +37,7 @@ STATUSES: tuple[str, ...] = (PENDING, ACCEPTED, REFUSED, REVIEW)
 RISK_STANDARD = "standard"
 #: Enhanced diligence: politically exposed person, high-risk jurisdiction, opaque structure,
 #: unexplained source of funds. Not a refusal — a heavier file and a shorter review cycle.
-RISK_HIGH = "eleve"
+RISK_HIGH = "high"
 
 RISK_LEVELS: tuple[str, ...] = (RISK_STANDARD, RISK_HIGH)
 

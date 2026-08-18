@@ -30,13 +30,13 @@ from app.core import instruments
 from app.models.base import Base, TimestampMixin, uuid_pk
 
 #: Waiting for the fund to decide.
-REQUEST_PENDING = "en_attente"
+REQUEST_PENDING = "pending"
 #: Accepted: a `Subscription` was created from it.
-REQUEST_ACCEPTED = "acceptee"
+REQUEST_ACCEPTED = "accepted"
 #: Refused, with a reason.
-REQUEST_REFUSED = "refusee"
+REQUEST_REFUSED = "refused"
 #: Withdrawn by the investor before the fund decided.
-REQUEST_WITHDRAWN = "retiree"
+REQUEST_WITHDRAWN = "withdrawn"
 
 REQUEST_STATUSES: tuple[str, ...] = (
     REQUEST_PENDING,

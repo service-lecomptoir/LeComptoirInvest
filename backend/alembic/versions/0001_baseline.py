@@ -128,7 +128,7 @@ def upgrade() -> None:
         sa.Column(
             "kyc_status",
             sa.String(length=20),
-            server_default="a_verifier",
+            server_default="pending",
             nullable=False,
         ),
         sa.Column(
@@ -401,7 +401,7 @@ def upgrade() -> None:
         sa.Column("currency", sa.String(length=3), nullable=False),
         sa.Column("requested_on", sa.Date(), nullable=False),
         sa.Column(
-            "status", sa.String(length=20), server_default="en_attente", nullable=False
+            "status", sa.String(length=20), server_default="pending", nullable=False
         ),
         sa.Column("decided_by", sa.String(length=150), nullable=True),
         sa.Column("decided_on", sa.Date(), nullable=True),

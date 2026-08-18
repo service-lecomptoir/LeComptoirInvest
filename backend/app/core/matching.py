@@ -34,13 +34,13 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 
 #: The account it landed on belongs to exactly one investor.
-BY_VIRTUAL_IBAN = "iban_virtuel"
+BY_VIRTUAL_IBAN = "virtual_iban"
 #: A valid reference was found in the label.
 BY_REFERENCE = "reference"
 #: The payer's account is one we hold for an investor.
-BY_PAYER_IBAN = "compte_donneur_ordre"
+BY_PAYER_IBAN = "payer_iban"
 #: Nothing identified it.
-UNMATCHED = "non_identifie"
+UNMATCHED = "unmatched"
 
 
 @dataclass(frozen=True)

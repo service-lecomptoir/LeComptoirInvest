@@ -100,7 +100,7 @@ class Investor(Base, TimestampMixin):
     kyc_status: Mapped[str] = mapped_column(
         String(20), nullable=False, default=kyc.PENDING, server_default=kyc.PENDING
     )
-    #: 'standard' or 'eleve'. Drives how long an acceptance stays current (36 months
+    #: 'standard' or 'high'. Drives how long an acceptance stays current (36 months
     #: against 12) and how heavy the file has to be.
     kyc_risk_level: Mapped[str] = mapped_column(
         String(20),

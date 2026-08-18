@@ -30,21 +30,21 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin, uuid_pk
 
 #: Being studied. No money committed.
-STUDY = "etude"
+STUDY = "study"
 #: Money committed and being deployed.
-ACTIVE = "en_cours"
+ACTIVE = "active"
 #: Finished: everything that was going to come back has.
-CLOSED = "cloture"
+CLOSED = "closed"
 #: Written off, wholly or in part. A state of its own, because « closed » and « lost » are
 #: not the same news and an investor is owed the difference.
-WRITTEN_OFF = "perdu"
+WRITTEN_OFF = "written_off"
 
 PROJECT_STATUSES: tuple[str, ...] = (STUDY, ACTIVE, CLOSED, WRITTEN_OFF)
 
 #: What came back: the fund's own money returning.
 RETURN_CAPITAL = "capital"
 #: What the project earned on top.
-RETURN_INCOME = "produit"
+RETURN_INCOME = "income"
 
 
 class Project(Base, TimestampMixin):

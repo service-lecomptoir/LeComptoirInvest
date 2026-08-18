@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply text-gray-900 antialiased bg-gray-50;
+  }
+
+  :where(a, button, [role='button'], [tabindex]):focus-visible {
+    outline: 2px solid #1a4a8a;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  ::selection {
+    background-color: #dbeafe;
+    color: #0d2f5c;
+  }
+
+  /* SIXTEEN PIXELS MINIMUM IN A FIELD, ON A PHONE. Below 16 px iOS ZOOMS the page when
+     a field takes focus, and that zoom STAYS after the form closes. Taken from the
+     sibling product, which paid for it on its sign-in screen. */
+  @media (max-width: 767px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+}

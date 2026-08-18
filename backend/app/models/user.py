@@ -32,9 +32,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base, TimestampMixin, uuid_pk
 
 #: Runs the fund. Created by Alice, never by this product.
-MANAGER = "gestionnaire"
+MANAGER = "manager"
 #: Sees their own portfolio and nothing else. Created here, by the manager.
-INVESTOR = "investisseur"
+INVESTOR = "investor"
 #: Platform administration.
 ADMIN = "admin"
 

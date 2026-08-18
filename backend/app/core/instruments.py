@@ -30,9 +30,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 #: The investor SUBSCRIBES to the fund. The primary instrument: this is what the fund is.
-EQUITY = "souscription"
+EQUITY = "equity"
 #: The investor LENDS to the fund. Secondary, and convertible into a subscription.
-LOAN = "pret"
+LOAN = "loan"
 
 INSTRUMENTS: tuple[str, ...] = (EQUITY, LOAN)
 

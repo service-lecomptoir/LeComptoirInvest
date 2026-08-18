@@ -36,7 +36,7 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('name', sa.String(length=200), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
-    sa.Column('status', sa.String(length=20), server_default='etude', nullable=False),
+    sa.Column('status', sa.String(length=20), server_default='study', nullable=False),
     sa.Column('currency', sa.String(length=3), nullable=False),
     sa.Column('target_amount', sa.Numeric(precision=18, scale=4), nullable=True),
     sa.Column('started_on', sa.Date(), nullable=True),
