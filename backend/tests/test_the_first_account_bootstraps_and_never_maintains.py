@@ -104,3 +104,37 @@ async def test_the_e_mail_is_normalised_whatever_was_typed(db, email):
     await ensure_first_manager(db, email=email, password="x")
     user = (await db.execute(select(User).where(User.role == MANAGER))).scalar_one()
     assert user.email == "gestion@fonds.fr"
+
+
+class TestTwoWorkersRacingDoNotProduceAnError:
+    async def test_a_duplicate_e_mail_is_an_answer_not_a_failure(self, db):
+        """🔴 SEEN IN PRODUCTION ON THE FIRST DEPLOYMENT. `uvicorn --workers 2` runs the
+        lifespan twice; both processes read « nobody can administer » before either had
+        committed, and both inserted. One won, the other raised a duplicate-key error and
+        logged a stack trace under a fund that was in fact correctly set up.
+
+        Here the row is inserted BEHIND the function's back — an investor account, so the
+        « can anybody administer » read still says no — and the unique index is what stops
+        the second write. It must come back as False, not as an exception.
+        """
+        db.add(
+            User(
+                email="gestion@fonds.fr",
+                hashed_password="posee-par-un-autre-processus",
+                role=INVESTOR,
+            )
+        )
+        await db.flush()
+
+        assert (
+            await ensure_first_manager(db, email="gestion@fonds.fr", password="x")
+            is False
+        )
+
+        rows = (
+            (await db.execute(select(User).where(User.email == "gestion@fonds.fr")))
+            .scalars()
+            .all()
+        )
+        assert len(rows) == 1
+        assert rows[0].hashed_password == "posee-par-un-autre-processus"

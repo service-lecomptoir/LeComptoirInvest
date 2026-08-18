@@ -27,6 +27,7 @@ from __future__ import annotations
 import logging
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
@@ -49,7 +50,23 @@ async def ensure_first_manager(db: AsyncSession, *, email: str, password: str) -
     """Create the first fund-wide account if there is none. Returns True if it created one.
 
     ⚠️ NEVER TOUCHES AN EXISTING ROW. Not the password, not the role, not the name. The
-    only write this function is allowed to make is an INSERT, and only into an empty field.
+    only write this function is allowed to make is an INSERT.
+
+    🔴 AND THE UNIQUE INDEX IS THE REAL ARBITER, NOT THE READ ABOVE IT. Seen in production
+    on the very first deployment: uvicorn runs `--workers 2`, both processes run the
+    lifespan, both read « nobody can administer » before either had committed, and both
+    inserted. One won; the other raised a duplicate-key error and logged a stack trace
+    under a fund that was in fact correctly set up.
+
+    A check followed by an insert is not atomic however carefully the check is written, and
+    the fix is not a wider lock: the database already holds the rule as `ix_users_email`.
+    A unique violation here means SOMEBODY ELSE CREATED THE ACCOUNT, which is precisely the
+    answer this function exists to give — so it is a `False`, not an error.
+
+    ⚠️ THE INSERT SITS IN A SAVEPOINT, so the failure rolls back the attempt and NOTHING
+    ELSE. A plain rollback would discard whatever the caller's transaction already held —
+    harmless at startup, where the session is fresh and dedicated, and quietly destructive
+    the first time somebody calls this from inside a wider unit of work.
     """
     somebody = (
         await db.execute(select(User.id).where(User.role.in_(FUND_WIDE_ROLES)).limit(1))
@@ -58,17 +75,27 @@ async def ensure_first_manager(db: AsyncSession, *, email: str, password: str) -
     if not bootstrap_is_needed(somebody_can_administer=somebody is not None):
         return False
 
-    db.add(
-        User(
-            email=email.strip().lower(),
-            hashed_password=hash_password(password),
-            account_name="Gestion du fonds",
-            role=MANAGER,
-            # The credential was handed over by whoever set the variable, so it is not the
-            # holder's yet. They replace it at first sign-in.
-            must_change_password=True,
+    try:
+        async with db.begin_nested():
+            db.add(
+                User(
+                    email=email.strip().lower(),
+                    hashed_password=hash_password(password),
+                    account_name="Gestion du fonds",
+                    role=MANAGER,
+                    # The credential was handed over by whoever set the variable, so it is
+                    # not the holder's yet. They replace it at first sign-in.
+                    must_change_password=True,
+                )
+            )
+    except IntegrityError:
+        # Another worker got there first. The fund IS administrable, which is the only
+        # thing this function was asked about.
+        logger.info(
+            "Compte d'amorçage déjà créé par un autre processus : rien à faire."
         )
-    )
+        return False
+
     await db.commit()
     logger.warning(
         "Aucun compte ne pouvait administrer le fonds : compte d'amorçage créé pour %s. "
