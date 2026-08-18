@@ -26,7 +26,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, uuid_pk
@@ -77,6 +77,17 @@ class User(Base, TimestampMixin):
     locale: Mapped[str] = mapped_column(
         String(5), nullable=False, default="fr", server_default="fr"
     )
+
+    # ── Identité postale, poussée par Alice ───────────────────────────────────────────
+    #: 🔴 CES COLONNES EXISTENT PARCE QU'ALICE LES ENVOIE. Un schéma qui ne nomme pas un
+    #: champ le supprime en silence : la console pousse une adresse, le produit n'a nulle
+    #: part où la mettre, rien n'échoue — et la facture part des mois plus tard avec un
+    #: destinataire vide. Elles ne servent qu'à la facturation, jamais à l'application.
+    phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    zip_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    city: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    country: Mapped[str | None] = mapped_column(String(80), nullable=True)
 
     @property
     def sees_whole_fund(self) -> bool:

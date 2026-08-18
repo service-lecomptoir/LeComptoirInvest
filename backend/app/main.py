@@ -68,6 +68,7 @@ async def health():
 
 
 from app.api.v1.auth import router as auth_router  # noqa: E402
+from app.api.v1.internal_admin import router as internal_router  # noqa: E402
 from app.api.v1.distributions import router as distributions_router  # noqa: E402
 from app.api.v1.investors import router as investors_router  # noqa: E402
 from app.api.v1.projects import router as projects_router  # noqa: E402
@@ -82,3 +83,11 @@ app.include_router(treasury_router, prefix="/api/v1")
 app.include_router(projects_router, prefix="/api/v1")
 app.include_router(distributions_router, prefix="/api/v1")
 app.include_router(statements_router, prefix="/api/v1")
+
+# 🔴 MONTÉ À LA RACINE, SANS `/api`. Le proxy edge ne transmet que `/api/` et `/health` à
+# ce backend ; tout le reste part vers le front, dont le repli SPA répond `index.html`.
+# `https://invest.lecomptoir.services/internal/managers` atteint donc une page statique et
+# jamais ce routeur : il n'est joignable que depuis le réseau Docker, où vit Alice.
+# Le déplacer sous `/api` publierait l'administration des comptes du fonds sur Internet,
+# derrière un simple en-tête partagé. Le préfixe n'est pas cosmétique.
+app.include_router(internal_router)
