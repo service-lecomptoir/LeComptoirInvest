@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import current_manager
+from app.api.deps import current_manager, investor_scope
 from app.database import get_db
 from app.models.subscription import Subscription
 from app.models.treasury import IN, BankMovement, CapitalCall
@@ -173,3 +173,134 @@ async def balance(
     return {
         c: str(a) for c, a in (await treasury_service.treasury_by_currency(db)).items()
     }
+
+
+class CallIn(BaseModel):
+    subscription_id: uuid.UUID
+    amount: Decimal
+    called_on: date
+    due_on: date
+
+
+class CallOut(BaseModel):
+    id: uuid.UUID
+    subscription_id: uuid.UUID
+    reference: str
+    amount: Decimal
+    currency: str
+    called_on: date
+    due_on: date
+    notified_on: date | None = None
+    #: What the investor scans to pay. Euro only, and absent rather than wrong otherwise.
+    epc_qr: str | None = None
+
+
+@router.post("/calls", response_model=CallOut, status_code=status.HTTP_201_CREATED)
+async def open_call(
+    data: CallIn,
+    _: User = Depends(current_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """Ask an investor for part of what they committed.
+
+    ⚠️ A CALL IS NOT MONEY. It creates a demand carrying a reference; the transfer arrives
+    later, on a statement, and is attributed then. Counting calls as cash is the second of
+    the four confusions, and the one that has funds spending money nobody has sent.
+
+    🔴 NEVER CALLS MORE THAN WHAT REMAINS COMMITTED. A call beyond the engagement is not a
+    call, it is an invoice the investor never agreed to — and it would show up on their
+    portal as something they owe.
+    """
+    subscription = await db.get(Subscription, data.subscription_id)
+    if subscription is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Souscription introuvable.")
+    if data.amount <= 0:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "Le montant doit être positif."
+        )
+    if data.due_on < data.called_on:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "L'échéance d'un appel ne peut pas précéder sa date d'émission.",
+        )
+
+    already = sum(
+        (
+            row
+            for row in (
+                await db.execute(
+                    select(CapitalCall.amount).where(
+                        CapitalCall.subscription_id == subscription.id
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        ),
+        Decimal("0"),
+    )
+    if already + data.amount > subscription.amount:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"L'engagement est de {subscription.amount} {subscription.currency} et "
+            f"{already} ont déjà été appelés : il ne reste que "
+            f"{subscription.amount - already} à appeler.",
+        )
+
+    call = await treasury_service.open_call(
+        db,
+        subscription=subscription,
+        amount=data.amount,
+        due_on=data.due_on,
+        called_on=data.called_on,
+    )
+    return _call_out(call)
+
+
+def _call_out(call: CapitalCall) -> CallOut:
+    """One shape for a call, so the portal and the fund never see two different ones."""
+    from app.config import get_settings
+    from app.core import money, references
+
+    settings = get_settings()
+    ibans = settings.fund_ibans
+    qr = None
+    if call.currency == "EUR" and ibans:
+        # ⚠️ EURO ONLY. The EPC standard is euro-denominated; producing one for an XOF call
+        # would encode an amount the investor's bank will read as euros.
+        qr = references.epc_qr_payload(
+            beneficiary=settings.APP_NAME,
+            iban=ibans[0],
+            amount=str(money.quantize(call.amount, call.currency)),
+            currency=call.currency,
+            reference=call.reference,
+        )
+    return CallOut(
+        id=call.id,
+        subscription_id=call.subscription_id,
+        reference=call.reference,
+        amount=call.amount,
+        currency=call.currency,
+        called_on=call.called_on,
+        due_on=call.due_on,
+        notified_on=call.notified_on,
+        epc_qr=qr,
+    )
+
+
+@router.get("/calls", response_model=list[CallOut])
+async def list_calls(
+    scope: uuid.UUID | None = Depends(investor_scope),
+    db: AsyncSession = Depends(get_db),
+):
+    """The calls an investor has to pay, or all of them for the fund.
+
+    The scope decides. An investor sees their own with the reference to quote, which is the
+    single thing that lets the fund attribute their transfer without guessing.
+    """
+    query = select(CapitalCall).order_by(CapitalCall.due_on)
+    if scope is not None:
+        query = query.join(
+            Subscription, Subscription.id == CapitalCall.subscription_id
+        ).where(Subscription.investor_id == scope)
+    return [_call_out(c) for c in (await db.execute(query)).scalars().all()]
