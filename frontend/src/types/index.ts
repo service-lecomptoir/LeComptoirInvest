@@ -11,6 +11,15 @@ export interface User {
   sees_whole_fund: boolean
 }
 
+export interface Me {
+  id: string
+  email: string
+  account_name: string | null
+  role: string
+  sees_whole_fund: boolean
+  must_change_password: boolean
+}
+
 export interface Investor {
   id: string
   kind: string
@@ -30,6 +39,9 @@ export interface SubscriptionRequest {
   requested_on: string
   status: string
   decision_reason: string | null
+  /** L'engagement né de cette demande. NULL tant qu'elle est en attente, et NULL pour
+   *  toujours si elle est refusée — c'est ce qui rend les deux lignes utiles séparément. */
+  subscription_id: string | null
 }
 
 export interface Position {

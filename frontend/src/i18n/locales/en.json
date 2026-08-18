@@ -296,5 +296,82 @@
     "decidedNotPaidTitle": "Decided but unpaid",
     "decidedNotPaidBody": "These amounts were decided during the year without leaving the fund's account. They are not part of your income: you did not receive them.",
     "capitalIsNotIncome": "Capital repaid is not income: it is your own money coming back."
+  },
+  "password": {
+    "title": "Change your password",
+    "forced": "This password was handed to you by somebody else. Choose your own before going further.",
+    "optional": "You can replace your password at any time.",
+    "current": "Current password",
+    "new": "New password",
+    "confirm": "Confirm the new password",
+    "mismatch": "The two entries do not match.",
+    "tooShort": "Ten characters minimum.",
+    "submit": "Save",
+    "done": "Password changed.",
+    "whyCurrent": "The current password is asked for even when the change is imposed: without it, a stolen token would be enough to take the account over for good."
+  },
+  "kyc": {
+    "decide": "Record a verdict",
+    "title": "Verification of {{name}}",
+    "verdict": "Verdict",
+    "risk": "Risk level",
+    "riskStandard": "Standard",
+    "riskHigh": "High",
+    "reason": "Reason",
+    "reasonRequired": "A refusal with no reason can be neither reconsidered nor explained to the investor.",
+    "recorded": "Verdict recorded.",
+    "blocksMoney": "Until the verdict reads « accepted », this investor can neither commit nor pay anything in."
+  },
+  "project": {
+    "deploy": "Deploy",
+    "deployTitle": "Deploy into {{name}}",
+    "deployed": "Deployment recorded.",
+    "recordReturn": "Record a return",
+    "returnTitle": "Return from {{name}}",
+    "returned": "Return recorded.",
+    "movement": "Bank movement",
+    "movementOut": "The OUTGOING transfer that carried the money.",
+    "movementIn": "The INCOMING transfer that brought it back.",
+    "capitalBack": "Capital returned",
+    "incomeBack": "Income",
+    "splitRequired": "The two amounts are asked for separately: a return keyed in as one figure lets a project that merely gave the money back be shown as performance.",
+    "changeStatus": "Change status",
+    "statusChanged": "Status updated.",
+    "closedOn": "Closed on",
+    "note": "Note"
+  },
+  "convert": {
+    "action": "Convert into a subscription",
+    "title": "Convert this loan",
+    "explain": "A loan becomes a subscription. It is an EVENT: the loan holding closes, a subscription holding opens, and both survive. The reverse does not exist.",
+    "date": "Conversion date",
+    "principal": "Principal converted",
+    "interest": "Interest converted",
+    "interestCash": "Interest paid in cash",
+    "interestWarning": "Accrued interest is a real amount: on a bullet loan it is every coupon since the drawdown. Leaving it implicit is how a lender silently loses a year of interest at conversion.",
+    "done": "Conversion recorded."
+  },
+  "pay": {
+    "action": "Mark as paid",
+    "title": "Pay this distribution",
+    "explain": "The investor is paid when the outgoing transfer is attached, not when the decision is taken.",
+    "movement": "Outgoing transfer",
+    "paidOn": "Paid on",
+    "done": "Distribution paid."
+  },
+  "invest": {
+    "action": "Ask to subscribe",
+    "title": "Ask to subscribe",
+    "explain": "You are expressing an intent. It binds nobody and nothing is taken: the fund will look at it alongside your file, and its acceptance is what creates the commitment.",
+    "instrument": "Instrument",
+    "amount": "Amount",
+    "currency": "Currency",
+    "documentVersion": "Information document version",
+    "documentHint": "The version you had in front of you, recorded now: it cannot be recovered later.",
+    "sent": "Request sent.",
+    "blocked": "Your file has not been accepted yet: no subscription is possible until it is.",
+    "myFile": "My file",
+    "fileAccepted": "File accepted: you may subscribe.",
+    "filePending": "File under verification."
   }
 }

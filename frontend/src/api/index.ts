@@ -1,6 +1,6 @@
 import { apiClient } from './client'
 import type {
-  CapitalCall, Distribution, Investor, Movement, Portfolio, Project,
+  CapitalCall, Distribution, Investor, Me, Movement, Portfolio, Project,
   Statement, SubscriptionRequest, Waterfall,
 } from '@/types'
 
@@ -8,6 +8,14 @@ export const authApi = {
   login: (email: string, password: string) =>
     apiClient.post<{ access_token: string; role: string; must_change_password: boolean }>(
       '/auth/login', { email, password }, { skipErrorToast: true }),
+  // Un rechargement ne garde que le jeton : l'application redemande QUI elle sert plutôt
+  // que de faire confiance à un rôle recopié dans le stockage local, qu'un utilisateur
+  // peut éditer et qui reste figé après un changement décidé ailleurs.
+  me: () => apiClient.get<Me>('/auth/me'),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiClient.post('/auth/change-password',
+      { current_password: currentPassword, new_password: newPassword },
+      { skipErrorToast: true }),
 }
 
 export const investorsApi = {

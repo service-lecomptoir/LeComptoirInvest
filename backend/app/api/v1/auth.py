@@ -1,11 +1,18 @@
-"""Signing in."""
+"""Signing in, and replacing the credential somebody else handed you."""
+
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_access_token, verify_password
+from app.api.deps import current_user
+from app.core.security import (
+    create_access_token,
+    hash_password,
+    verify_password,
+)
 from app.database import get_db
 from app.models.user import User
 
@@ -40,3 +47,66 @@ async def login(data: LoginIn, db: AsyncSession = Depends(get_db)):
         role=user.role,
         must_change_password=user.must_change_password,
     )
+
+
+class MeOut(BaseModel):
+    """Who is signed in, for a front end that only kept a token across a refresh."""
+
+    id: uuid.UUID
+    email: EmailStr
+    account_name: str | None = None
+    role: str
+    sees_whole_fund: bool
+    must_change_password: bool
+
+
+@router.get("/me", response_model=MeOut)
+async def me(user: User = Depends(current_user)):
+    return MeOut(
+        id=user.id,
+        email=user.email,
+        account_name=user.account_name,
+        role=user.role,
+        sees_whole_fund=user.sees_whole_fund,
+        must_change_password=user.must_change_password,
+    )
+
+
+class ChangePasswordIn(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=10)
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_password(
+    data: ChangePasswordIn,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """The holder replaces the credential somebody else handed them.
+
+    🔴 CETTE ROUTE MANQUAIT, ET C'ÉTAIT LE PIRE TROU DU PRODUIT. `must_change_password` est
+    posé par l'amorçage, par Alice à la création d'un compte et à chaque réinitialisation ;
+    la connexion le renvoie fidèlement. Mais rien ne permettait de changer quoi que ce
+    soit : on exigeait d'un utilisateur qu'il remplace un mot de passe qu'un autre avait vu,
+    et on ne lui en donnait pas le moyen. Un contrôle qu'on ne peut pas satisfaire n'est pas
+    un contrôle, c'est un panneau.
+
+    ⚠️ LE MOT DE PASSE ACTUEL EST EXIGÉ, même quand `must_change_password` est vrai. Un
+    jeton volé suffirait sinon à s'approprier le compte définitivement : la victime perd
+    l'accès et l'attaquant le garde. Le jeton prouve qu'on est entré, jamais qu'on est le
+    titulaire.
+    """
+    if not verify_password(data.current_password, user.hashed_password):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Le mot de passe actuel est incorrect."
+        )
+    if verify_password(data.new_password, user.hashed_password):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Le nouveau mot de passe est identique à l'ancien : il n'a pas cessé d'être "
+            "connu de qui vous l'a transmis.",
+        )
+    user.hashed_password = hash_password(data.new_password)
+    user.must_change_password = False
+    await db.commit()

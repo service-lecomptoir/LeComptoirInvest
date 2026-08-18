@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import {
-  Banknote, Building2, FileText, LayoutDashboard, LogOut, Menu, PieChart,
+  Banknote, Building2, FileText, KeyRound, LayoutDashboard, LogOut, Menu, PieChart,
   Receipt, Users, Wallet, X,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
@@ -131,6 +131,13 @@ export function Shell() {
           <LanguageSwitcher dark />
         </div>
         <p className="px-2.5 text-[11px] text-white/40 capitalize">{role ?? ''}</p>
+        <NavLink
+          to="/change-password"
+          onClick={() => setOpen(false)}
+          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] text-white/70 hover:bg-white/5 hover:text-white"
+        >
+          <KeyRound size={16} /> {t('password.title')}
+        </NavLink>
         <button
           onClick={signOut}
           className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] text-white/70 hover:bg-white/5 hover:text-white"

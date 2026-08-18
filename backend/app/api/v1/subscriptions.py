@@ -42,6 +42,13 @@ class RequestOut(BaseModel):
     requested_on: date
     status: str
     decision_reason: str | None = None
+    #: ⚠️ L'ENGAGEMENT NÉ DE CETTE DEMANDE, et il manquait. Une demande et une souscription
+    #: sont deux objets distincts, exprès ; mais sans ce lien, un écran qui veut agir sur
+    #: l'engagement n'a que l'identifiant de la demande sous la main, et l'envoie — pour
+    #: recevoir un 404 dont la cause n'a rien d'évident. NULL tant qu'elle est en attente,
+    #: et NULL pour toujours si elle est refusée : c'est précisément ce qui rend les deux
+    #: lignes utiles séparément.
+    subscription_id: uuid.UUID | None = None
 
 
 @router.post(

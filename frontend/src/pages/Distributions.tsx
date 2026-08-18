@@ -40,6 +40,7 @@ export default function Distributions() {
   const [refusal, setRefusal] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [history, setHistory] = useState<Distribution[] | null>(null)
+  const [paying, setPaying] = useState<Distribution | null>(null)
 
   const loadHistory = () => {
     distributionsApi.list().then((r) => setHistory(r.data)).catch(() => setHistory([]))
@@ -244,6 +245,7 @@ export default function Distributions() {
               <Th right>{t('common.income')}</Th>
               <Th right>{t('distributions.withholding')}</Th>
               <Th>{t('common.status')}</Th>
+              <Th right>{t('pay.action')}</Th>
             </tr>
           </thead>
           <tbody>
@@ -260,12 +262,100 @@ export default function Distributions() {
                     <Pill tone="warn">{t('distributions.notPaid')}</Pill>
                   )}
                 </Td>
+                <Td right>
+                  {!d.paid_on && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setPaying(paying?.id === d.id ? null : d)}
+                    >
+                      {t('pay.action')}
+                    </Button>
+                  )}
+                </Td>
               </tr>
             ))}
           </tbody>
         </TableWrap>
       )}
+
+      {paying && (
+        <div className="mt-3">
+          <PayDistribution
+            distribution={paying}
+            onCancel={() => setPaying(null)}
+            onDone={() => {
+              setPaying(null)
+              loadHistory()
+            }}
+          />
+        </div>
+      )}
     </>
+  )
+}
+
+/**
+ * Attacher le virement sortant — sans quoi tout restait « décidée, non payée » à jamais.
+ *
+ * 🔴 LA DISTINCTION DÉCIDÉ / PAYÉ EXISTAIT DANS LA BASE DEPUIS LA PREMIÈRE MIGRATION, et
+ * aucun écran ne permettait de franchir la seconde étape. Le produit tenait scrupuleusement
+ * un état que personne ne pouvait quitter : chaque investisseur restait éternellement « à
+ * payer », et le relevé fiscal — qui ne compte que ce qui a été PAYÉ — restait vide.
+ *
+ * ⚠️ C'est le virement qui paie, pas le clic. `paid_on` prend par défaut la date de valeur
+ * du mouvement : la date à laquelle l'argent a réellement quitté le compte, pas celle où
+ * quelqu'un s'en est occupé.
+ */
+function PayDistribution({
+  distribution, onCancel, onDone,
+}: { distribution: Distribution; onCancel: () => void; onDone: () => void }) {
+  const { t } = useTranslation()
+  const [movementId, setMovementId] = useState('')
+  const [paidOn, setPaidOn] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      await distributionsApi.pay(distribution.id, {
+        bank_movement_id: movementId.trim(),
+        paid_on: paidOn || undefined,
+      })
+      toast.success(t('pay.done'))
+      onDone()
+    } catch {
+      /* le message du serveur est déjà affiché par l'intercepteur */
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="p-4 border-brand-navy/30">
+      <p className="text-sm font-semibold text-gray-900">{t('pay.title')}</p>
+      <p className="mt-0.5 mb-3 text-xs text-gray-500 max-w-2xl">{t('pay.explain')}</p>
+      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-3 items-end">
+        <Input
+          label={t('pay.movement')}
+          value={movementId}
+          onChange={(e) => setMovementId(e.target.value)}
+          required
+        />
+        <Input
+          label={t('pay.paidOn')}
+          type="date"
+          value={paidOn}
+          onChange={(e) => setPaidOn(e.target.value)}
+          hint={t('pay.explain')}
+        />
+        <div className="flex gap-2">
+          <Button type="submit" isLoading={busy}>{t('common.confirm')}</Button>
+          <Button type="button" variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
+        </div>
+      </form>
+    </Card>
   )
 }
 

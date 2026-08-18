@@ -1,8 +1,9 @@
 import type { ReactElement } from 'react'
-import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
+import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Shell } from '@/components/layout/Shell'
 import { useAuthStore } from '@/store/authStore'
 import Login from '@/pages/Login'
+import ChangePassword from '@/pages/ChangePassword'
 import Dashboard from '@/pages/Dashboard'
 import Treasury from '@/pages/Treasury'
 import Projects from '@/pages/Projects'
@@ -14,9 +15,22 @@ import Calls from '@/pages/Calls'
 import MyDistributions from '@/pages/MyDistributions'
 import StatementPage from '@/pages/Statement'
 
+const PASSWORD_ROUTE = '/change-password'
+
 function RequireAuth() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />
+  const mustChangePassword = useAuthStore((s) => s.mustChangePassword)
+  const location = useLocation()
+
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+
+  // 🔴 LE CHANGEMENT IMPOSÉ BLOQUE TOUT LE RESTE, et c'est le seul endroit où l'appliquer.
+  // Le poser sur chaque écran laisserait celui qu'on oublie servir de porte dérobée, et
+  // c'est toujours le douzième écran ajouté sous pression qui l'est.
+  if (mustChangePassword && location.pathname !== PASSWORD_ROUTE) {
+    return <Navigate to={PASSWORD_ROUTE} replace />
+  }
+  return <Outlet />
 }
 
 /** The fund's screens and the investor's are different ROUTES, not one set with rows
@@ -48,6 +62,7 @@ export const router = createBrowserRouter([
         element: <Shell />,
         children: [
           { path: '/', element: <Home /> },
+          { path: PASSWORD_ROUTE, element: <ChangePassword /> },
           { path: '/projects', element: <Projects /> },
           { path: '/treasury', element: <FundOnly><Treasury /></FundOnly> },
           { path: '/distributions', element: <FundOnly><Distributions /></FundOnly> },

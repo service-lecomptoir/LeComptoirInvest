@@ -34,6 +34,7 @@ export default function Investors() {
   const { t } = useTranslation()
   const [rows, setRows] = useState<Row[] | null>(null)
   const [creating, setCreating] = useState(false)
+  const [deciding, setDeciding] = useState<Row | null>(null)
   const [bank, setBank] = useState<Record<string, { iban: string | null }>>({})
 
   const load = () =>
@@ -93,6 +94,7 @@ export default function Investors() {
               <Th>{t('investors.kind')}</Th>
               <Th>{t('investors.verification')}</Th>
               <Th>{t('investors.reviewBy')}</Th>
+              <Th>{t('kyc.verdict')}</Th>
               <Th>{t('investors.bankDetails')}</Th>
             </tr>
           </thead>
@@ -117,6 +119,15 @@ export default function Investors() {
                   </Td>
                   <Td className="text-gray-500 whitespace-nowrap">{day(r.kyc_review_due_on)}</Td>
                   <Td>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setDeciding(deciding?.id === r.id ? null : r)}
+                    >
+                      {t('kyc.decide')}
+                    </Button>
+                  </Td>
+                  <Td>
                     {/* 🔴 THE IBAN IS NOT IN THE LISTING. A register is read constantly, and
                         shipping everybody's account details on every page view is how a
                         leak becomes exhaustive. One investor at a time, on demand. */}
@@ -139,7 +150,111 @@ export default function Investors() {
           </tbody>
         </TableWrap>
       )}
+
+      {deciding && (
+        <div className="mt-3">
+          <KycVerdict
+            investor={deciding}
+            onCancel={() => setDeciding(null)}
+            onDone={() => {
+              setDeciding(null)
+              load()
+            }}
+          />
+        </div>
+      )}
     </>
+  )
+}
+
+/**
+ * Rendre un verdict — l'écran sans lequel le registre ne servait à rien.
+ *
+ * 🔴 UN VERDICT QUI N'EST PAS « ACCEPTÉ » BLOQUE L'ARGENT, et c'est écrit sur l'écran. Le
+ * contrôle existait côté serveur depuis le premier jour ; sans ce formulaire, personne ne
+ * pouvait accepter un investisseur, donc aucun engagement ni aucun encaissement n'était
+ * possible. Un contrôle qu'on ne peut pas lever n'est pas prudent, il est mort.
+ *
+ * ⚠️ UN REFUS SANS MOTIF EST REFUSÉ ICI AUSSI, pas seulement par l'API. L'investisseur à
+ * qui on dit « non » sans raison ne peut ni corriger son dossier ni demander à le revoir.
+ */
+function KycVerdict({
+  investor, onCancel, onDone,
+}: { investor: Row; onCancel: () => void; onDone: () => void }) {
+  const { t } = useTranslation()
+  const [status, setStatus] = useState(investor.kyc_status)
+  const [risk, setRisk] = useState('standard')
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const needsReason = status === 'refused' || status === 'review'
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (needsReason && !reason.trim()) {
+      toast.error(t('kyc.reasonRequired'))
+      return
+    }
+    setBusy(true)
+    try {
+      await investorsApi.setKyc(investor.id, {
+        status,
+        risk_level: risk,
+        reason: reason.trim() || undefined,
+      })
+      toast.success(t('kyc.recorded'))
+      onDone()
+    } catch {
+      /* handled by the interceptor */
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="p-4 border-brand-navy/30">
+      <p className="text-sm font-semibold text-gray-900">
+        {t('kyc.title', { name: investor.display_name })}
+      </p>
+      <p className="mt-0.5 mb-3 text-xs text-gray-500 max-w-2xl">{t('kyc.blocksMoney')}</p>
+      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-4 items-end">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('kyc.verdict')}</label>
+          <Select
+            value={status}
+            onChange={setStatus}
+            options={['accepted', 'pending', 'review', 'refused'].map((v) => ({
+              value: v,
+              label: t(`investors.kyc.${v}`),
+            }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('kyc.risk')}</label>
+          <Select
+            value={risk}
+            onChange={setRisk}
+            options={[
+              { value: 'standard', label: t('kyc.riskStandard') },
+              { value: 'high', label: t('kyc.riskHigh') },
+            ]}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+          />
+        </div>
+        <Input
+          label={t('kyc.reason')}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          required={needsReason}
+          hint={needsReason ? t('kyc.reasonRequired') : undefined}
+        />
+        <div className="flex gap-2">
+          <Button type="submit" isLoading={busy}>{t('common.confirm')}</Button>
+          <Button type="button" variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
+        </div>
+      </form>
+    </Card>
   )
 }
 

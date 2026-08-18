@@ -26,6 +26,7 @@ export default function Subscriptions() {
   const { t } = useTranslation()
   const [rows, setRows] = useState<SubscriptionRequest[] | null>(null)
   const [refusing, setRefusing] = useState<string | null>(null)
+  const [converting, setConverting] = useState<SubscriptionRequest | null>(null)
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -108,6 +109,17 @@ export default function Subscriptions() {
                     )}
                   </Td>
                   <Td right>
+                    {/* 🔴 Un prêt ACCEPTÉ peut devenir une souscription — la décision du
+                        17 août. Elle n'avait aucun écran, donc elle était inapplicable. */}
+                    {r.status === 'accepted' && r.instrument === 'loan' && r.subscription_id && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setConverting(converting?.id === r.id ? null : r)}
+                      >
+                        {t('convert.action')}
+                      </Button>
+                    )}
                     {r.status === 'pending' && (
                       <div className="inline-flex gap-2">
                         <Button size="sm" onClick={() => accept(r.id)} isLoading={busy}>
@@ -127,6 +139,19 @@ export default function Subscriptions() {
               ))}
             </tbody>
           </TableWrap>
+
+          {converting && (
+            <div className="mt-3">
+              <ConvertLoan
+                request={converting}
+                onCancel={() => setConverting(null)}
+                onDone={() => {
+                  setConverting(null)
+                  load()
+                }}
+              />
+            </div>
+          )}
 
           {refusing && (
             <Card className="mt-3 p-4 border-red-200">
@@ -158,5 +183,97 @@ export default function Subscriptions() {
         </>
       )}
     </>
+  )
+}
+
+/**
+ * Convertir un prêt en souscription — la décision prise le 17 août, sans écran jusqu'ici.
+ *
+ * 🔴 C'EST UN ÉVÉNEMENT, PAS UNE MODIFICATION. La ligne de prêt se ferme, une ligne de
+ * souscription s'ouvre, et les deux survivent : chaque relevé déjà envoyé disait que
+ * l'investisseur détenait un prêt, et chaque distribution passée l'a classé comme dette.
+ * Muter la ligne existante ferait prétendre à l'historique qu'il s'agissait de capital
+ * depuis toujours.
+ *
+ * ⚠️ ET JAMAIS L'INVERSE. Transformer du capital en dette placerait cet investisseur devant
+ * les autres en liquidation, après coup — ce qui n'est pas une conversion mais une
+ * préférence consentie à un créancier, et celles-là se font annuler.
+ */
+function ConvertLoan({
+  request, onCancel, onDone,
+}: { request: SubscriptionRequest; onCancel: () => void; onDone: () => void }) {
+  const { t } = useTranslation()
+  const today = new Date().toISOString().slice(0, 10)
+  const [convertedOn, setConvertedOn] = useState(today)
+  const [principal, setPrincipal] = useState(request.amount)
+  const [interest, setInterest] = useState('')
+  const [interestCash, setInterestCash] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      // 🔴 L'ENGAGEMENT, PAS LA DEMANDE. Envoyer l'identifiant de la demande donne un 404
+      // dont la cause n'a rien d'évident : deux objets distincts, deux identifiants.
+      await subscriptionsApi.convert(request.subscription_id!, {
+        converted_on: convertedOn,
+        principal_converted: principal,
+        interest_converted: interest || '0',
+        interest_paid_in_cash: interestCash || '0',
+      })
+      toast.success(t('convert.done'))
+      onDone()
+    } catch {
+      /* le message du serveur est déjà affiché par l'intercepteur */
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="p-4 border-brand-navy/30">
+      <p className="text-sm font-semibold text-gray-900">{t('convert.title')}</p>
+      <p className="mt-0.5 text-xs text-gray-500 max-w-2xl">{t('convert.explain')}</p>
+      <p className="mt-1 mb-3 text-xs text-amber-800 max-w-2xl">{t('convert.interestWarning')}</p>
+      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-5 items-end">
+        <Input
+          label={t('convert.date')}
+          type="date"
+          value={convertedOn}
+          onChange={(e) => setConvertedOn(e.target.value)}
+          required
+        />
+        <Input
+          label={t('convert.principal')}
+          type="number"
+          min="0"
+          step="0.01"
+          value={principal}
+          onChange={(e) => setPrincipal(e.target.value)}
+          required
+        />
+        <Input
+          label={t('convert.interest')}
+          type="number"
+          min="0"
+          step="0.01"
+          value={interest}
+          onChange={(e) => setInterest(e.target.value)}
+        />
+        <Input
+          label={t('convert.interestCash')}
+          type="number"
+          min="0"
+          step="0.01"
+          value={interestCash}
+          onChange={(e) => setInterestCash(e.target.value)}
+        />
+        <div className="flex gap-2">
+          <Button type="submit" isLoading={busy}>{t('common.confirm')}</Button>
+          <Button type="button" variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
+        </div>
+      </form>
+    </Card>
   )
 }
