@@ -245,3 +245,15 @@ export interface CapitalAccountLine {
   closing_balance: string
   net_paid: string
 }
+
+export interface ProjectValuation {
+  id: string
+  project_id: string
+  /** The day the value is judged AS OF, never the day it was typed. */
+  valued_on: string
+  amount: string
+  currency: string
+  /** Who formed the judgement. A valuation nobody signed is one nobody can be asked about. */
+  valued_by: string
+  basis: string | null
+}

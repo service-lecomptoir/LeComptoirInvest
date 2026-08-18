@@ -346,7 +346,14 @@
     "changeStatus": "Change status",
     "statusChanged": "Status updated.",
     "closedOn": "Closed on",
-    "note": "Note"
+    "note": "Note",
+    "value": "Value",
+    "valueTitle": "Value {{name}}",
+    "valueHint": "A valuation is a dated, signed judgement rather than a flow: it is imputed on no bank movement. It is recorded in your name and never edited; correcting one means recording another.",
+    "valuedOn": "As of",
+    "valuedAmount": "Value judged",
+    "basis": "What it rests on",
+    "valued": "Valuation recorded."
   },
   "convert": {
     "action": "Convert into a subscription",

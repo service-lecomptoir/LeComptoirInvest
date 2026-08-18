@@ -346,7 +346,14 @@
     "changeStatus": "Changer l'état",
     "statusChanged": "État mis à jour.",
     "closedOn": "Clôturé le",
-    "note": "Note"
+    "note": "Note",
+    "value": "Valoriser",
+    "valueTitle": "Valoriser {{name}}",
+    "valueHint": "Une valorisation est un jugement daté et signé, pas un flux : elle ne s'impute sur aucun mouvement bancaire. Elle est enregistrée à votre nom et n'est jamais modifiée ; corriger revient à en enregistrer une nouvelle.",
+    "valuedOn": "Arrêtée au",
+    "valuedAmount": "Valeur retenue",
+    "basis": "Sur quoi elle repose",
+    "valued": "Valorisation enregistrée."
   },
   "convert": {
     "action": "Convertir en souscription",

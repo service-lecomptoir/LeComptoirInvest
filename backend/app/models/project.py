@@ -83,6 +83,51 @@ class Project(Base, TimestampMixin):
         return f"<Project {self.name} [{self.status}]>"
 
 
+class ProjectValuation(Base, TimestampMixin):
+    """What a project was judged to be worth on a date, and by whom.
+
+    🔴 THIS PRODUCT DOES NOT VALUE ANYTHING; IT RECORDS A JUDGEMENT SOMEBODY MADE. A
+    valuation is an opinion with an author and a date, not a computed figure, and the three
+    together are what makes it auditable a year later. Storing an amount alone would produce
+    a number nobody can question and nobody can defend.
+
+    ⚠️ A HISTORY, NOT A CURRENT VALUE. Rows accumulate and none is ever updated: the point of
+    a valuation is being able to say what was thought in March and what changed by June. A
+    single mutable column would erase exactly the evidence an investor asks for when the
+    figure moves.
+
+    ⚠️ AND AN UNVALUED PROJECT IS NOT WORTH ZERO. Nothing here fills a gap: a fund with one
+    project nobody valued has an UNKNOWN net asset value, and `valuation_service` refuses to
+    total rather than treat the silence as a nil.
+    """
+
+    __tablename__ = "project_valuations"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    #: The day the value is judged AS OF, which is not the day it was entered. A March
+    #: valuation recorded in May is a March figure, and dating it by the entry would move
+    #: every quarter's report by the delay of whoever typed it.
+    valued_on: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    amount: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, index=True)
+    #: Who formed the judgement. A valuation nobody signed is one nobody can be asked about.
+    valued_by: Mapped[str] = mapped_column(String(150), nullable=False)
+    #: What it rests on: a transaction, a yield, an expert report. Free text on purpose —
+    #: a closed list would push everyone into the nearest wrong option.
+    basis: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    project: Mapped["Project"] = relationship("Project")
+
+    def __repr__(self) -> str:
+        return f"<ProjectValuation {self.amount} {self.currency} on {self.valued_on}>"
+
+
 class Deployment(Base, TimestampMixin):
     """Money leaving the fund for a project.
 

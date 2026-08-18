@@ -3,7 +3,7 @@ import type {
   CapitalCall, Distribution, Investor, Me, Movement, Portfolio, Project,
   Statement, SubscriptionRequest, Waterfall,
   BillingSubscription, PaymentMethods, BillingPlan, BillingInvoice, BillingStatus,
-  PerformanceBlock, CapitalAccountLine,
+  PerformanceBlock, CapitalAccountLine, ProjectValuation,
 } from '@/types'
 
 export const authApi = {
@@ -63,6 +63,12 @@ export const projectsApi = {
     apiClient.post(`/projects/${id}/returns`, body),
   setStatus: (id: string, body: Record<string, unknown>) =>
     apiClient.post<Project>(`/projects/${id}/status`, body),
+  // A valuation is an opinion with an author and a date. The author is the signed-in
+  // manager and is never sent from here: a signature the caller chooses is worth nothing.
+  valuations: (id: string) =>
+    apiClient.get<ProjectValuation[]>(`/projects/${id}/valuations`),
+  recordValuation: (id: string, body: { valued_on: string; amount: string; basis?: string }) =>
+    apiClient.post<ProjectValuation>(`/projects/${id}/valuations`, body),
 }
 
 export const distributionsApi = {

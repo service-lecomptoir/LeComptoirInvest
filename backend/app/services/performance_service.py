@@ -27,6 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.performance import Flow, Performance, measure
 from app.models.subscription import Subscription
 from app.models.treasury import BankMovement, Contribution, Distribution
+from app.services import valuation_service
 
 
 async def flows_by_currency(
@@ -95,26 +96,30 @@ async def performance(
     *,
     as_of: date,
     investor_id: uuid.UUID | None = None,
-    valuations: dict[str, object] | None = None,
 ) -> list[Performance]:
     """One measure per currency, for one investor or for the whole fund.
 
-    `valuations` maps a currency to what is still held, valued on `as_of`. This product
-    values nothing on its own: a figure only appears here because somebody recorded it, and
-    without it the answer stays limited to what has already come back and says so.
+    🔴 THE RESIDUAL VALUE IS FETCHED, NOT PASSED IN, AND THAT IS THE POINT. It used to be an
+    argument nobody supplied: `valuation_service` could compute it and this module never
+    asked, so TVPI answered « unknown » on a fund whose projects had all been valued. A
+    module that CAN answer and is never called is the same object as a rule nobody applies.
+
+    ⚠️ AND IT STAYS None WHEN THE VALUE IS UNKNOWN. An unvalued project makes the whole net
+    asset value unknown; the measure then reports what has come back and says why the rest
+    is missing, exactly as before. Nothing here invents a figure.
     """
-    supplied = valuations or {}
-    return [
-        measure(
-            currency=currency,
-            as_of=as_of,
-            flows=flows,
-            residual_value=supplied.get(currency),  # type: ignore[arg-type]
+    flows_per_currency = await flows_by_currency(db, investor_id=investor_id)
+    out: list[Performance] = []
+    for currency, flows in sorted(flows_per_currency.items()):
+        residual = await valuation_service.residual_value_of(
+            db, currency=currency, as_of=as_of, investor_id=investor_id
         )
-        for currency, flows in sorted(
-            (await flows_by_currency(db, investor_id=investor_id)).items()
+        out.append(
+            measure(
+                currency=currency, as_of=as_of, flows=flows, residual_value=residual
+            )
         )
-    ]
+    return out
 
 
 __all__ = ["flows_by_currency", "performance"]

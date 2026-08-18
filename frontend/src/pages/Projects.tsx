@@ -105,7 +105,7 @@ export default function Projects() {
                   {seesWholeFund && (
                     <Td right>
                       <div className="inline-flex gap-1.5">
-                        {(['deploy', 'return', 'status'] as Action[]).map((what) => (
+                        {(['deploy', 'return', 'value', 'status'] as Action[]).map((what) => (
                           <Button
                             key={what}
                             size="sm"
@@ -123,7 +123,9 @@ export default function Projects() {
                                 ? 'project.deploy'
                                 : what === 'return'
                                   ? 'project.recordReturn'
-                                  : 'project.changeStatus',
+                                  : what === 'value'
+                                    ? 'project.value'
+                                    : 'project.changeStatus',
                             )}
                           </Button>
                         ))}
@@ -218,7 +220,7 @@ function NewProject({ onCancel, onDone }: { onCancel: () => void; onDone: () => 
 }
 
 
-type Action = 'deploy' | 'return' | 'status'
+type Action = 'deploy' | 'return' | 'status' | 'value'
 
 /**
  * Les trois gestes qui font vivre un projet, et qui n'avaient aucun écran : l'argent
@@ -250,6 +252,12 @@ function ProjectAction({
   const [note, setNote] = useState('')
   const [status, setStatus] = useState(project.status)
   const [closedOn, setClosedOn] = useState('')
+  // 🔴 LA DATE D'ARRÊTÉ, PAS CELLE DE SAISIE. Une valorisation de mars enregistrée en mai
+  // reste un chiffre de mars ; la dater du jour où on la tape décalerait chaque rapport
+  // trimestriel du délai de celui qui l'écrit.
+  const [valuedOn, setValuedOn] = useState('')
+  const [valuation, setValuation] = useState('')
+  const [basis, setBasis] = useState('')
   const [busy, setBusy] = useState(false)
 
   const submit = async (e: React.FormEvent) => {
@@ -271,6 +279,13 @@ function ProjectAction({
           note: note.trim() || undefined,
         })
         toast.success(t('project.returned'))
+      } else if (what === 'value') {
+        await projectsApi.recordValuation(project.id, {
+          valued_on: valuedOn,
+          amount: valuation,
+          basis: basis.trim() || undefined,
+        })
+        toast.success(t('project.valued'))
       } else {
         await projectsApi.setStatus(project.id, {
           status,
@@ -291,22 +306,57 @@ function ProjectAction({
       ? t('project.deployTitle', { name: project.name })
       : what === 'return'
         ? t('project.returnTitle', { name: project.name })
-        : t('project.changeStatus')
+        : what === 'value'
+          ? t('project.valueTitle', { name: project.name })
+          : t('project.changeStatus')
 
   return (
     <Card className="p-4 border-brand-navy/30">
       <p className="text-sm font-semibold text-gray-900">{title}</p>
+      {what === 'value' && (
+        <p className="mt-0.5 mb-3 text-xs text-gray-500 max-w-2xl">{t('project.valueHint')}</p>
+      )}
       {what === 'return' && (
         <p className="mt-0.5 mb-3 text-xs text-gray-500 max-w-2xl">{t('project.splitRequired')}</p>
       )}
       <form onSubmit={submit} className="grid gap-3 sm:grid-cols-4 items-end mt-2">
-        {what !== 'status' && (
+        {/* ⚠️ UNE VALORISATION NE S'IMPUTE SUR AUCUN MOUVEMENT BANCAIRE. C'est un jugement,
+            pas un flux : exiger une référence de virement ici obligerait à en inventer une,
+            et la règle « chaque montant vient de la banque » perdrait son sens là où elle
+            compte vraiment, c'est-à-dire sur l'argent. */}
+        {what !== 'status' && what !== 'value' && (
           <Input
             label={t('project.movement')}
             value={movementId}
             onChange={(e) => setMovementId(e.target.value)}
             required
           />
+        )}
+
+        {what === 'value' && (
+          <>
+            <Input
+              label={t('project.valuedOn')}
+              type="date"
+              value={valuedOn}
+              onChange={(e) => setValuedOn(e.target.value)}
+              required
+            />
+            <Input
+              label={t('project.valuedAmount')}
+              type="number"
+              min="0"
+              step="0.01"
+              value={valuation}
+              onChange={(e) => setValuation(e.target.value)}
+              required
+            />
+            <Input
+              label={t('project.basis')}
+              value={basis}
+              onChange={(e) => setBasis(e.target.value)}
+            />
+          </>
         )}
 
         {what === 'deploy' && (

@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_manager, current_user
 from app.database import get_db
-from app.models.project import PROJECT_STATUSES, STUDY, Project
+from app.models.project import PROJECT_STATUSES, STUDY, Project, ProjectValuation
 from app.models.treasury import BankMovement
 from app.models.user import User
 from app.services import project_service
@@ -224,3 +224,93 @@ async def set_status(
         gain=result.gain,
         multiple=result.multiple(),
     )
+
+
+class ValuationIn(BaseModel):
+    #: The day the value is judged AS OF, not the day it is typed. A March valuation
+    #: recorded in May is a March figure.
+    valued_on: date
+    amount: Decimal
+    #: What the judgement rests on: a transaction, a yield, an expert report.
+    basis: str | None = None
+
+
+class ValuationOut(BaseModel):
+    id: uuid.UUID
+    project_id: uuid.UUID
+    valued_on: date
+    amount: Decimal
+    currency: str
+    valued_by: str
+    basis: str | None = None
+
+
+@router.post(
+    "/{project_id}/valuations",
+    response_model=ValuationOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def record_valuation(
+    project_id: uuid.UUID,
+    data: ValuationIn,
+    user: User = Depends(current_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """Record what this project is judged to be worth, and who judged it.
+
+    🔴 THE AUTHOR IS THE SIGNED-IN MANAGER, never a field in the payload. A valuation is an
+    opinion somebody can be asked about a year later; letting the caller name its author
+    would make the signature worth nothing, which is the only part that makes the figure
+    defensible.
+
+    ⚠️ THE CURRENCY COMES FROM THE PROJECT. Accepting one would let a valuation in euros sit
+    against a project in CFA francs, and the net asset value would add them.
+
+    ⚠️ A VALUATION IS NEVER UPDATED, ONLY ADDED. Correcting one means recording a new
+    judgement on the same date; the earlier row stays, because « what did you think in March
+    and what changed » is the question an investor asks when a figure moves.
+    """
+    project = await db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Projet introuvable.")
+    if data.amount < 0:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Une valorisation négative n'a pas de sens : un projet vaut zéro au minimum, et "
+            "une perte se dit par le statut.",
+        )
+    valuation = ProjectValuation(
+        project_id=project.id,
+        valued_on=data.valued_on,
+        amount=data.amount,
+        currency=project.currency,
+        valued_by=user.email,
+        basis=data.basis,
+    )
+    db.add(valuation)
+    await db.flush()
+    return ValuationOut(**{k: getattr(valuation, k) for k in ValuationOut.model_fields})
+
+
+@router.get("/{project_id}/valuations", response_model=list[ValuationOut])
+async def list_valuations(
+    project_id: uuid.UUID,
+    _: User = Depends(current_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """Every judgement made on this project, most recent first. The history IS the record."""
+    rows = (
+        (
+            await db.execute(
+                select(ProjectValuation)
+                .where(ProjectValuation.project_id == project_id)
+                .order_by(ProjectValuation.valued_on.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return [
+        ValuationOut(**{k: getattr(v, k) for k in ValuationOut.model_fields})
+        for v in rows
+    ]
