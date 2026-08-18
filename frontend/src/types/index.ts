@@ -155,3 +155,59 @@ export interface Statement {
   capital_at_work: Record<string, string>
   decided_not_paid: Record<string, string>
 }
+
+// ── L'abonnement AU LOGICIEL ────────────────────────────────────────────────────────
+// ⚠️ À NE PAS CONFONDRE avec `SubscriptionRequest`, qui est l'engagement d'un investisseur
+// dans un fonds. Le métier a pris le mot « souscription » ; ce que le gestionnaire paie
+// pour utiliser le produit s'appelle donc « billing » d'un bout à l'autre du code.
+
+export interface BillingSubscription {
+  /** false = aucune console ne pilote cette instance. Ce n'est PAS « gratuit ». */
+  managed: boolean
+  plan_name: string | null
+  monthly_price: number | null
+  is_blocked: boolean
+  features: string[] | null
+  access_until: string | null
+  fund_limit: number | null
+}
+
+export interface PaymentMethods {
+  card_enabled: boolean
+  transfer_enabled: boolean
+  currency: string
+  transfer: {
+    holder: string | null
+    iban: string | null
+    bic: string | null
+    bank: string | null
+    instructions: string | null
+  } | null
+}
+
+export interface BillingPlan {
+  id: string
+  name: string
+  monthly_price: number
+  property_limit: number | null
+}
+
+export interface BillingInvoice {
+  id: string
+  number?: string | null
+  period?: string | null
+  issued_at?: string | null
+  amount?: number | null
+  status?: string | null
+  paid_at?: string | null
+}
+
+export interface BillingStatus {
+  stripe_enabled: boolean
+  has_subscription: boolean
+  status?: string | null
+  current_period_end?: string | null
+  cancel_at_period_end?: boolean
+  payment_method?: string | null
+  transfer_pending?: boolean
+}

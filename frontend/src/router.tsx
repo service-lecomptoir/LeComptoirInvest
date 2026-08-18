@@ -14,6 +14,7 @@ import Portfolio from '@/pages/Portfolio'
 import Calls from '@/pages/Calls'
 import MyDistributions from '@/pages/MyDistributions'
 import StatementPage from '@/pages/Statement'
+import Billing from '@/pages/Billing'
 
 const PASSWORD_ROUTE = '/change-password'
 
@@ -81,6 +82,8 @@ export const router = createBrowserRouter([
           { path: '/distributions', element: <FundOnly><Distributions /></FundOnly> },
           { path: '/investors', element: <FundOnly><Investors /></FundOnly> },
           { path: '/subscriptions', element: <FundOnly><Subscriptions /></FundOnly> },
+          // L'abonnement AU PRODUIT : réservé à qui le paie, donc à la gestion du fonds.
+          { path: '/billing', element: <FundOnly><Billing /></FundOnly> },
           { path: '/capital-calls', element: <InvestorOnly><Calls /></InvestorOnly> },
           { path: '/my-distributions', element: <InvestorOnly><MyDistributions /></InvestorOnly> },
           { path: '/statement', element: <InvestorOnly><StatementPage /></InvestorOnly> },

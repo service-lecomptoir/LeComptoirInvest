@@ -3,8 +3,8 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import {
-  Banknote, Building2, FileText, KeyRound, LayoutDashboard, LogOut, Menu, PieChart,
-  Receipt, Users, Wallet, X,
+  Banknote, Building2, CreditCard, FileText, KeyRound, LayoutDashboard, LogOut, Menu,
+  PieChart, Receipt, Users, Wallet, X,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { confirmDialog } from '@/store/confirm'
@@ -42,6 +42,14 @@ const FUND_NAV: { section: string; items: Item[] }[] = [
       { to: '/investors', key: 'nav.register', icon: Users },
       { to: '/subscriptions', key: 'nav.subscriptions', icon: Receipt },
     ],
+  },
+  {
+    // ⚠️ SA PROPRE SECTION, et non une ligne de plus sous « Investisseurs ». Ce que le
+    // gestionnaire paie pour utiliser le produit n'a rien à voir avec ce que les
+    // investisseurs engagent dans le fonds : les ranger ensemble ferait lire « Abonnement »
+    // comme un abonnement d'investisseur, dans le seul menu où ce contresens coûte cher.
+    section: 'nav.myAccount',
+    items: [{ to: '/billing', key: 'nav.billing', icon: CreditCard }],
   },
 ]
 

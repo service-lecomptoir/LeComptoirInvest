@@ -32,7 +32,20 @@ class Settings(BaseSettings):
     #: Alice, the SaaS console that owns manager accounts. Same contract as the sister
     #: products: a manager is never minted here.
     ALICE_URL: str = ""
+
+    #: 🔴 DEUX CLÉS, DEUX SENS, ET ELLES NE SONT PAS INTERCHANGEABLES.
+    #:
+    #: `ALICE_INTERNAL_KEY` est la clé ENTRANTE : celle qu'Alice présente en appelant
+    #: `/internal`, et que ce produit vérifie. `ALICE_API_KEY` est la clé SORTANTE : celle
+    #: que ce produit présente en interrogeant Alice sur son propre abonnement.
+    #:
+    #: Les confondre sous un seul nom ne casse rien de visible : les appels sortants sont
+    #: simplement refusés en 401, l'écran d'abonnement se dégrade en « non piloté », et on
+    #: en conclut qu'aucune console ne gère l'instance. Pire, réutiliser la clé entrante
+    #: pour sortir reviendrait à faire circuler le secret qui protège l'administration des
+    #: comptes du fonds dans des appels qui n'en ont pas besoin.
     ALICE_INTERNAL_KEY: str = ""
+    ALICE_API_KEY: str = ""
 
     #: The first fund-wide account, created ONLY when nobody can administer the fund yet.
     #: See `app/startup/bootstrap.py`: it is an escape hatch until Alice drives this

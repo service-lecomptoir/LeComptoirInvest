@@ -2,6 +2,7 @@ import { apiClient } from './client'
 import type {
   CapitalCall, Distribution, Investor, Me, Movement, Portfolio, Project,
   Statement, SubscriptionRequest, Waterfall,
+  BillingSubscription, PaymentMethods, BillingPlan, BillingInvoice, BillingStatus,
 } from '@/types'
 
 export const authApi = {
@@ -81,4 +82,33 @@ export const statementsApi = {
     apiClient.get<Statement>(`/statements/${year}`, {
       params: investorId ? { investor_id: investorId } : {},
     }),
+}
+
+/**
+ * L'abonnement du gestionnaire AU PRODUIT.
+ *
+ * ⚠️ `billingApi` et `subscriptionsApi` ne parlent pas de la même chose, et c'est pour
+ * cela qu'ils portent des noms sans rapport : le second, ce sont les investisseurs qui
+ * souscrivent au fonds. Un nom partagé aurait fini par mêler les deux dans un écran.
+ */
+export const billingApi = {
+  mine: () => apiClient.get<BillingSubscription>('/billing'),
+  paymentMethods: () => apiClient.get<PaymentMethods>('/billing/payment-methods'),
+  status: () => apiClient.get<BillingStatus>('/billing/status'),
+  plans: () => apiClient.get<BillingPlan[]>('/billing/plans'),
+  // Le refus est MONTRÉ EN PLACE, à côté du bouton : une console injoignable est une
+  // information utile, pas une bannière rouge fugace en haut de l'écran.
+  checkout: (planId?: string) =>
+    apiClient.post<{ url?: string }>('/billing/checkout', planId ? { plan_id: planId } : {},
+      { skipErrorToast: true }),
+  portal: () => apiClient.post<{ url?: string }>('/billing/portal', {}, { skipErrorToast: true }),
+  declareTransfer: () => apiClient.post('/billing/declare-transfer', {}, { skipErrorToast: true }),
+  cancelTransfer: () => apiClient.post('/billing/cancel-transfer', {}, { skipErrorToast: true }),
+  changePlan: (planId: string) =>
+    apiClient.post('/billing/change-plan', { plan_id: planId }, { skipErrorToast: true }),
+  previewChange: (planId: string) =>
+    apiClient.post<{ amount_due?: number; currency?: string }>(
+      '/billing/change-plan-preview', { plan_id: planId }, { skipErrorToast: true }),
+  invoices: () => apiClient.get<BillingInvoice[]>('/billing/invoices'),
+  invoicePdfUrl: (id: string) => `/billing/invoices/${id}/pdf`,
 }

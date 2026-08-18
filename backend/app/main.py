@@ -68,6 +68,7 @@ async def health():
 
 
 from app.api.v1.auth import router as auth_router  # noqa: E402
+from app.api.v1.billing import router as billing_router  # noqa: E402
 from app.api.v1.internal_admin import router as internal_router  # noqa: E402
 from app.api.v1.distributions import router as distributions_router  # noqa: E402
 from app.api.v1.investors import router as investors_router  # noqa: E402
@@ -83,6 +84,7 @@ app.include_router(treasury_router, prefix="/api/v1")
 app.include_router(projects_router, prefix="/api/v1")
 app.include_router(distributions_router, prefix="/api/v1")
 app.include_router(statements_router, prefix="/api/v1")
+app.include_router(billing_router, prefix="/api/v1")
 
 # 🔴 MONTÉ À LA RACINE, SANS `/api`. Le proxy edge ne transmet que `/api/` et `/health` à
 # ce backend ; tout le reste part vers le front, dont le repli SPA répond `index.html`.
