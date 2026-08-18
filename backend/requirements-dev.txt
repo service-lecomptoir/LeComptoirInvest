@@ -1,0 +1,11 @@
+# Outillage de developpement et d'integration continue.
+#
+# ⚠️ SEPARE DE requirements.txt A DESSEIN. L'image de production installe le premier
+# seulement : y embarquer un lanceur de tests et un linter, c'est transporter du code qui
+# ne sert jamais en production et toute faille qu'il traine avec lui. La CI installe
+# celui-ci, qui inclut l'autre.
+-r requirements.txt
+
+pytest==8.2.2
+pytest-asyncio==0.23.8
+ruff==0.15.16

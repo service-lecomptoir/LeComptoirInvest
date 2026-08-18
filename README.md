@@ -4,10 +4,11 @@ Un fonds d'investissement : des investisseurs y placent de l'argent, le fonds le
 dans des projets, les projets rapportent, les investisseurs sont payés. L'outil n'a qu'un
 vrai travail — que ces quatre mouvements se recoupent **toujours**.
 
-> État au 18 août 2026 : **backend complet et interface complète.** Les quatre mouvements
-> existent de bout en bout, l'invariant de trésorerie est vérifié, la cascade de
-> distribution est appliquée et gardée. 90 gardes côté serveur, 3 côté interface.
-> ⛔ Reste : l'enregistrement dans Alice et le déploiement.
+> État au 18 août 2026 : **en production sur https://invest.lecomptoir.services.**
+> Les quatre mouvements existent de bout en bout, l'invariant de trésorerie est vérifié,
+> la cascade de distribution est appliquée et gardée. 99 gardes côté serveur, 3 côté
+> interface, toutes exigées par le pipeline **avant** que l'image soit construite.
+> ⛔ Reste : le contrat `/internal` et l'inscription dans Alice.
 
 ---
 
@@ -87,7 +88,7 @@ Et un prêt dont le montant dû n'est pas calculable **bloque tout** : sans rép
 | `app/services/statement_service.py` | le relevé fiscal : l'année du **paiement**, jamais de la décision |
 | `app/api/v1/` | 25 routes : connexion, registre, KYC, demandes, conversion, trésorerie, appels, projets, distributions, relevés |
 | `alembic/versions/` | **0001** le socle, **0002** les projets. La chaîne va jusqu'à head contre une base vide |
-| `tests/` + `tests_unit/` | **90 gardes**, dont la base de test bâtie par les migrations |
+| `tests/` + `tests_unit/` | **99 gardes**, dont la base de test bâtie par les migrations |
 
 ### Interface
 
@@ -110,9 +111,29 @@ l'investisseur — et non une seule avec des lignes grisées.
 produits frères (`lecomptoir-lang`). Le catalogue anglais est **écrit à la main** et
 `npm run i18n:check` refuse une entrée anglaise identique à sa version française.
 
+## Déploiement
+
+`git push` sur `main` suffit : le pipeline lance **les gardes d'abord** (ruff + 99 tests
+serveur, puis `i18n:check` + `tsc` + vitest), construit les deux images, les pousse sur
+ghcr.io, et le VPS les tire. Les produits frères déploient sans passer leurs tests ; ici la
+valeur du produit **est** l'arithmétique, et une erreur y est invisible.
+
+| Élément | Valeur |
+|---|---|
+| Domaine | `invest.lecomptoir.services`, certificat dédié |
+| Projet compose | **`invest`** — jamais `docker` : le préfixe nomme les volumes, et un mauvais projet monte un volume **vide** |
+| Conteneurs | `invest_backend` (8001), `invest_frontend` (80), `invest_db` |
+| Réseau | `lecomptoir_net` (partagé), proxy `edge_nginx` |
+| Secrets | `~/LeComptoirInvest/backend/.env.prod` sur le VPS, **hors dépôt** |
+
+Les migrations tournent dans le `CMD` de l'image, **avant** uvicorn : un échec arrête le
+conteneur, qui boucle à la vue de tous plutôt que de servir un ancien schéma.
+
 ## Ce qui n'existe pas encore
 
-L'enregistrement dans Alice et le déploiement.
+Le contrat `/internal` (CRUD des gestionnaires) et, une fois qu'il existe, l'inscription
+dans le registre produits d'Alice. En attendant, `app/startup/bootstrap.py` crée le premier
+gestionnaire — et **seulement** si personne ne peut administrer le fonds.
 
 ---
 
@@ -128,7 +149,7 @@ CREATE DATABASE lecomptoirinvest OWNER invest_user;
 ```
 
 ```
-cd backend && pip install -r requirements.txt
+cd backend && pip install -r requirements-dev.txt   # runtime + pytest + ruff
 cp .env.example .env        # puis renseigner SECRET_KEY et DATABASE_URL
 python -m alembic upgrade head
 python -m pytest -q
