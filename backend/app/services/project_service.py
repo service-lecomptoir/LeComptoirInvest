@@ -45,14 +45,25 @@ class ProjectResult:
         return self.income_returned
 
     def multiple(self) -> Decimal | None:
-        """Total returned over total deployed. None while nothing has been deployed.
+        """Total returned over total deployed. None until something has come back.
 
-        None rather than zero: a project that has not started has no multiple, and printing
-        « 0,00x » beside it reads as a project that lost everything.
+        🔴 NONE, PAS ZÉRO, ET LA PREMIÈRE VERSION NE COUVRAIT QUE LA MOITIÉ DU CAS. Elle
+        rendait `None` tant que rien n'était déployé — mais un projet financé hier, qui n'a
+        simplement pas encore eu le temps de rendre quoi que ce soit, affichait « 0,00x ».
+        Vu à l'écran le 18 août : c'est exactement la lecture « il a tout perdu » que le
+        commentaire d'origine disait vouloir éviter, et elle était pire, parce qu'elle
+        portait sur un projet en bonne santé.
+
+        Un ratio de ce qui n'est pas encore arrivé n'est pas nul : il est INCONNU. Et une
+        perte réelle est déjà dite par le STATUT (« perte constatée ») et par `outstanding`,
+        qui sont faits pour ça.
         """
         if self.deployed <= 0:
             return None
-        return (self.capital_returned + self.income_returned) / self.deployed
+        returned = self.capital_returned + self.income_returned
+        if returned <= 0:
+            return None
+        return returned / self.deployed
 
 
 async def results(db: AsyncSession) -> list[ProjectResult]:

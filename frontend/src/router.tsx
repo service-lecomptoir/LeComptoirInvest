@@ -53,6 +53,19 @@ function FundOnly({ children }: { children: ReactElement }) {
   return seesWholeFund ? children : <Navigate to="/" replace />
 }
 
+/**
+ * Et la réciproque, qui manquait.
+ *
+ * ⚠️ Un gestionnaire qui atteignait `/statement` lisait « Rien à déclarer pour 2026 » —
+ * une phrase FAUSSE : il n'est pas investisseur, l'écran ne le concerne pas, et l'API
+ * répondait 400 que la page traduisait en état vide. Un écran qui ment sur un cas limite
+ * est un écran auquel on cesse de croire sur les autres.
+ */
+function InvestorOnly({ children }: { children: ReactElement }) {
+  const seesWholeFund = useAuthStore((s) => s.seesWholeFund)
+  return seesWholeFund ? <Navigate to="/" replace /> : children
+}
+
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
   {
@@ -68,9 +81,9 @@ export const router = createBrowserRouter([
           { path: '/distributions', element: <FundOnly><Distributions /></FundOnly> },
           { path: '/investors', element: <FundOnly><Investors /></FundOnly> },
           { path: '/subscriptions', element: <FundOnly><Subscriptions /></FundOnly> },
-          { path: '/capital-calls', element: <Calls /> },
-          { path: '/my-distributions', element: <MyDistributions /> },
-          { path: '/statement', element: <StatementPage /> },
+          { path: '/capital-calls', element: <InvestorOnly><Calls /></InvestorOnly> },
+          { path: '/my-distributions', element: <InvestorOnly><MyDistributions /></InvestorOnly> },
+          { path: '/statement', element: <InvestorOnly><StatementPage /></InvestorOnly> },
           { path: '*', element: <Navigate to="/" replace /> },
         ],
       },

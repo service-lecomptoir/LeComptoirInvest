@@ -74,7 +74,10 @@ export default function Projects() {
                 <Th right>{t('common.income')}</Th>
                 <Th right>{t('projects.stillIn')}</Th>
                 <Th right>{t('projects.multiple')}</Th>
-                {seesWholeFund && <Th right>{t('common.status')}</Th>}
+                {/* ⚠️ PAS `common.status` : la colonne d'état existe déjà trois
+                    colonnes plus tôt, et deux en-têtes identiques dans un même
+                    tableau rendent la lecture impossible — vu à l'écran. */}
+                {seesWholeFund && <Th right>{t('common.actions')}</Th>}
               </tr>
             </thead>
             <tbody>

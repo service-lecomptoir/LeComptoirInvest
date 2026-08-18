@@ -67,7 +67,12 @@ export default function ChangePassword() {
 
       <div className="max-w-xl">
         <div className="mb-5">
-          <Notice tone={mustChange ? 'warn' : 'info'} title={t('password.title')}>
+          {/* Le titre de l'encadré n'est PAS celui de la page : répété, il ne dit
+              rien et pousse le message utile plus bas. */}
+          <Notice
+            tone={mustChange ? 'warn' : 'info'}
+            title={mustChange ? t('password.mustTitle') : t('password.optionalTitle')}
+          >
             {mustChange ? t('password.forced') : t('password.optional')}
           </Notice>
         </div>

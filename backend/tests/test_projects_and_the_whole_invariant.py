@@ -134,6 +134,34 @@ class TestGettingYourOwnMoneyBackIsNotAGain:
         (result,) = await project_service.results(db)
         assert result.multiple() is None
 
+    async def test_a_project_that_has_not_returned_anything_yet_has_no_multiple_either(
+        self, db
+    ):
+        """🔴 LA MOITIÉ DU CAS QUI MANQUAIT, vue à l'écran le 18 août.
+
+        La première règle ne rendait `None` que si rien n'était déployé. Un projet financé
+        la veille, parfaitement sain, simplement trop jeune pour avoir rendu quoi que ce
+        soit, affichait « 0,00x » — exactement la lecture « il a tout perdu » que la règle
+        prétendait empêcher, et en pire, puisqu'elle portait sur un projet en bonne santé.
+
+        Un ratio de ce qui n'est pas encore arrivé n'est pas nul, il est INCONNU. Une perte
+        réelle, elle, est déjà dite par le statut et par le capital encore engagé.
+        """
+        project = await _project(db)
+        out = await _movement(db, direction=OUT, amount=Decimal("120000"))
+        await project_service.deploy(
+            db,
+            project=project,
+            movement=out,
+            amount=Decimal("120000"),
+            decided_by="tests",
+        )
+        (result,) = await project_service.results(db)
+        assert result.deployed == Decimal("120000")
+        assert result.multiple() is None
+        # Ce qui est engagé, lui, se dit tout de suite.
+        assert result.outstanding == Decimal("120000")
+
 
 class TestTheTreasuryIdentityHolds:
     async def test_the_four_movements_reconcile_per_currency(self, db):

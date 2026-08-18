@@ -201,7 +201,15 @@ export default function Distributions() {
                 <div>
                   <p className="text-sm font-semibold text-red-900">{t('distributions.blockedTitle')}</p>
                   <p className="mt-1 text-sm text-red-800 leading-relaxed">{waterfall.blocked_reason}</p>
-                  <p className="mt-2 text-xs text-red-700/80 leading-relaxed">{t('distributions.blockedWhy')}</p>
+                  {/* ⚠️ CETTE JUSTIFICATION NE VAUT QUE POUR UNE DETTE. Affichée quand le
+                      blocage vient d'ailleurs — « aucune souscription ouverte », par
+                      exemple — elle fait chercher un problème de dette qui n'existe pas.
+                      Vu à l'écran le 18 août. */}
+                  {Number(waterfall.debt_remaining) > 0 && (
+                    <p className="mt-2 text-xs text-red-700/80 leading-relaxed">
+                      {t('distributions.blockedWhy')}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

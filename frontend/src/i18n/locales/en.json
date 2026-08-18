@@ -22,7 +22,8 @@
     "total": "Total",
     "investor": "Investor",
     "project": "Project",
-    "year": "Year"
+    "year": "Year",
+    "actions": "Actions"
   },
   "brand": {
     "name": "Comptoir Invest",
@@ -308,7 +309,9 @@
     "tooShort": "Ten characters minimum.",
     "submit": "Save",
     "done": "Password changed.",
-    "whyCurrent": "The current password is asked for even when the change is imposed: without it, a stolen token would be enough to take the account over for good."
+    "whyCurrent": "The current password is asked for even when the change is imposed: without it, a stolen token would be enough to take the account over for good.",
+    "mustTitle": "A password to replace",
+    "optionalTitle": "Your password"
   },
   "kyc": {
     "decide": "Record a verdict",
