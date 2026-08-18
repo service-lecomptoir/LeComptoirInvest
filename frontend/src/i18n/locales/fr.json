@@ -132,7 +132,13 @@
       "amount": "Montant seul : ne prouve rien",
       "unmatched": "Aucun indice"
     },
-    "thirdParty": "Paiement de tiers"
+    "thirdParty": "Paiement de tiers",
+    "camtTitle": "Relevé bancaire (CAMT.053)",
+    "camtHelp": "Déposez le fichier de votre banque. Les références y sont telles que l'investisseur les a saisies : c'est ce qui permet le rapprochement automatique. Réimporter le même relevé ne crée aucun doublon.",
+    "camtImported_one": "{{count}} mouvement importé ({{known}} déjà connu).",
+    "camtImported_other": "{{count}} mouvements importés ({{known}} déjà connus).",
+    "camtRefused_one": "{{count}} ligne non importée",
+    "camtRefused_other": "{{count}} lignes non importées"
   },
   "projects": {
     "title": "Projets",

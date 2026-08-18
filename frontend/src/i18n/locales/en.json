@@ -132,7 +132,13 @@
       "amount": "Amount alone: proves nothing",
       "unmatched": "No clue"
     },
-    "thirdParty": "Third-party payment"
+    "thirdParty": "Third-party payment",
+    "camtTitle": "Bank statement (CAMT.053)",
+    "camtHelp": "Drop your bank's file here. The references it carries are exactly as the investor typed them, which is what makes the automatic matching work. Re-importing the same statement creates no duplicate.",
+    "camtImported_one": "{{count}} movement imported ({{known}} already known).",
+    "camtImported_other": "{{count}} movements imported ({{known}} already known).",
+    "camtRefused_one": "{{count}} line not imported",
+    "camtRefused_other": "{{count}} lines not imported"
   },
   "projects": {
     "title": "Projects",

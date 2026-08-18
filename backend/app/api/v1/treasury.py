@@ -4,12 +4,13 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_manager, investor_scope
+from app.core import camt
 from app.database import get_db
 from app.models.subscription import Subscription
 from app.models.treasury import IN, BankMovement, CapitalCall
@@ -97,6 +98,96 @@ async def import_movements(
             )
         )
     return out
+
+
+class CamtImportOut(BaseModel):
+    #: Movements actually created. Fewer than the file holds when some were already known.
+    imported: list[MovementOut]
+    #: Lines the file held and this import did not create, with the reason, one per line.
+    #: 🔴 NEVER SUMMARISED INTO A COUNT. « 3 lignes ignorées » is unactionable; a statement
+    #: quietly short of one entry reconciles to a figure that is wrong and looks right.
+    refused: list[str] = []
+    #: Already known by (account, external id), so skipped rather than duplicated.
+    already_known: int = 0
+
+
+@router.post(
+    "/movements/camt", response_model=CamtImportOut, status_code=status.HTTP_201_CREATED
+)
+async def import_camt(
+    file: UploadFile = File(...),
+    _: User = Depends(current_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """Import a CAMT.053 statement from the bank, and say what each line probably is.
+
+    🔴 THE MATCHING ENGINE EXISTED AND HAD NOTHING TO EAT. `matching.propose` ties a transfer
+    to a subscription by its reference, its virtual IBAN and its payer name; the only way to
+    feed it was somebody retyping a statement. Retyped money carries a typo, and the typo
+    lands on the reference — the single field the whole matching rests on.
+
+    ⚠️ RE-IMPORTING THE SAME FILE IS NORMAL and must change nothing: a line already known by
+    (account, external id) is skipped, exactly as in the manual import. Duplicating a
+    200 000 € transfer would make the treasury wrong in the direction that looks like good
+    news.
+    """
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Fichier vide.")
+    parsed = camt.parse(raw)
+    if not parsed.lines and parsed.refused:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Aucun mouvement n'a pu être lu : " + " | ".join(parsed.refused[:5]),
+        )
+
+    created: list[BankMovement] = []
+    already = 0
+    for line in parsed.lines:
+        if line.external_id:
+            known = (
+                await db.execute(
+                    select(BankMovement.id).where(
+                        BankMovement.account_iban == line.account_iban,
+                        BankMovement.external_id == line.external_id,
+                    )
+                )
+            ).first()
+            if known:
+                already += 1
+                continue
+        movement = BankMovement(
+            account_iban=line.account_iban,
+            external_id=line.external_id,
+            direction=line.direction,
+            amount=line.amount,
+            currency=line.currency,
+            value_date=line.value_date,
+            label=line.label,
+            counterparty_name=line.counterparty_name,
+            counterparty_iban=line.counterparty_iban,
+        )
+        db.add(movement)
+        created.append(movement)
+    await db.flush()
+
+    imported = []
+    for movement in created:
+        proposal = await treasury_service.propose_for(db, movement)
+        imported.append(
+            MovementOut(
+                id=movement.id,
+                amount=movement.amount,
+                currency=movement.currency,
+                value_date=movement.value_date,
+                label=movement.label,
+                counterparty_name=movement.counterparty_name,
+                proposal=ProposalOut(**proposal.__dict__),
+            )
+        )
+    return CamtImportOut(
+        imported=imported, refused=parsed.refused, already_known=already
+    )
 
 
 @router.get("/unattributed", response_model=list[MovementOut])

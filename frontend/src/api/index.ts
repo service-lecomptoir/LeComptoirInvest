@@ -4,6 +4,7 @@ import type {
   Statement, SubscriptionRequest, Waterfall,
   BillingSubscription, PaymentMethods, BillingPlan, BillingInvoice, BillingStatus,
   PerformanceBlock, CapitalAccountLine, ProjectValuation, LateCall, InvestorCategory,
+  CamtImport,
 } from '@/types'
 
 export const authApi = {
@@ -52,6 +53,13 @@ export const treasuryApi = {
   unattributed: () => apiClient.get<Movement[]>('/treasury/unattributed'),
   importMovements: (lines: Record<string, unknown>[]) =>
     apiClient.post<Movement[]>('/treasury/movements', lines),
+  // The bank's own statement. Retyped money carries a typo, and the typo lands on the
+  // reference — the single field the whole matching rests on.
+  importCamt: (file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    return apiClient.post<CamtImport>('/treasury/movements/camt', body)
+  },
   attribute: (movementId: string, body: Record<string, unknown>) =>
     apiClient.post(`/treasury/movements/${movementId}/attribute`, body),
   calls: () => apiClient.get<CapitalCall[]>('/treasury/calls'),

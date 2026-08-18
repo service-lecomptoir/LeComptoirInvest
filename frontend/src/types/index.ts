@@ -297,3 +297,13 @@ export interface ProjectValuation {
   valued_by: string
   basis: string | null
 }
+
+export interface CamtImport {
+  imported: Movement[]
+  /** 🔴 ONE LINE PER REFUSAL, never a count. « 3 lines ignored » is unactionable, and a
+   *  statement quietly short of one entry reconciles to a figure that is wrong and looks
+   *  right. */
+  refused: string[]
+  /** Already known by (account, external id): a re-import must change nothing. */
+  already_known: number
+}

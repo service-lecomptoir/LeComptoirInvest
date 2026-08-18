@@ -37,6 +37,29 @@ export default function Treasury() {
   }
   useEffect(load, [])
 
+  const [refused, setRefused] = useState<string[]>([])
+
+  /** Import the bank's own CAMT.053 file. */
+  const importFile = async (file: File) => {
+    setBusy(true)
+    setRefused([])
+    try {
+      const { data } = await treasuryApi.importCamt(file)
+      setRefused(data.refused)
+      toast.success(
+        t('treasury.camtImported', {
+          count: data.imported.length,
+          known: data.already_known,
+        }),
+      )
+      load()
+    } catch {
+      /* handled by the interceptor */
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const importLines = async () => {
     let parsed: unknown
     try {
@@ -67,6 +90,39 @@ export default function Treasury() {
   return (
     <>
       <PageHeader title={t('treasury.title')} subtitle={t('treasury.subtitle')} />
+
+      <Card className="p-4 mb-6">
+        <h2 className="text-sm font-semibold text-gray-900 mb-1">{t('treasury.camtTitle')}</h2>
+        <p className="text-xs text-gray-500 mb-3">{t('treasury.camtHelp')}</p>
+        <input
+          type="file"
+          accept=".xml,text/xml,application/xml"
+          disabled={busy}
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            // The input is cleared so re-importing the SAME file fires the change event
+            // again: a corrected statement usually keeps its name.
+            e.target.value = ''
+            if (file) importFile(file)
+          }}
+          className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-navy file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-brand-navy/90"
+        />
+
+        {/* 🔴 CHAQUE LIGNE REFUSÉE EST MONTRÉE, UNE PAR UNE. Un compte « 3 lignes ignorées »
+            n'est pas exploitable, et un relevé amputé d'une écriture se rapproche sur un
+            chiffre qui est faux et qui a l'air juste. */}
+        {refused.length > 0 && (
+          <div className="mt-3">
+            <Notice tone="warn" title={t('treasury.camtRefused', { count: refused.length })}>
+              <ul className="list-disc pl-4 space-y-0.5">
+                {refused.map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ul>
+            </Notice>
+          </div>
+        )}
+      </Card>
 
       <Card className="p-4 mb-6">
         <h2 className="text-sm font-semibold text-gray-900 mb-1">{t('treasury.importTitle')}</h2>
