@@ -46,6 +46,9 @@ class WaterfallOut(BaseModel):
     #: subscribers' pocket: a screen that only displayed the total would let it pass as
     #: part of what the investors received.
     carried_interest: Decimal = Decimal("0")
+    #: ⚠️ SHOWN BESIDE THE CARRY, NEVER ADDED TO IT. A fee is owed whether the fund performs
+    #: or not; one combined figure would hide a flat year in which the manager was still paid.
+    management_fee: Decimal = Decimal("0")
     #: What is still missing before the hurdle is met. Zero means the carry has begun.
     preferred_remaining: Decimal = Decimal("0")
     blocked_reason: str | None = None
@@ -72,6 +75,7 @@ def _to_out(waterfall) -> WaterfallOut:
         undistributed=waterfall.undistributed,
         debt_remaining=waterfall.debt_remaining,
         carried_interest=waterfall.carried_interest,
+        management_fee=waterfall.management_fee,
         preferred_remaining=waterfall.preferred_remaining,
         blocked_reason=waterfall.blocked_reason,
         unknown=[reason for _, reason in waterfall.unknown],

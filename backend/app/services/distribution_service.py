@@ -83,18 +83,24 @@ class Waterfall:
     #: The preferred return still to be served to subscribers after this proposal. Zero means
     #: the hurdle is met and carried interest has begun.
     preferred_remaining: Decimal = Decimal("0")
+    #: 🔴 THE MANAGEMENT FEE TAKEN OUT OF THIS DISTRIBUTION, held apart from the carry and
+    #: from the shares. It is a COST OF RUNNING the vehicle, owed whether the fund performs
+    #: or not; folding it into the carry would tell subscribers the manager earned nothing in
+    #: a flat year while they had been paying all along.
+    management_fee: Decimal = Decimal("0")
 
     @property
     def distributed(self) -> Decimal:
-        """What leaves the fund: the investors' shares AND the carried interest.
+        """What leaves the fund: the investors' shares, the carry AND the management fee.
 
-        ⚠️ CARRIED INTEREST IS PART OF IT. Leaving it out would show money actually
-        allocated to the manager as « kept by the fund », and the undistributed balance would
-        be wrong by exactly the amount nobody is looking at.
+        ⚠️ BOTH OF THE MANAGER'S AMOUNTS ARE PART OF IT. Leaving either out would show money
+        actually allocated to the manager as « kept by the fund », and the undistributed
+        balance would be wrong by exactly the amount nobody is looking at.
         """
         return (
             sum((s.gross_amount for s in self.shares), Decimal("0"))
             + self.carried_interest
+            + self.management_fee
         )
 
     @property
@@ -269,21 +275,28 @@ def _shared_equity_terms(
     """
     if not equity:
         return None, None
+    # 🔴 EVERY ECONOMIC TERM IS COMPARED, NOT A CHOSEN FEW. A tuple that named only two of
+    # the three silently dropped the management fee: the rebuilt terms carried a fee of zero,
+    # the waterfall took nothing, and no test of the fee itself would have caught it because
+    # the arithmetic was right — it was the reconstruction that lost the field. Deriving the
+    # tuple from the dataclass means a term added later is compared without anyone
+    # remembering to come back here.
+    _FIELDS = tuple(EquityTerms.__dataclass_fields__)
     distinct = {
-        (t.preferred_return, t.carried_interest)
+        tuple(getattr(t, name) for name in _FIELDS)
         for t in (_equity_terms(h.subscription.terms) for h in equity)
     }
     if len(distinct) > 1:
-        lisible = ", ".join(
-            f"{pref:.2%} / {carry:.2%}" for pref, carry in sorted(distinct)
+        lisible = " ; ".join(
+            ", ".join(f"{name} {value:.2%}" for name, value in zip(_FIELDS, values))
+            for values in sorted(distinct)
         )
         return None, (
-            f"Les souscripteurs ne portent pas les mêmes conditions (rendement préférentiel "
-            f"/ carried : {lisible}). Une cascade par classe de parts n'est pas calculée "
-            f"ici : tant que les conditions divergent, aucune répartition n'est proposée."
+            f"Les souscripteurs ne portent pas les mêmes conditions ({lisible}). Une cascade "
+            f"par classe de parts n'est pas calculée ici : tant que les conditions divergent, "
+            f"aucune répartition n'est proposée."
         )
-    pref, carry = distinct.pop()
-    return EquityTerms(preferred_return=pref, carried_interest=carry), None
+    return EquityTerms(**dict(zip(_FIELDS, distinct.pop()))), None
 
 
 async def propose(
@@ -370,6 +383,7 @@ async def propose(
 
     blocked: str | None = None
     carried = Decimal("0")
+    management_fee = Decimal("0")
     preferred_remaining = Decimal("0")
 
     # ---- 2. Subscribers, and only once the lenders are whole ---------------------------
@@ -403,6 +417,29 @@ async def propose(
                 ):
                     give(holding, part, Decimal("0"))
                 remaining -= capital_payable
+
+            # ---- 2a bis. The management fee, before anything is measured against a hurdle
+            # 🔴 A FEE IS NOT A CARRY, AND IT COMES FIRST. The carry pays for performance and
+            # is earned only above the hurdle; the fee pays for running the vehicle and is
+            # owed on a flat year exactly as on a good one. Taking it after the hurdle would
+            # make a bad year cost the manager nothing and a good one pay them twice.
+            if terms.management_fee > 0 and remaining > 0:
+                owed_fee = sum(
+                    (
+                        accrual.management_fee_accrued(
+                            capital_at_work=h.capital_at_work,
+                            rate=terms.management_fee,
+                            since=h.drawn_on or h.subscription.signed_on,
+                            until=as_of,
+                            currency=currency,
+                        )
+                        for h in equity
+                    ),
+                    Decimal("0"),
+                )
+                if owed_fee > 0:
+                    management_fee = money.quantize(min(remaining, owed_fee), currency)
+                    remaining -= management_fee
 
             # ---- 2b. The preferred return, before the manager takes anything -----------
             # 🔴 THE HURDLE IS A THRESHOLD, NOT A DEBT. Nothing below is owed if the fund
@@ -482,6 +519,7 @@ async def propose(
         debt_remaining=debt_remaining,
         blocked_reason=blocked,
         carried_interest=carried,
+        management_fee=management_fee,
         preferred_remaining=preferred_remaining,
     )
 

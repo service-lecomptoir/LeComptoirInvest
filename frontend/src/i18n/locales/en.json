@@ -247,7 +247,9 @@
     "decidedOn": "Decided",
     "withholding": "Withheld",
     "paidOn": "Paid on {{date}}",
-    "notPaid": "Decided, unpaid"
+    "notPaid": "Decided, unpaid",
+    "managementFee": "Management fee",
+    "carriedInterest": "Carried interest"
   },
   "portfolio": {
     "title": "My portfolio",

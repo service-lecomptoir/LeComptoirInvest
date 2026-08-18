@@ -247,7 +247,9 @@
     "decidedOn": "Décidée le",
     "withholding": "Retenue",
     "paidOn": "Payée le {{date}}",
-    "notPaid": "Décidée, non payée"
+    "notPaid": "Décidée, non payée",
+    "managementFee": "Frais de gestion",
+    "carriedInterest": "Carried"
   },
   "portfolio": {
     "title": "Mon portefeuille",

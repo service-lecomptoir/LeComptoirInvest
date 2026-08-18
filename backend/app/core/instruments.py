@@ -115,6 +115,17 @@ class EquityTerms:
     #: The manager's share of what exceeds the hurdle, as a fraction.
     carried_interest: float = 0.0
 
+    #: 🔴 THE MANAGEMENT FEE IS NOT THE CARRY, AND CONFLATING THEM MISSTATES BOTH. The carry
+    #: pays for PERFORMANCE and is earned only above the hurdle; the fee pays for RUNNING the
+    #: vehicle and is owed whether it performs or not. A fund that reported one figure would
+    #: tell its subscribers the manager earned nothing in a flat year, having in fact been
+    #: paid all along — or that they took a performance share out of a loss.
+    #:
+    #: ⚠️ IT ACCRUES, IT IS NOT DEDUCTED HERE. This module says what is owed; when and out of
+    #: which distribution it is actually taken is a separate act with its own date, exactly
+    #: as a lender's interest accrues before anybody pays it.
+    management_fee: float = 0.0
+
 
 def terms_kind(instrument: str) -> type[LoanTerms] | type[EquityTerms]:
     """The terms class an instrument requires. One place answers it."""

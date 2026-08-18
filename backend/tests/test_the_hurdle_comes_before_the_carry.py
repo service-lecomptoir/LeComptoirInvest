@@ -45,6 +45,7 @@ async def _subscriber(
     amount: str,
     preferred_return: float = 0.0,
     carried_interest: float = 0.0,
+    management_fee: float = 0.0,
 ) -> Subscription:
     """One subscriber who signed, paid in full on `DRAWN_ON`, and holds the fund's terms."""
     investor = Investor(
@@ -63,6 +64,7 @@ async def _subscriber(
         terms={
             "preferred_return": preferred_return,
             "carried_interest": carried_interest,
+            "management_fee": management_fee,
         },
     )
     db.add(subscription)
@@ -329,3 +331,70 @@ async def test_nothing_is_lost_between_the_tiers(db, carry: float):
     assert shared + waterfall.carried_interest + waterfall.undistributed == Decimal(
         "33333.33"
     )
+
+
+async def test_a_management_fee_is_owed_even_when_nothing_exceeds_the_hurdle(db):
+    """🔴 THE DIFFERENCE BETWEEN A FEE AND A CARRY, IN ONE CASE.
+
+    100 000 at work for a year, a 2 % fee and an 8 % hurdle. Only 5 000 is available: the
+    hurdle is nowhere near met, so the carry is zero — and the fee is still owed, because
+    running the vehicle cost what it cost. A fund reporting one combined figure would tell
+    its subscribers the manager earned nothing this year.
+    """
+    await _subscriber(
+        db,
+        name="Bernard",
+        amount="100000",
+        preferred_return=0.08,
+        carried_interest=0.20,
+        management_fee=0.02,
+    )
+
+    waterfall = await _propose(db, "5000")
+
+    assert waterfall.management_fee == Decimal("2000")
+    assert waterfall.carried_interest == Decimal("0")
+    # What is left after the fee goes to the subscriber, against their preference.
+    assert waterfall.shares[0].income_amount == Decimal("3000")
+    assert waterfall.distributed == Decimal("5000")
+
+
+async def test_the_fee_comes_before_the_hurdle_not_after(db):
+    """⚠️ THE ORDER DECIDES WHO PAYS FOR A GOOD YEAR.
+
+    12 000 available: 2 000 of fee first, then the 8 000 preference on what remains, leaving
+    2 000 above the hurdle of which the manager carries 20 %. Taking the fee AFTER would let
+    the subscriber absorb it out of their preference, and the carry would be computed on a
+    base that was never theirs.
+    """
+    await _subscriber(
+        db,
+        name="Bernard",
+        amount="100000",
+        preferred_return=0.08,
+        carried_interest=0.20,
+        management_fee=0.02,
+    )
+
+    waterfall = await _propose(db, "12000")
+
+    assert waterfall.management_fee == Decimal("2000")
+    assert waterfall.preferred_remaining == Decimal("0")
+    assert waterfall.carried_interest == Decimal("400")
+    assert waterfall.shares[0].income_amount == Decimal("9600")
+    assert waterfall.distributed == Decimal("12000")
+
+
+async def test_no_fee_agreed_means_no_fee_taken(db):
+    """A crowdfunding vehicle that never agreed a management fee must not be given one."""
+    await _subscriber(
+        db,
+        name="Bernard",
+        amount="100000",
+        preferred_return=0.08,
+        carried_interest=0.20,
+    )
+
+    waterfall = await _propose(db, "12000")
+
+    assert waterfall.management_fee == Decimal("0")

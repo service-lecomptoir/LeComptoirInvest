@@ -158,10 +158,16 @@ export default function Distributions() {
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-3 mb-4">
+          {/* 🔴 LES DEUX MONTANTS DU GESTIONNAIRE SONT MONTRÉS, ET SÉPARÉMENT. Les fondre
+              dans « réparti » ferait passer pour une part d'investisseur ce qui va au
+              gestionnaire ; les fondre l'un dans l'autre ferait croire qu'une année plate
+              ne lui a rien rapporté, alors que les frais courent quoi qu'il arrive. */}
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5 mb-4">
             {[
               [t('distributions.available'), waterfall.available],
               [t('distributions.allocated'), waterfall.distributed],
+              [t('distributions.managementFee'), waterfall.management_fee],
+              [t('distributions.carriedInterest'), waterfall.carried_interest],
               [t('distributions.keptByFund'), waterfall.undistributed],
             ].map(([label, value]) => (
               <Card key={label as string} className="px-4 py-3">

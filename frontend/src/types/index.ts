@@ -121,6 +121,14 @@ export interface Waterfall {
   distributed: string
   undistributed: string
   debt_remaining: string
+  /** The manager's performance share, on what exceeds the hurdle. */
+  carried_interest: string
+  /** ⚠️ SEPARATE FROM THE CARRY, and it must stay separate on screen. A fee is owed whether
+   *  the fund performs or not; one combined figure would hide a flat year in which the
+   *  manager was still paid. */
+  management_fee: string
+  /** What is still missing before the hurdle is met. Zero means the carry has begun. */
+  preferred_remaining: string
   blocked_reason: string | null
   unknown: string[]
 }

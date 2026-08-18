@@ -194,6 +194,41 @@ def preferred_return_accrued(
     return remaining if remaining > 0 else Decimal("0")
 
 
+def management_fee_accrued(
+    *,
+    capital_at_work: Decimal,
+    rate: float,
+    since: date,
+    until: date,
+    currency: str,
+    already_taken: Decimal = Decimal("0"),
+) -> Decimal:
+    """The management fee run up on a holding, net of what has already been taken.
+
+    🔴 THIS IS OWED WHETHER THE FUND PERFORMS OR NOT, and that is the whole difference with
+    the carry. A hurdle is a threshold: earn nothing and nobody owes anything. A fee is a
+    cost of running the vehicle: it accrues on a flat year exactly as on a good one, and a
+    fund that reported only the carry would tell its subscribers the manager earned nothing
+    while they had been paying all along.
+
+    ⚠️ ON CAPITAL AT WORK, on the same basis as the preferred return. Charging it on capital
+    COMMITTED would bill a subscriber for money the fund never called, and charging it on
+    capital SUBSCRIBED would keep billing after their money came back.
+
+    ⚠️ AND IT IS NOT DEDUCTED HERE. This says what is owed; taking it is a separate act with
+    its own date, the same way a lender's interest accrues long before anybody pays it.
+    """
+    gross = interest_accrued(
+        principal=capital_at_work,
+        rate=rate,
+        since=since,
+        until=until,
+        currency=currency,
+    )
+    remaining = gross - already_taken
+    return remaining if remaining > 0 else Decimal("0")
+
+
 def allocate(amount: Decimal, weights: list[Decimal], currency: str) -> list[Decimal]:
     """Split `amount` in proportion to `weights`, losing nothing.
 
