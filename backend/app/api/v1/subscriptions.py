@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_manager, current_user, investor_scope
 from app.core import eligibility, instruments, kyc
+from app.core import fund_time
 from app.database import get_db
 from app.models.investor import Investor
 from app.models.subscription import (
@@ -92,7 +93,13 @@ async def request_subscription(
         )
 
     investor = await db.get(Investor, scope)
-    requested_on = date.today()
+    # 🔴 THE INVESTOR'S DAY, NOT THE SERVER'S, AND THIS IS THE ONE THAT MATTERS. This date
+    # starts their reflection period: an investor in Réunion asking at 23:00 local time is
+    # recorded on the previous day in UTC, and their four days start a day early. A
+    # protection shortened by a day is a protection nobody can see was shortened.
+    requested_on = fund_time.today_for_investor(
+        investor.country_code if investor else None
+    )
     request = SubscriptionRequest(
         investor_id=scope,
         instrument=data.instrument,
@@ -144,7 +151,11 @@ async def acknowledge_risk(
             status.HTTP_409_CONFLICT, f"Cette demande est déjà « {request.status} »."
         )
     if request.risk_acknowledged_on is None:
-        request.risk_acknowledged_on = date.today()
+        # Theirs too: they are the one acknowledging.
+        investor = await db.get(Investor, scope)
+        request.risk_acknowledged_on = fund_time.today_for_investor(
+            investor.country_code if investor else None
+        )
         await db.flush()
     return RequestOut(**{k: getattr(request, k) for k in RequestOut.model_fields})
 
@@ -232,12 +243,13 @@ async def decide(
         request.status = REQUEST_REFUSED
         request.decision_reason = data.reason
         request.decided_by = user.email
-        request.decided_on = date.today()
+        # The fund's own act, on the fund's own day.
+        request.decided_on = fund_time.platform_today()
         await db.flush()
         return RequestOut(**{k: getattr(request, k) for k in RequestOut.model_fields})
 
     investor = await db.get(Investor, request.investor_id)
-    signed_on = data.signed_on or date.today()
+    signed_on = data.signed_on or fund_time.platform_today()
 
     refusal = kyc.refusal_reason(
         status=investor.kyc_status,
@@ -298,7 +310,7 @@ async def decide(
     request.status = REQUEST_ACCEPTED
     request.subscription_id = subscription.id
     request.decided_by = user.email
-    request.decided_on = date.today()
+    request.decided_on = fund_time.platform_today()
     await db.flush()
     return RequestOut(**{k: getattr(request, k) for k in RequestOut.model_fields})
 

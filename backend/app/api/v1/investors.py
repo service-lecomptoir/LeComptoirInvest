@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_manager, current_user, investor_scope
 from app.core import eligibility, kyc, landlord_kind_values
+from app.core import fund_time
 from app.database import get_db
 from app.models.investor import Investor
 from app.models.user import User
@@ -78,7 +79,10 @@ def _out(investor: Investor, *, today: date | None = None) -> InvestorOut:
     """⚠️ `today` IS AN ARGUMENT because whether an acceptance has aged out depends on a
     date. A serialiser reading the machine's clock would answer differently for two readers
     in different timezones, on the same file, on the day it expires."""
-    on = today or date.today()
+    # ⚠️ THE FUND'S DAY, not the container's. Whether an acceptance has expired is judged
+    # on the day the fund is having, and a serialiser reading UTC would flip a file to
+    # « out of date » a few hours early for anybody the fund's own zone is ahead of.
+    on = today or fund_time.platform_today()
     refusal = kyc.refusal_reason(
         status=investor.kyc_status,
         accepted_on=investor.kyc_decided_on,
@@ -176,7 +180,8 @@ async def record_verdict(
         verdict = kyc.Verdict(
             status=data.status,
             decided_by=user.email,
-            decided_on=date.today(),
+            # The FUND took this verdict: its own day, not the container's.
+            decided_on=fund_time.platform_today(),
             reason=data.reason,
         )
     except ValueError as exc:

@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_manager, investor_scope
 from app.core import camt
+from app.core import fund_time
 from app.database import get_db
 from app.models.subscription import Subscription
 from app.models.treasury import IN, BankMovement, CapitalCall
@@ -247,7 +248,7 @@ async def attribute(
             capital_call=call,
             attributed_by=user.email,
             third_party_reason=data.third_party_reason,
-            today=date.today(),
+            today=fund_time.platform_today(),
         )
     except ValueError as exc:
         # 409 rather than 422: nothing about the request is malformed — the fund's state
