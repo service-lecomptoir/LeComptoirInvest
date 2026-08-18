@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import {
   Banknote, Building2, CreditCard, FileText, KeyRound, LayoutDashboard, LogOut, Menu,
-  PieChart, Receipt, TrendingUp, Users, Wallet, X,
+  AlarmClock, PieChart, Receipt, TrendingUp, Users, Wallet, X,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { confirmDialog } from '@/store/confirm'
@@ -32,6 +32,7 @@ const FUND_NAV: { section: string; items: Item[] }[] = [
     items: [
       { to: '/', key: 'nav.dashboard', icon: LayoutDashboard },
       { to: '/treasury', key: 'nav.treasury', icon: Wallet },
+      { to: '/late-calls', key: 'nav.lateCalls', icon: AlarmClock },
       { to: '/projects', key: 'nav.projects', icon: Building2 },
       { to: '/distributions', key: 'nav.distributions', icon: Banknote },
       { to: '/performance', key: 'nav.performance', icon: TrendingUp },

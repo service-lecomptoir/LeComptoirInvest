@@ -47,7 +47,8 @@
     "theProjects": "The projects",
     "myAccount": "My account",
     "billing": "Subscription",
-    "performance": "Performance"
+    "performance": "Performance",
+    "lateCalls": "Late calls"
   },
   "login": {
     "title": "Sign in",
@@ -181,6 +182,17 @@
       "pending": "To check (blocks)",
       "review": "To review (blocks)",
       "refused": "Refused"
+    },
+    "category": "Category",
+    "notAssessed": "Not assessed",
+    "assessTitle": "Eligibility of {{name}}",
+    "capacity": "Declared loss-bearing capacity",
+    "capacityHint": "The threshold above which a risk warning must be acknowledged is the greater of 1,000 € and 5 % of this capacity. While it is undeclared the threshold stays unknown and every commitment is refused: an absent capacity is not an unlimited one.",
+    "eligibilityRecorded": "Eligibility recorded.",
+    "categories": {
+      "retail": "Retail",
+      "sophisticated": "Sophisticated",
+      "professional": "Professional"
     }
   },
   "subscriptions": {
@@ -475,5 +487,26 @@
     "incomplete": "Incomplete measure",
     "nothing": "Nothing to measure yet",
     "nothingHint": "No contribution has been recorded yet. Performance appears as soon as the first capital call is collected."
+  },
+  "lateCalls": {
+    "title": "Late calls",
+    "subtitle": "What is still short, and who is genuinely late.",
+    "asOf": "Lateness as of",
+    "reference": "Reference",
+    "dueOn": "Due",
+    "called": "Called",
+    "received": "Received",
+    "outstanding": "Outstanding",
+    "lateInterest": "Late interest",
+    "reminder": "Reminder",
+    "daysLate_one": "({{count}} day)",
+    "daysLate_other": "({{count}} days)",
+    "neverNotified": "Never notified",
+    "reminderDue": "Reminder due",
+    "none": "No late calls",
+    "noneHint": "Every call due by that date has been settled.",
+    "unsentTitle_one": "{{count}} call never notified",
+    "unsentTitle_other": "{{count}} calls never notified",
+    "unsentHint": "These calls were never sent: it is the first notice that is missing, not a reminder. Chasing them would blame the investor for the fund's own omission."
   }
 }

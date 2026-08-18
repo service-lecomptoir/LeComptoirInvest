@@ -47,7 +47,8 @@
     "theProjects": "Les projets",
     "myAccount": "Mon compte",
     "billing": "Abonnement",
-    "performance": "Performance"
+    "performance": "Performance",
+    "lateCalls": "Appels en retard"
   },
   "login": {
     "title": "Connexion",
@@ -181,6 +182,17 @@
       "pending": "À vérifier (bloque)",
       "review": "À revoir (bloque)",
       "refused": "Refusé"
+    },
+    "category": "Catégorie",
+    "notAssessed": "Non évalué",
+    "assessTitle": "Éligibilité de {{name}}",
+    "capacity": "Capacité de perte déclarée",
+    "capacityHint": "Le seuil au-delà duquel un avertissement sur les risques doit être reconnu vaut le plus élevé de 1 000 € et de 5 % de cette capacité. Tant qu'elle n'est pas déclarée, le seuil reste inconnu et tout engagement est refusé : une capacité absente n'est pas une capacité illimitée.",
+    "eligibilityRecorded": "Éligibilité enregistrée.",
+    "categories": {
+      "retail": "Particulier",
+      "sophisticated": "Averti",
+      "professional": "Professionnel"
     }
   },
   "subscriptions": {
@@ -475,5 +487,26 @@
     "incomplete": "Mesure incomplète",
     "nothing": "Rien à mesurer pour l'instant",
     "nothingHint": "Aucun versement n'a encore été constaté. La performance apparaîtra dès le premier appel de fonds encaissé."
+  },
+  "lateCalls": {
+    "title": "Appels en retard",
+    "subtitle": "Ce qui manque encore, et qui est vraiment en retard.",
+    "asOf": "Retards constatés au",
+    "reference": "Référence",
+    "dueOn": "Échéance",
+    "called": "Appelé",
+    "received": "Reçu",
+    "outstanding": "Manquant",
+    "lateInterest": "Intérêts de retard",
+    "reminder": "Relance",
+    "daysLate_one": "({{count}} jour)",
+    "daysLate_other": "({{count}} jours)",
+    "neverNotified": "Jamais notifié",
+    "reminderDue": "Relance due",
+    "none": "Aucun appel en retard",
+    "noneHint": "Tous les appels échus à cette date ont été réglés.",
+    "unsentTitle_one": "{{count}} appel jamais notifié",
+    "unsentTitle_other": "{{count}} appels jamais notifiés",
+    "unsentHint": "Ces appels n'ont jamais été envoyés : c'est le premier avis qui manque, pas une relance. Relancer reviendrait à reprocher à l'investisseur une omission du fonds."
   }
 }

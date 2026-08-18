@@ -8,6 +8,7 @@ import {
 } from '@/components/common/Primitives'
 import { day } from '@/lib/format'
 import { toast } from '@/store/toast'
+import type { InvestorCategory } from '@/types'
 
 /** The four verdicts, exactly as `app/core/kyc.py` names them. The tone follows what each
  *  one DOES to money, not how pleasant it sounds: « pending » blocks just as hard as
@@ -28,6 +29,10 @@ interface Row {
   kyc_status: string
   kyc_review_due_on: string | null
   has_bank_details: boolean
+  //   Which protections apply. null means nobody assessed them, which the API reads as
+  //   PROTECTED — so the column shows « not assessed » rather than an empty cell.
+  category: InvestorCategory | null
+  loss_bearing_capacity: string | null
 }
 
 export default function Investors() {
@@ -35,6 +40,7 @@ export default function Investors() {
   const [rows, setRows] = useState<Row[] | null>(null)
   const [creating, setCreating] = useState(false)
   const [deciding, setDeciding] = useState<Row | null>(null)
+  const [assessing, setAssessing] = useState<Row | null>(null)
   const [bank, setBank] = useState<Record<string, { iban: string | null }>>({})
 
   const load = () =>
@@ -94,6 +100,7 @@ export default function Investors() {
               <Th>{t('investors.kind')}</Th>
               <Th>{t('investors.verification')}</Th>
               <Th>{t('investors.reviewBy')}</Th>
+              <Th>{t('investors.category')}</Th>
               <Th>{t('kyc.verdict')}</Th>
               <Th>{t('investors.bankDetails')}</Th>
             </tr>
@@ -118,6 +125,24 @@ export default function Investors() {
                     </Pill>
                   </Td>
                   <Td className="text-gray-500 whitespace-nowrap">{day(r.kyc_review_due_on)}</Td>
+                  {/* 🔴 « NON ÉVALUÉ » N'EST PAS UN BLANC : c'est l'état qui REFUSE tout
+                      engagement, parce qu'une catégorie absente est lue comme protégée.
+                      L'afficher comme une case vide laisserait croire à un détail. */}
+                  <Td>
+                    <button
+                      type="button"
+                      onClick={() => setAssessing(assessing?.id === r.id ? null : r)}
+                      className="text-left"
+                    >
+                      {r.category ? (
+                        <Pill tone={r.category === 'retail' ? 'info' : 'neutral'}>
+                          {t(`investors.categories.${r.category}`)}
+                        </Pill>
+                      ) : (
+                        <Pill tone="warn">{t('investors.notAssessed')}</Pill>
+                      )}
+                    </button>
+                  </Td>
                   <Td>
                     <Button
                       size="sm"
@@ -149,6 +174,19 @@ export default function Investors() {
             })}
           </tbody>
         </TableWrap>
+      )}
+
+      {assessing && (
+        <div className="mt-3">
+          <Eligibility
+            investor={assessing}
+            onCancel={() => setAssessing(null)}
+            onDone={() => {
+              setAssessing(null)
+              load()
+            }}
+          />
+        </div>
       )}
 
       {deciding && (
@@ -331,6 +369,81 @@ function NewInvestor({ onCancel, onDone }: { onCancel: () => void; onDone: () =>
           <Button type="button" variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
         </div>
       </form>
+    </Card>
+  )
+}
+
+
+/**
+ * Which protections apply to this investor, and on what declared basis.
+ *
+ * 🔴 SÉPARÉ DU VERDICT KYC, ET C'EST LE SUJET. Le KYC dit si le fonds peut traiter avec
+ * cette personne ; ceci dit combien elle peut engager avant qu'un avertissement soit dû.
+ * Les réunir dans un même écran laisserait un clic « accepté » lever un plafond au passage.
+ *
+ * ⚠️ UNE CAPACITÉ REMISE À VIDE REND LE REFUS, et c'est voulu : oublier ce que quelqu'un a
+ * déclaré doit ramener le fonds à « nous ne savons pas », jamais à « pas de plafond ».
+ */
+function Eligibility({
+  investor, onCancel, onDone,
+}: { investor: Row; onCancel: () => void; onDone: () => void }) {
+  const { t } = useTranslation()
+  const [category, setCategory] = useState<InvestorCategory>(investor.category ?? 'retail')
+  const [capacity, setCapacity] = useState(investor.loss_bearing_capacity ?? '')
+  const [busy, setBusy] = useState(false)
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      await investorsApi.setEligibility(investor.id, {
+        category,
+        loss_bearing_capacity: capacity.trim() || null,
+      })
+      toast.success(t('investors.eligibilityRecorded'))
+      onDone()
+    } catch {
+      /* handled by the interceptor */
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="p-4 border-brand-navy/30">
+      <p className="text-sm font-semibold text-gray-900">
+        {t('investors.assessTitle', { name: investor.display_name })}
+      </p>
+      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-3 items-end mt-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('investors.category')}
+          </label>
+          <Select
+            value={category}
+            onChange={(v) => setCategory(v as InvestorCategory)}
+            options={(['retail', 'sophisticated', 'professional'] as InvestorCategory[]).map((c) => ({
+              value: c,
+              label: t(`investors.categories.${c}`),
+            }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+          />
+        </div>
+        <Input
+          label={t('investors.capacity')}
+          type="number"
+          min="0"
+          step="0.01"
+          value={capacity}
+          onChange={(e) => setCapacity(e.target.value)}
+        />
+        <div className="flex gap-2">
+          <Button type="submit" disabled={busy}>{t('common.confirm')}</Button>
+          <Button type="button" variant="secondary" onClick={onCancel}>{t('common.cancel')}</Button>
+        </div>
+      </form>
+      {/* L'aide vit SOUS la rangée, jamais dans une cellule alignée en bas. */}
+      <p className="mt-2 text-xs text-gray-500 max-w-3xl">{t('investors.capacityHint')}</p>
     </Card>
   )
 }

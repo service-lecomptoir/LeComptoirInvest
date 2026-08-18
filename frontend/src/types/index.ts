@@ -28,7 +28,39 @@ export interface Investor {
   country: string | null
   kyc_status: KycStatus
   kyc_reviewed_on: string | null
+  /** ⚠️ THE TRUTH THE GATES APPLY, staleness included. It used to read the status alone, so
+   *  a file three years past its review still showed « accepts money » while every endpoint
+   *  that moves money refused it. */
   accepts_money: boolean
+  /** Why money is refused, when it is: « never accepted » and « out of date » call for
+   *  different actions from whoever reads it. */
+  refusal_reason: string | null
+  category: InvestorCategory | null
+  loss_bearing_capacity: string | null
+  /** The amount above which a risk warning must be acknowledged. null is never « no limit ». */
+  warning_threshold: string | null
+  threshold_reason: string | null
+}
+
+export type InvestorCategory = 'retail' | 'sophisticated' | 'professional'
+
+export interface LateCall {
+  call_id: string
+  reference: string
+  investor_id: string
+  investor_name: string
+  currency: string
+  called: string
+  received: string
+  outstanding: string
+  due_on: string
+  days_late: number
+  late_interest: string
+  /** True when the notice was never sent: the fund is late, not the investor. */
+  never_notified: boolean
+  last_reminded_on: string | null
+  reminder_due: boolean
+  reminder_blocked_reason: string | null
 }
 
 export interface SubscriptionRequest {

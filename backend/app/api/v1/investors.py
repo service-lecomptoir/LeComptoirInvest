@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import date
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
@@ -9,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_manager, current_user, investor_scope
-from app.core import kyc, landlord_kind_values
+from app.core import eligibility, kyc, landlord_kind_values
 from app.database import get_db
 from app.models.investor import Investor
 from app.models.user import User
@@ -52,12 +53,42 @@ class InvestorOut(BaseModel):
     #: how a leak becomes exhaustive. It is served by its own endpoint, one investor at a
     #: time, to a manager.
     has_bank_details: bool = False
+    #: 🔴 THE TRUTH THE GATES ACTUALLY APPLY, staleness included. It used to read the status
+    #: alone: an acceptance long past its review date answered « true » here while every
+    #: endpoint that moves money refused it. A register that disagrees with the gate teaches
+    #: its reader to trust neither.
     accepts_money: bool = False
+    #: Why money is refused, when it is. Carried to the screen so « refused » is actionable:
+    #: « never accepted » means open a file, « out of date » means review one that exists.
+    refusal_reason: str | None = None
+
+    #: Which protections apply to this investor. NULL means nobody has assessed them, and
+    #: `eligibility.is_protected` reads that as PROTECTED.
+    category: str | None = None
+    loss_bearing_capacity: Decimal | None = None
+    #: The amount above which a warning must be acknowledged, or None when it cannot be
+    #: established. ⚠️ None is never « no limit ».
+    warning_threshold: Decimal | None = None
+    threshold_reason: str | None = None
 
     model_config = {"from_attributes": True}
 
 
-def _out(investor: Investor) -> InvestorOut:
+def _out(investor: Investor, *, today: date | None = None) -> InvestorOut:
+    """⚠️ `today` IS AN ARGUMENT because whether an acceptance has aged out depends on a
+    date. A serialiser reading the machine's clock would answer differently for two readers
+    in different timezones, on the same file, on the day it expires."""
+    on = today or date.today()
+    refusal = kyc.refusal_reason(
+        status=investor.kyc_status,
+        accepted_on=investor.kyc_decided_on,
+        risk_level=investor.kyc_risk_level,
+        today=on,
+    )
+    threshold = eligibility.warning_threshold(
+        category=investor.category,
+        loss_bearing_capacity=investor.loss_bearing_capacity,
+    )
     return InvestorOut(
         id=investor.id,
         kind=investor.kind,
@@ -69,7 +100,12 @@ def _out(investor: Investor) -> InvestorOut:
         kyc_risk_level=investor.kyc_risk_level,
         kyc_review_due_on=investor.kyc_review_due_on,
         has_bank_details=bool(investor.iban_encrypted),
-        accepts_money=investor.accepts_money,
+        accepts_money=refusal is None,
+        refusal_reason=refusal,
+        category=investor.category,
+        loss_bearing_capacity=investor.loss_bearing_capacity,
+        warning_threshold=threshold.amount,
+        threshold_reason=threshold.unavailable_reason,
     )
 
 
@@ -159,6 +195,52 @@ class BankDetailsOut(BaseModel):
     iban: str | None
     bic: str | None
     virtual_iban: str | None
+
+
+class EligibilityIn(BaseModel):
+    #: One of `eligibility.CATEGORIES`. Required: this endpoint exists to answer the
+    #: question, and accepting an empty value would record an assessment nobody made.
+    category: str
+    #: What they declared they could afford to lose. NULL leaves the threshold unknown, and
+    #: an unknown threshold refuses every commitment rather than allowing any.
+    loss_bearing_capacity: Decimal | None = None
+
+
+@router.post("/{investor_id}/eligibility", response_model=InvestorOut)
+async def set_eligibility(
+    investor_id: uuid.UUID,
+    data: EligibilityIn,
+    _: User = Depends(current_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """Record which protections apply to this investor, and on what basis.
+
+    🔴 THIS IS NOT A KYC DECISION, and it deliberately lives on its own endpoint. KYC says
+    whether the fund may deal with them at all; this says how much they may commit before a
+    warning is owed. Folding the two into one screen would let an « accepted » click quietly
+    lift a cap, which is precisely the confusion the separate module exists to prevent.
+
+    ⚠️ A CAPACITY SET BACK TO NULL RESTORES THE REFUSAL, and that is correct: forgetting what
+    somebody declared must return the fund to « we do not know », never to « no limit ».
+    """
+    investor = await db.get(Investor, investor_id)
+    if investor is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Investisseur introuvable.")
+    if data.category not in eligibility.CATEGORIES:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            f"Catégorie inconnue : {data.category!r}. Attendu : "
+            f"{', '.join(eligibility.CATEGORIES)}.",
+        )
+    if data.loss_bearing_capacity is not None and data.loss_bearing_capacity < 0:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Une capacité de perte négative n'a pas de sens.",
+        )
+    investor.category = data.category
+    investor.loss_bearing_capacity = data.loss_bearing_capacity
+    await db.flush()
+    return _out(investor)
 
 
 @router.get("/{investor_id}/bank-details", response_model=BankDetailsOut)

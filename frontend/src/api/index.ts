@@ -3,7 +3,7 @@ import type {
   CapitalCall, Distribution, Investor, Me, Movement, Portfolio, Project,
   Statement, SubscriptionRequest, Waterfall,
   BillingSubscription, PaymentMethods, BillingPlan, BillingInvoice, BillingStatus,
-  PerformanceBlock, CapitalAccountLine, ProjectValuation,
+  PerformanceBlock, CapitalAccountLine, ProjectValuation, LateCall, InvestorCategory,
 } from '@/types'
 
 export const authApi = {
@@ -26,6 +26,10 @@ export const investorsApi = {
   create: (body: Record<string, unknown>) => apiClient.post<Investor>('/investors', body),
   setKyc: (id: string, body: Record<string, unknown>) =>
     apiClient.post<Investor>(`/investors/${id}/kyc`, body),
+  // Which protections apply, and on what declared basis. Its own endpoint on purpose:
+  // folding it into the KYC verdict would let an « accepted » click quietly lift a cap.
+  setEligibility: (id: string, body: { category: InvestorCategory; loss_bearing_capacity?: string | null }) =>
+    apiClient.post<Investor>(`/investors/${id}/eligibility`, body),
   bankDetails: (id: string) =>
     apiClient.get<{ iban: string | null; bic: string | null; virtual_iban: string | null }>(
       `/investors/${id}/bank-details`),
@@ -52,6 +56,10 @@ export const treasuryApi = {
     apiClient.post(`/treasury/movements/${movementId}/attribute`, body),
   calls: () => apiClient.get<CapitalCall[]>('/treasury/calls'),
   openCall: (body: Record<string, unknown>) => apiClient.post<CapitalCall>('/treasury/calls', body),
+  // `as_of` is always sent: whether a call is late depends on a date, and a server reading
+  // its own clock would answer differently for two readers on the day it falls due.
+  lateCalls: (asOf: string) =>
+    apiClient.get<LateCall[]>('/treasury/late-calls', { params: { as_of: asOf } }),
 }
 
 export const projectsApi = {
