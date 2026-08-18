@@ -85,17 +85,16 @@ async def change_password(
 ):
     """The holder replaces the credential somebody else handed them.
 
-    🔴 CETTE ROUTE MANQUAIT, ET C'ÉTAIT LE PIRE TROU DU PRODUIT. `must_change_password` est
-    posé par l'amorçage, par Alice à la création d'un compte et à chaque réinitialisation ;
-    la connexion le renvoie fidèlement. Mais rien ne permettait de changer quoi que ce
-    soit : on exigeait d'un utilisateur qu'il remplace un mot de passe qu'un autre avait vu,
-    et on ne lui en donnait pas le moyen. Un contrôle qu'on ne peut pas satisfaire n'est pas
-    un contrôle, c'est un panneau.
+    🔴 THIS ROUTE WAS MISSING, AND IT WAS THE PRODUCT'S WORST HOLE. `must_change_password`
+    is set by the bootstrap, by Alice when an account is created, and on every reset; the
+    login faithfully reports it. But nothing let anybody act on it: a user was required to
+    replace a password somebody else had seen, and given no way to do so. A control that
+    cannot be satisfied is not a control, it is a sign.
 
-    ⚠️ LE MOT DE PASSE ACTUEL EST EXIGÉ, même quand `must_change_password` est vrai. Un
-    jeton volé suffirait sinon à s'approprier le compte définitivement : la victime perd
-    l'accès et l'attaquant le garde. Le jeton prouve qu'on est entré, jamais qu'on est le
-    titulaire.
+    ⚠️ THE CURRENT PASSWORD IS REQUIRED, even when `must_change_password` is true. A stolen
+    token would otherwise be enough to take the account for good: the victim loses access
+    and the attacker keeps it. A token proves somebody got in, never that they are the
+    holder.
     """
     if not verify_password(data.current_password, user.hashed_password):
         raise HTTPException(

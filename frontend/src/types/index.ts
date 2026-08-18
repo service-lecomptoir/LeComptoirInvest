@@ -211,3 +211,37 @@ export interface BillingStatus {
   payment_method?: string | null
   transfer_pending?: boolean
 }
+
+// ── Performance ─────────────────────────────────────────────────────────────────────
+// ⚠️ EVERY RATIO IS NULLABLE ON PURPOSE. Three of the four need a valuation of what is
+// still held, and this product values nothing. A number where the answer is « unknown »
+// would under-state every open fund, and nobody disputes a return that looks too low.
+
+export interface PerformanceBlock {
+  currency: string
+  as_of: string
+  paid_in: string
+  distributed: string
+  residual_value: string | null
+  dpi: string | null
+  rvpi: string | null
+  tvpi: string | null
+  irr: string | null
+  /** True when the rate covers only what has already come back. */
+  irr_is_realised_only: boolean
+  unavailable_reason: string | null
+}
+
+export interface CapitalAccountLine {
+  currency: string
+  since: string
+  until: string
+  opening_balance: string
+  contributions: string
+  capital_returned: string
+  income: string
+  withheld: string
+  outstanding_commitment: string
+  closing_balance: string
+  net_paid: string
+}

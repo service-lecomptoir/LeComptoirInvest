@@ -42,6 +42,12 @@ class WaterfallOut(BaseModel):
     distributed: Decimal
     undistributed: Decimal
     debt_remaining: Decimal
+    #: ⚠️ SHOWN, NEVER FOLDED INTO `distributed` ALONE. The manager's carry leaves the
+    #: subscribers' pocket: a screen that only displayed the total would let it pass as
+    #: part of what the investors received.
+    carried_interest: Decimal = Decimal("0")
+    #: What is still missing before the hurdle is met. Zero means the carry has begun.
+    preferred_remaining: Decimal = Decimal("0")
     blocked_reason: str | None = None
     unknown: list[str] = []
 
@@ -65,6 +71,8 @@ def _to_out(waterfall) -> WaterfallOut:
         distributed=waterfall.distributed,
         undistributed=waterfall.undistributed,
         debt_remaining=waterfall.debt_remaining,
+        carried_interest=waterfall.carried_interest,
+        preferred_remaining=waterfall.preferred_remaining,
         blocked_reason=waterfall.blocked_reason,
         unknown=[reason for _, reason in waterfall.unknown],
     )

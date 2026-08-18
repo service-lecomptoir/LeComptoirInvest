@@ -34,7 +34,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import accrual, instruments, money
-from app.core.instruments import LoanTerms
+from app.core.instruments import EquityTerms, LoanTerms
 from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.treasury import OUT, BankMovement, Contribution, Distribution
@@ -74,9 +74,28 @@ class Waterfall:
     #: whole proposal is refused: `shares` is empty and `blocked_reason` is set.
     unknown: list[tuple[uuid.UUID, str]] = field(default_factory=list)
 
+    #: 🔴 THE MANAGER'S SHARE, HELD APART FROM `shares` AND DELIBERATELY SO. Carried interest
+    #: is not a distribution to an investor: it has no subscription, no investor tax
+    #: statement, and folding it into a share would make the manager appear in the register
+    #: as a holder they are not. It is shown separately because an amount that leaves the
+    #: subscribers' pocket must be read, never inferred.
+    carried_interest: Decimal = Decimal("0")
+    #: The preferred return still to be served to subscribers after this proposal. Zero means
+    #: the hurdle is met and carried interest has begun.
+    preferred_remaining: Decimal = Decimal("0")
+
     @property
     def distributed(self) -> Decimal:
-        return sum((s.gross_amount for s in self.shares), Decimal("0"))
+        """What leaves the fund: the investors' shares AND the carried interest.
+
+        ⚠️ CARRIED INTEREST IS PART OF IT. Leaving it out would show money actually
+        allocated to the manager as « kept by the fund », and the undistributed balance would
+        be wrong by exactly the amount nobody is looking at.
+        """
+        return (
+            sum((s.gross_amount for s in self.shares), Decimal("0"))
+            + self.carried_interest
+        )
 
     @property
     def undistributed(self) -> Decimal:
@@ -94,6 +113,9 @@ class _Holding:
     capital_repaid: Decimal
     income_paid: Decimal
     due: accrual.Due | None = None
+    #: First day the money arrived. The preferred return runs from there, never from the
+    #: signature: a subscriber who has not paid in yet was deprived of nothing.
+    drawn_on: date | None = None
 
     @property
     def capital_at_work(self) -> Decimal:
@@ -181,6 +203,7 @@ async def _holdings(db: AsyncSession, currency: str, as_of: date) -> list[_Holdi
             contributed=contributed.get(s.id, Decimal("0")),
             capital_repaid=repaid.get(s.id, Decimal("0")),
             income_paid=income.get(s.id, Decimal("0")),
+            drawn_on=first_drawn.get(s.id, s.signed_on),
         )
         if s.instrument == instruments.LOAN:
             holding.due = accrual.amount_due(
@@ -212,6 +235,55 @@ def _loan_terms(raw: dict | None) -> LoanTerms | None:
         return None
     allowed = LoanTerms.__dataclass_fields__.keys()
     return LoanTerms(**{k: v for k, v in raw.items() if k in allowed})
+
+
+def _equity_terms(raw: dict | None) -> EquityTerms:
+    """A subscription's terms, or those of a fund that takes nothing.
+
+    ⚠️ ABSENCE MEANS « NEITHER HURDLE NOR CARRY », and it is the one acceptable default
+    here: zero and zero reproduce exactly the waterfall that existed before this module,
+    where every surplus goes to the subscribers. A fund that recorded nothing is therefore
+    never given a manager's fee it did not agree to, and a crowdfunding vehicle, which has
+    none, has nothing to fill in.
+    """
+    if not raw:
+        return EquityTerms()
+    allowed = EquityTerms.__dataclass_fields__.keys()
+    return EquityTerms(**{k: v for k, v in raw.items() if k in allowed})
+
+
+def _shared_equity_terms(
+    equity: list[_Holding],
+) -> tuple[EquityTerms | None, str | None]:
+    """The terms common to every subscriber, or the reason to refuse.
+
+    🔴 A HURDLE AND A CARRY ARE THE FUND'S ECONOMICS, NOT ONE INVESTOR'S. They are stored on
+    the subscription because that is where `terms` lives, but they describe the vehicle: the
+    carry is computed on EVERYBODY'S surplus, and two subscribers carrying different rates do
+    not describe two contracts — they describe a waterfall this module cannot compute.
+
+    ⚠️ SO IT REFUSES, IT DOES NOT AVERAGE. Taking the first rate, or the mean, or the lowest,
+    would produce a plausible and wrong number, and the gap would come out of somebody's
+    share. Share classes on distinct terms exist and are legitimate; serving them needs a
+    per-class waterfall, which remains to be written.
+    """
+    if not equity:
+        return None, None
+    distinct = {
+        (t.preferred_return, t.carried_interest)
+        for t in (_equity_terms(h.subscription.terms) for h in equity)
+    }
+    if len(distinct) > 1:
+        lisible = ", ".join(
+            f"{pref:.2%} / {carry:.2%}" for pref, carry in sorted(distinct)
+        )
+        return None, (
+            f"Les souscripteurs ne portent pas les mêmes conditions (rendement préférentiel "
+            f"/ carried : {lisible}). Une cascade par classe de parts n'est pas calculée "
+            f"ici : tant que les conditions divergent, aucune répartition n'est proposée."
+        )
+    pref, carry = distinct.pop()
+    return EquityTerms(preferred_return=pref, carried_interest=carry), None
 
 
 async def propose(
@@ -297,6 +369,8 @@ async def propose(
     debt_remaining = debt_total - debt_paid
 
     blocked: str | None = None
+    carried = Decimal("0")
+    preferred_remaining = Decimal("0")
 
     # ---- 2. Subscribers, and only once the lenders are whole ---------------------------
     if debt_remaining > 0:
@@ -309,33 +383,79 @@ async def propose(
         )
     elif remaining > 0 and equity:
         weights = [h.capital_at_work for h in equity]
+        terms, disagreement = _shared_equity_terms(equity)
         if sum(weights, Decimal("0")) <= 0:
             blocked = (
                 "Aucun souscripteur n'a de capital au travail : il n'y a rien à répartir "
                 "au prorata."
             )
-        elif repay_capital:
+        elif disagreement is not None:
+            blocked = disagreement
+        else:
+            # ---- 2a. Return of capital, when this distribution is a wind-down ----------
             # Capital back first, then what exceeds it is a gain. The European order, and
             # the one that keeps a wind-down from being reported as performance.
-            capital_wanted = sum(weights, Decimal("0"))
-            capital_payable = min(remaining, capital_wanted)
-            for holding, part in zip(
-                equity, accrual.allocate(capital_payable, weights, currency)
+            if repay_capital:
+                capital_wanted = sum(weights, Decimal("0"))
+                capital_payable = min(remaining, capital_wanted)
+                for holding, part in zip(
+                    equity, accrual.allocate(capital_payable, weights, currency)
+                ):
+                    give(holding, part, Decimal("0"))
+                remaining -= capital_payable
+
+            # ---- 2b. The preferred return, before the manager takes anything -----------
+            # 🔴 THE HURDLE IS A THRESHOLD, NOT A DEBT. Nothing below is owed if the fund
+            # earned nothing; what it decides is WHO the next euro belongs to. Skipping it —
+            # which is what this module did until now — hands the manager a carry on profits
+            # the subscribers were promised first.
+            owed_preference = [
+                accrual.preferred_return_accrued(
+                    capital_at_work=h.capital_at_work,
+                    rate=terms.preferred_return,
+                    since=h.drawn_on or h.subscription.signed_on,
+                    until=as_of,
+                    currency=currency,
+                    already_served=h.income_paid,
+                )
+                for h in equity
+            ]
+            wanted_preference = sum(owed_preference, Decimal("0"))
+            if wanted_preference > 0 and remaining > 0:
+                payable = min(remaining, wanted_preference)
+                # Pari passu among subscribers: short money shortens everyone alike, and no
+                # clause here grants one subscriber their preference ahead of another.
+                for holding, part in zip(
+                    equity, accrual.allocate(payable, owed_preference, currency)
+                ):
+                    give(holding, Decimal("0"), part)
+                remaining -= payable
+                preferred_remaining = wanted_preference - payable
+
+            # ---- 2c. Carried interest on what exceeds the hurdle ----------------------
+            # ⚠️ ONLY ON THE EXCESS, and only once the preference is fully served. A carry
+            # taken on the first euro is a management fee wearing a performance fee's name:
+            # the manager would be paid on money that merely came back, and the subscribers
+            # would read it as a share of a gain that did not happen.
+            if (
+                remaining > 0
+                and preferred_remaining <= 0
+                and terms.carried_interest > 0
             ):
-                give(holding, part, Decimal("0"))
-            remaining -= capital_payable
+                carried = money.quantize(
+                    remaining * Decimal(str(terms.carried_interest)), currency
+                )
+                if carried > remaining:
+                    carried = remaining
+                remaining -= carried
+
+            # ---- 2d. The rest, pro rata to capital at work -----------------------------
             if remaining > 0:
                 for holding, part in zip(
                     equity, accrual.allocate(remaining, weights, currency)
                 ):
                     give(holding, Decimal("0"), part)
                 remaining = Decimal("0")
-        else:
-            for holding, part in zip(
-                equity, accrual.allocate(remaining, weights, currency)
-            ):
-                give(holding, Decimal("0"), part)
-            remaining = Decimal("0")
 
     by_id = {h.subscription.id: h for h in holdings}
     built = [
@@ -361,6 +481,8 @@ async def propose(
         shares=built,
         debt_remaining=debt_remaining,
         blocked_reason=blocked,
+        carried_interest=carried,
+        preferred_remaining=preferred_remaining,
     )
 
 

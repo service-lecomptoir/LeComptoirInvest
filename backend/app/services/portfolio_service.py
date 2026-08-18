@@ -22,13 +22,14 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.subscription import Subscription
-from app.models.treasury import CapitalCall, Contribution, Distribution
+from app.models.treasury import BankMovement, CapitalCall, Contribution, Distribution
 
 
 @dataclass(frozen=True)
@@ -150,6 +151,159 @@ async def positions_of(db: AsyncSession, investor_id: uuid.UUID) -> list[Positio
             withheld=withheld.get(s.id, Decimal("0")),
         )
         for s in subscriptions
+    ]
+
+
+@dataclass(frozen=True)
+class CapitalAccount:
+    """One investor's capital account over a period, in one currency.
+
+    🔴 THE OPENING BALANCE IS NOT A STORED FIGURE. It is what the account held on the day
+    before the period began, recomputed from the movements — the same rule as everywhere
+    else in this module. A carried-forward balance kept in a column is a second ledger, and
+    the day it disagrees with the movements nobody can say which one is wrong.
+
+    ⚠️ THE PERIOD IS INCLUSIVE AT BOTH ENDS, and it has to be said: an investor comparing a
+    quarterly statement with their bank will otherwise find one transfer on neither side, or
+    on both.
+    """
+
+    currency: str
+    since: date
+    until: date
+    #: Capital at work the day before `since`.
+    opening_balance: Decimal
+    #: Money paid in during the period.
+    contributions: Decimal
+    #: Their own capital given back during the period.
+    capital_returned: Decimal
+    #: What they earned during the period, before withholding.
+    income: Decimal
+    #: Tax withheld at source during the period.
+    withheld: Decimal
+    #: Still callable at the end of the period.
+    outstanding_commitment: Decimal
+
+    @property
+    def closing_balance(self) -> Decimal:
+        """Capital at work at the end of the period.
+
+        ⚠️ INCOME DOES NOT ENTER IT. A distribution of profit does not reduce the capital
+        the investor has at work; only their own money coming back does. Folding the two
+        would shrink the base every future return is computed on, and understate it forever.
+        """
+        return self.opening_balance + self.contributions - self.capital_returned
+
+    @property
+    def net_paid(self) -> Decimal:
+        """What actually reached their account during the period."""
+        return self.capital_returned + self.income - self.withheld
+
+
+async def capital_account(
+    db: AsyncSession, investor_id: uuid.UUID, *, since: date, until: date
+) -> list[CapitalAccount]:
+    """The capital account of one investor, one line per currency.
+
+    This is the statement an institutional holder asks for every quarter, and the one the
+    positions endpoint cannot give: positions answer « where do I stand today », a capital
+    account answers « what moved between these two dates, and what did I hold on either
+    side ». The second cannot be derived from the first.
+    """
+    if until < since:
+        raise ValueError(
+            "La période se termine avant de commencer : aucun relevé ne peut être établi."
+        )
+
+    subscriptions = (
+        (
+            await db.execute(
+                select(Subscription).where(Subscription.investor_id == investor_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if not subscriptions:
+        return []
+    currency_of = {s.id: s.currency for s in subscriptions}
+    ids = list(currency_of)
+
+    blank = {
+        "opening": Decimal("0"),
+        "contributions": Decimal("0"),
+        "capital_returned": Decimal("0"),
+        "income": Decimal("0"),
+        "withheld": Decimal("0"),
+    }
+    ledger: dict[str, dict[str, Decimal]] = {
+        currency: dict(blank) for currency in set(currency_of.values())
+    }
+
+    for sub_id, amount, value_date in (
+        await db.execute(
+            select(
+                Contribution.subscription_id,
+                Contribution.amount,
+                BankMovement.value_date,
+            )
+            .join(BankMovement, BankMovement.id == Contribution.bank_movement_id)
+            .where(Contribution.subscription_id.in_(ids))
+        )
+    ).all():
+        block = ledger[currency_of[sub_id]]
+        if value_date < since:
+            block["opening"] += amount
+        elif value_date <= until:
+            block["contributions"] += amount
+
+    for sub_id, capital, earned, tax, paid_on in (
+        await db.execute(
+            select(
+                Distribution.subscription_id,
+                Distribution.capital_amount,
+                Distribution.income_amount,
+                Distribution.withholding_amount,
+                Distribution.paid_on,
+            ).where(Distribution.subscription_id.in_(ids))
+        )
+    ).all():
+        if paid_on is None:
+            continue  # decided, not paid: not a movement on anybody's account
+        block = ledger[currency_of[sub_id]]
+        if paid_on < since:
+            block["opening"] -= capital or Decimal("0")
+        elif paid_on <= until:
+            block["capital_returned"] += capital or Decimal("0")
+            block["income"] += earned or Decimal("0")
+            block["withheld"] += tax or Decimal("0")
+
+    committed: dict[str, Decimal] = {}
+    contributed_total: dict[str, Decimal] = {}
+    for s in subscriptions:
+        committed[s.currency] = committed.get(s.currency, Decimal("0")) + s.amount
+    for currency, block in ledger.items():
+        contributed_total[currency] = block["opening"] + block["contributions"]
+
+    return [
+        CapitalAccount(
+            currency=currency,
+            since=since,
+            until=until,
+            opening_balance=block["opening"],
+            contributions=block["contributions"],
+            capital_returned=block["capital_returned"],
+            income=block["income"],
+            withheld=block["withheld"],
+            # ⚠️ Measured on what was CONTRIBUTED, not on what is still at work: capital
+            # already returned does not become callable again.
+            outstanding_commitment=max(
+                committed.get(currency, Decimal("0"))
+                - (block["opening"] + block["contributions"]),
+                Decimal("0"),
+            ),
+        )
+        for currency, block in sorted(ledger.items())
     ]
 
 

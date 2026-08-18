@@ -71,7 +71,9 @@ async def _call(
     except Exception as exc:  # noqa: BLE001
         logger.warning("Alice %s %s injoignable : %s", method, path, exc)
         if strict:
-            raise AliceUnavailable("Le service d'abonnement est momentanément indisponible.")
+            raise AliceUnavailable(
+                "Le service d'abonnement est momentanément indisponible."
+            )
         return None
     if resp.status_code == 404:
         return None
@@ -83,7 +85,9 @@ async def _call(
             pass
         logger.warning("Alice %s %s -> %s %s", method, path, resp.status_code, detail)
         if strict:
-            raise AliceUnavailable(detail or "Le service d'abonnement a refusé la demande.")
+            raise AliceUnavailable(
+                detail or "Le service d'abonnement a refusé la demande."
+            )
         return None
     if not resp.content:
         return None
@@ -102,12 +106,19 @@ async def payment_config() -> dict:
     own Stripe account in the console; reading a sister product's would print another
     company's IBAN on our screen.
     """
-    data = await _call("GET", "/api/v1/internal/payment-config", params={"app": "invest"})
+    data = await _call(
+        "GET", "/api/v1/internal/payment-config", params={"app": "invest"}
+    )
     return data or {"stripe_enabled": False, "rib_enabled": False}
 
 
 async def billing(
-    method: str, action: str, user_id: UUID, *, json: dict | None = None, strict: bool = True
+    method: str,
+    action: str,
+    user_id: UUID,
+    *,
+    json: dict | None = None,
+    strict: bool = True,
 ) -> Any:
     """One of Alice's `/internal/billing/{action}/{user_id}` operations."""
     return await _call(
@@ -133,11 +144,14 @@ async def invoice_pdf(user_id: UUID, invoice_id: str) -> tuple[bytes, str] | Non
     try:
         async with httpx.AsyncClient(timeout=_ACTION_TIMEOUT) as client:
             resp = await client.get(
-                f"{base}/api/v1/internal/invoices/{user_id}/{invoice_id}/pdf", headers=headers
+                f"{base}/api/v1/internal/invoices/{user_id}/{invoice_id}/pdf",
+                headers=headers,
             )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Alice invoice pdf injoignable : %s", exc)
         return None
     if resp.status_code != 200:
         return None
-    return resp.content, resp.headers.get("content-disposition", 'attachment; filename="FACTURE.pdf"')
+    return resp.content, resp.headers.get(
+        "content-disposition", 'attachment; filename="FACTURE.pdf"'
+    )

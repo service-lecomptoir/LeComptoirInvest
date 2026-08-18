@@ -46,7 +46,8 @@
     "statement": "Annual statement",
     "theProjects": "The projects",
     "myAccount": "My account",
-    "billing": "Subscription"
+    "billing": "Subscription",
+    "performance": "Performance"
   },
   "login": {
     "title": "Sign in",
@@ -447,5 +448,23 @@
     "paymentDoneHint": "Thank you. Your subscription is up to date; the charge may take a moment to appear below.",
     "paymentCancelled": "Payment interrupted",
     "paymentCancelledHint": "Nothing was charged. You can resume the payment whenever you like."
+  },
+  "performance": {
+    "title": "Performance",
+    "subtitle": "What has come back, and what cannot yet be said about the rest.",
+    "asOf": "As of",
+    "paidIn": "Paid in",
+    "distributed": "Distributed",
+    "residual": "Residual value",
+    "residualHint": "What is still held, once valued. This product computes no valuation of its own.",
+    "dpiHint": "What has come back, over the capital paid in.",
+    "tvpiHint": "Distributed and residual, over the capital paid in. Needs a valuation.",
+    "rvpiHint": "Residual over the capital paid in. Needs a valuation.",
+    "irr": "Rate of return",
+    "irrRealised": "Realised return",
+    "irrRealisedHint": "Covers only what has already come back: it under-states a fund still open.",
+    "incomplete": "Incomplete measure",
+    "nothing": "Nothing to measure yet",
+    "nothingHint": "No contribution has been recorded yet. Performance appears as soon as the first capital call is collected."
   }
 }

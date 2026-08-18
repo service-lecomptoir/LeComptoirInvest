@@ -1,14 +1,13 @@
-"""Changer son mot de passe — la route qui manquait.
+"""Changing one's own password — the route that was missing.
 
-🔴 CE TROU ÉTAIT LE PIRE DU PRODUIT, et il ne ressemblait pas à une panne. `must_change_password`
-était posé à trois endroits — l'amorçage, la création par Alice, chaque réinitialisation —
-et fidèlement renvoyé à la connexion. Mais aucune route ne permettait d'y répondre. On
-exigeait d'un utilisateur qu'il remplace un identifiant qu'un autre avait vu, sans lui en
-donner le moyen. Un contrôle qu'on ne peut pas satisfaire n'est pas un contrôle : c'est un
-panneau.
+🔴 THIS HOLE WAS THE PRODUCT'S WORST, and it did not look like a breakdown.
+`must_change_password` was set in three places — the bootstrap, creation by Alice, every
+reset — and faithfully reported at login. But no route let anybody answer it. A user was
+required to replace a credential somebody else had seen, with no means of doing so. A
+control that cannot be satisfied is not a control: it is a sign.
 
-Ce que ces gardes tiennent immobile, c'est surtout le refus : le mot de passe ACTUEL reste
-exigé même quand le changement est imposé.
+What these guards hold still is above all the refusal: the CURRENT password stays required
+even when the change is imposed.
 """
 
 from __future__ import annotations
@@ -105,10 +104,10 @@ class TestATokenProvesEntryNeverOwnership:
     async def test_the_current_password_is_required_even_when_the_change_is_imposed(
         self, client, db
     ):
-        """🔴 LE POINT. Sans cette exigence, un jeton volé suffirait à s'approprier le
-        compte DÉFINITIVEMENT : la victime perd l'accès, l'attaquant le garde. Et c'est
-        précisément quand `must_change_password` est vrai qu'on serait tenté de l'assouplir,
-        « puisque de toute façon il doit changer »."""
+        """🔴 THE POINT. Without this requirement a stolen token would be enough to take the
+        account FOR GOOD: the victim loses access, the attacker keeps it. And it is exactly
+        when `must_change_password` is true that one would be tempted to relax it, « since
+        they have to change it anyway »."""
         await _account(db, must_change=True)
         token = await _token(client)
         r = await client.post(
@@ -130,7 +129,7 @@ class TestATokenProvesEntryNeverOwnership:
 
 class TestTheReplacementMustActuallyReplace:
     async def test_reusing_the_same_password_is_refused(self, client, db):
-        """Le remettre ne le rend pas inconnu de qui l'a transmis."""
+        """Setting it back does not make it unknown to whoever handed it over."""
         await _account(db)
         token = await _token(client)
         r = await client.post(
@@ -153,8 +152,8 @@ class TestTheReplacementMustActuallyReplace:
 
 class TestWhoAmI:
     async def test_me_says_what_the_front_needs_after_a_refresh(self, client, db):
-        """Un rechargement ne garde que le jeton : l'écran doit pouvoir redemander qui il
-        sert, et surtout si le changement de mot de passe est encore dû."""
+        """A reload keeps only the token: the screen must be able to ask again who it
+        serves, and above all whether the password change is still due."""
         await _account(db)
         token = await _token(client)
         body = (await client.get("/api/v1/auth/me", headers=bearer(token))).json()

@@ -46,7 +46,8 @@
     "statement": "Relevé annuel",
     "theProjects": "Les projets",
     "myAccount": "Mon compte",
-    "billing": "Abonnement"
+    "billing": "Abonnement",
+    "performance": "Performance"
   },
   "login": {
     "title": "Connexion",
@@ -447,5 +448,23 @@
     "paymentDoneHint": "Merci. Votre abonnement est à jour ; l'encaissement peut mettre quelques instants à apparaître ci-dessous.",
     "paymentCancelled": "Paiement interrompu",
     "paymentCancelledHint": "Aucun montant n'a été prélevé. Vous pouvez reprendre le paiement quand vous le souhaitez."
+  },
+  "performance": {
+    "title": "Performance",
+    "subtitle": "Ce qui est revenu, et ce qu'on ne peut pas encore en dire.",
+    "asOf": "Arrêtée au",
+    "paidIn": "Capital versé",
+    "distributed": "Déjà distribué",
+    "residual": "Valeur résiduelle",
+    "residualHint": "Ce qui reste détenu, une fois valorisé. Aucune valorisation n'est calculée par ce produit.",
+    "dpiHint": "Ce qui est revenu, rapporté au capital versé.",
+    "tvpiHint": "Distribué et résiduel, rapportés au capital versé. Exige une valorisation.",
+    "rvpiHint": "Résiduel rapporté au capital versé. Exige une valorisation.",
+    "irr": "Taux de rendement",
+    "irrRealised": "Rendement réalisé",
+    "irrRealisedHint": "Ne porte que sur ce qui est déjà revenu : sous-estime un fonds encore ouvert.",
+    "incomplete": "Mesure incomplète",
+    "nothing": "Rien à mesurer pour l'instant",
+    "nothingHint": "Aucun versement n'a encore été constaté. La performance apparaîtra dès le premier appel de fonds encaissé."
   }
 }

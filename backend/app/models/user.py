@@ -78,11 +78,11 @@ class User(Base, TimestampMixin):
         String(5), nullable=False, default="fr", server_default="fr"
     )
 
-    # ── Identité postale, poussée par Alice ───────────────────────────────────────────
-    #: 🔴 CES COLONNES EXISTENT PARCE QU'ALICE LES ENVOIE. Un schéma qui ne nomme pas un
-    #: champ le supprime en silence : la console pousse une adresse, le produit n'a nulle
-    #: part où la mettre, rien n'échoue — et la facture part des mois plus tard avec un
-    #: destinataire vide. Elles ne servent qu'à la facturation, jamais à l'application.
+    # ── Postal identity, pushed by Alice ──────────────────────────────────────────────
+    #: 🔴 THESE COLUMNS EXIST BECAUSE ALICE SENDS THEM. A schema that does not name a
+    #: field drops it silently: the console pushes an address, the product has nowhere to
+    #: put it, nothing fails — and months later the invoice goes out with an empty
+    #: addressee. They serve billing only, never the application itself.
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
     zip_code: Mapped[str | None] = mapped_column(String(20), nullable=True)

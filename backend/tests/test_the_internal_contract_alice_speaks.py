@@ -1,15 +1,15 @@
 """The `/internal` contract, held still.
 
-🔴 CE QUI EST GARDÉ ICI N'EST PAS « ÇA RÉPOND 200 ». Ce sont les trois décisions qui, prises
-à l'envers, ne se voient pas :
+🔴 WHAT IS GUARDED HERE IS NOT « IT ANSWERS 200 ». It is the three decisions that, taken
+the wrong way round, are invisible:
 
-  * la protection porte sur L'EFFET (« ce fonds resterait-il administrable ? »), jamais sur
-    le rôle — une garde sur le rôle interdit de renommer un admin, ce qui n'enferme
-    personne, et laisse supprimer le dernier gestionnaire, ce qui enferme ;
-  * une mise à jour partielle ne DOIT PAS vider les champs absents de la charge utile ;
-  * les champs qu'Alice envoie et que ce produit ne garde pas sont NOMMÉS, parce qu'un
-    schéma qui ne nomme pas un champ le supprime en silence — le produit frère a livré
-    ainsi un NaN en production.
+  * the protection is on the OUTCOME (« would this fund still be administrable? »), never on
+    the role — a guard on the role forbids renaming an admin, which locks nobody out, and
+    allows deleting the last manager, which locks everybody out;
+  * a partial update must NOT blank the fields absent from the payload;
+  * the fields Alice sends and this product does not keep are NAMED, because a schema that
+    does not name a field drops it silently — that is how the sister product shipped a NaN
+    to production.
 """
 
 from __future__ import annotations
@@ -113,8 +113,8 @@ class TestNothingIsSwallowedInSilence:
     async def test_the_landlord_identity_is_accepted_and_deliberately_not_stored(
         self, client, db
     ):
-        """Un fonds n'a pas de bailleur. Le refuser casserait Alice ; l'avaler sans le dire
-        est le défaut. Il est donc reçu, ignoré, et la décision est NOMMÉE."""
+        """A fund has no landlord. Refusing it would break Alice; swallowing it without
+        saying so is the defect. So it is accepted, ignored, and the decision is NAMED."""
         payload = {
             "email": "avec-bailleur@fonds.fr",
             "full_name": "X",
@@ -147,7 +147,7 @@ class TestNothingIsSwallowedInSilence:
         assert r.status_code == 200
         await db.refresh(user)
         assert user.city == "Paris"
-        # Le champ absent de la charge utile n'a pas bougé.
+        # The field missing from the payload has not moved.
         assert user.phone == "+2250700000000"
         assert user.account_name == "Gestion"
 
@@ -167,7 +167,7 @@ class TestTheGuardProtectsTheOutcomeNotTheRole:
     async def test_but_they_can_be_renamed_and_have_their_password_reset(
         self, client, db
     ):
-        """Ce que la garde par le RÔLE interdisait à tort : renommer n'enferme personne."""
+        """What a guard on the ROLE wrongly forbade: renaming locks nobody out."""
         user = await _manager(db, "seul@fonds.fr")
         assert (
             await client.patch(
@@ -235,7 +235,7 @@ class TestBlockAndUnblockAreSymmetrical:
         await db.refresh(user)
         await db.refresh(collateral)
         assert user.is_active is True
-        # 🔴 Le compte désactivé pour une autre raison n'a PAS été ressuscité.
+        # 🔴 The account deactivated for another reason has NOT been resurrected.
         assert collateral.is_active is False
 
 
@@ -275,7 +275,7 @@ class TestBillingIdentityAnswersForFormerCustomersToo:
         assert r.status_code == 200
         assert r.json()["full_name"] == "Ancien client"
 
-        # Alors que le contrat « gestionnaire » ne le voit pas, et c'est correct.
+        # Whereas the « manager » contract does not see them, and that is correct.
         assert (
             await client.get(f"/internal/managers/{found.id}", headers=auth())
         ).status_code == 404

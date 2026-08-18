@@ -129,7 +129,7 @@ class TestGettingYourOwnMoneyBackIsNotAGain:
         assert result.multiple() == Decimal("1.18")
 
     async def test_a_project_that_has_not_started_has_no_multiple(self, db):
-        """None rather than zero: « 0,00x » reads as a project that lost everything."""
+        """None rather than zero: « 0.00x » reads as a project that lost everything."""
         await _project(db)
         (result,) = await project_service.results(db)
         assert result.multiple() is None
@@ -137,15 +137,15 @@ class TestGettingYourOwnMoneyBackIsNotAGain:
     async def test_a_project_that_has_not_returned_anything_yet_has_no_multiple_either(
         self, db
     ):
-        """🔴 LA MOITIÉ DU CAS QUI MANQUAIT, vue à l'écran le 18 août.
+        """🔴 THE HALF OF THE CASE THAT WAS MISSING, seen on screen on 18 August.
 
-        La première règle ne rendait `None` que si rien n'était déployé. Un projet financé
-        la veille, parfaitement sain, simplement trop jeune pour avoir rendu quoi que ce
-        soit, affichait « 0,00x » — exactement la lecture « il a tout perdu » que la règle
-        prétendait empêcher, et en pire, puisqu'elle portait sur un projet en bonne santé.
+        The first rule returned `None` only when nothing had been deployed. A project funded
+        the day before, perfectly healthy, simply too young to have returned anything, was
+        showing « 0.00x » — exactly the « it lost everything » reading the rule claimed to
+        prevent, and worse, since it landed on a project in good health.
 
-        Un ratio de ce qui n'est pas encore arrivé n'est pas nul, il est INCONNU. Une perte
-        réelle, elle, est déjà dite par le statut et par le capital encore engagé.
+        A ratio of what has not arrived yet is not zero, it is UNKNOWN. A real loss, by
+        contrast, is already stated by the status and by the capital still outstanding.
         """
         project = await _project(db)
         out = await _movement(db, direction=OUT, amount=Decimal("120000"))
@@ -159,7 +159,7 @@ class TestGettingYourOwnMoneyBackIsNotAGain:
         (result,) = await project_service.results(db)
         assert result.deployed == Decimal("120000")
         assert result.multiple() is None
-        # Ce qui est engagé, lui, se dit tout de suite.
+        # What is committed, by contrast, is stated straight away.
         assert result.outstanding == Decimal("120000")
 
 

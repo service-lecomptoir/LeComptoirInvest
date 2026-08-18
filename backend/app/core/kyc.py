@@ -1,6 +1,6 @@
 """Who the fund may do business with, and what that verdict actually stops.
 
-« UNE BASE KYC POUR SAVOIR AVEC QUI FAIRE AFFAIRE » — the user's words, and they set the
+« A KYC BASE TO KNOW WHO WE MAY DO BUSINESS WITH » — the user's words, and they set the
 shape. This is not a filing cabinet for identity documents. It is a DECISION, taken by a
 named person on a date, that either lets money in or does not.
 

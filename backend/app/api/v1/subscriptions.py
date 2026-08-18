@@ -42,11 +42,11 @@ class RequestOut(BaseModel):
     requested_on: date
     status: str
     decision_reason: str | None = None
-    #: ⚠️ L'ENGAGEMENT NÉ DE CETTE DEMANDE, et il manquait. Une demande et une souscription
-    #: sont deux objets distincts, exprès ; mais sans ce lien, un écran qui veut agir sur
-    #: l'engagement n'a que l'identifiant de la demande sous la main, et l'envoie — pour
-    #: recevoir un 404 dont la cause n'a rien d'évident. NULL tant qu'elle est en attente,
-    #: et NULL pour toujours si elle est refusée : c'est précisément ce qui rend les deux
+    #: ⚠️ THE COMMITMENT BORN OF THIS REQUEST, and it was missing. A request and a
+    #: subscription are two distinct objects on purpose; but without this link, a screen
+    #: acting on the commitment only has the request's id to hand, and sends that — to get
+    #: back a 404 whose cause is anything but obvious. NULL while it is pending, and NULL
+    #: for good if it is refused: which is exactly what makes the two
     #: lignes utiles séparément.
     subscription_id: uuid.UUID | None = None
 

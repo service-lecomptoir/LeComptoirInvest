@@ -3,6 +3,7 @@ import type {
   CapitalCall, Distribution, Investor, Me, Movement, Portfolio, Project,
   Statement, SubscriptionRequest, Waterfall,
   BillingSubscription, PaymentMethods, BillingPlan, BillingInvoice, BillingStatus,
+  PerformanceBlock, CapitalAccountLine,
 } from '@/types'
 
 export const authApi = {
@@ -111,4 +112,17 @@ export const billingApi = {
       '/billing/change-plan-preview', { plan_id: planId }, { skipErrorToast: true }),
   invoices: () => apiClient.get<BillingInvoice[]>('/billing/invoices'),
   invoicePdfUrl: (id: string) => `/billing/invoices/${id}/pdf`,
+}
+
+export const performanceApi = {
+  // `as_of` is always sent: a server that dated the report itself would give two readers
+  // in different places a different « today », on the same fund.
+  get: (asOf: string, investorId?: string) =>
+    apiClient.get<PerformanceBlock[]>('/performance', {
+      params: { as_of: asOf, ...(investorId ? { investor_id: investorId } : {}) },
+    }),
+  capitalAccount: (since: string, until: string, investorId?: string) =>
+    apiClient.get<CapitalAccountLine[]>('/capital-account', {
+      params: { since, until, ...(investorId ? { investor_id: investorId } : {}) },
+    }),
 }

@@ -1,16 +1,16 @@
-"""L'abonnement AU LOGICIEL, à ne pas confondre avec les souscriptions AUX FONDS.
+"""The subscription to the SOFTWARE, not to be confused with commitments to the FUNDS.
 
-🔴 CE QUI EST GARDÉ ICI. Quatre décisions dont aucune ne se voit à l'écran quand elle est
-prise à l'envers :
+🔴 WHAT IS GUARDED HERE. Four decisions, none of which is visible on screen when taken the
+wrong way round:
 
-  * un investisseur n'a pas d'abonnement à ce produit et ne doit rien pouvoir en lire ;
-  * l'identité du payeur vient de la SESSION, jamais d'un paramètre d'appel : une facture
-    se lirait sinon en changeant un identifiant dans l'adresse ;
-  * une console absente rend « non piloté », JAMAIS un plan gratuit : traduire « je ne sais
-    pas » par « c'est offert » accorde un droit que personne n'a donné ;
-  * une action de PAIEMENT qui échoue remonte une erreur, quand une LECTURE qui échoue se
-    dégrade. Un gestionnaire persuadé d'avoir payé sans l'avoir fait est un dossier de
-    support ; un montant affiché « inconnu » n'est qu'un écran incomplet.
+  * an investor has no subscription to this product and must be able to read nothing of it;
+  * the payer's identity comes from the SESSION, never from a request parameter: an invoice
+    would otherwise be read by changing an id in the address;
+  * an absent console yields « not managed », NEVER a free plan: turning « I do not know »
+    into « it is free » grants an entitlement nobody gave;
+  * a PAYMENT action that fails raises an error, whereas a READ that fails degrades. A
+    manager convinced they have paid when they have not is a support case; an amount shown
+    as « unknown » is merely an incomplete screen.
 """
 
 from __future__ import annotations
@@ -59,19 +59,23 @@ def _auth(user: User) -> dict[str, str]:
 
 
 async def test_an_investor_has_no_subscription_to_read(client, db):
-    """Le porteur de parts paie SON fonds, pas le logiciel. L'écran ne le concerne pas."""
+    """A unit holder pays for THEIR fund, not for the software. The screen is not theirs."""
     investor = await _user(db, INVESTOR)
-    for path in ("/api/v1/billing", "/api/v1/billing/invoices", "/api/v1/billing/plans"):
+    for path in (
+        "/api/v1/billing",
+        "/api/v1/billing/invoices",
+        "/api/v1/billing/plans",
+    ):
         resp = await client.get(path, headers=_auth(investor))
         assert resp.status_code == 403, f"{path} a répondu {resp.status_code}"
 
 
 async def test_no_console_means_unknown_and_never_free(client, db, monkeypatch):
-    """🔴 « Pas de réponse » ne se traduit pas par « offre gratuite ».
+    """🔴 « No answer » does not translate to « free plan ».
 
-    Sans console, l'écran doit dire qu'il n'est pas piloté. Le piège serait de rendre un
-    `plan_name` vide avec un prix à zéro : l'utilisateur y lirait un abonnement gratuit,
-    et personne ne le lui a accordé.
+    With no console, the screen must say it is not managed. The trap would be to return an
+    empty `plan_name` with a price of zero: the user would read a free subscription there,
+    and nobody granted them one.
     """
 
     async def _absent(_user_id):
@@ -86,11 +90,11 @@ async def test_no_console_means_unknown_and_never_free(client, db, monkeypatch):
 
 
 async def test_the_payer_is_the_session_never_a_parameter(client, db, monkeypatch):
-    """L'identifiant transmis à la console est celui du porteur du jeton.
+    """The id handed to the console is the token holder's.
 
-    ⚠️ La garde vérifie l'ARGUMENT REÇU par le client, pas seulement le code de réponse :
-    un endpoint qui accepterait un `user_id` en requête répondrait 200 tout pareil, en
-    lisant la facture d'un autre fonds.
+    ⚠️ The guard checks the ARGUMENT THE CLIENT RECEIVED, not merely the status code: an
+    endpoint accepting a `user_id` from the query would answer 200 just the same, while
+    reading another fund's invoice.
     """
     seen: list[uuid.UUID] = []
 
@@ -109,11 +113,13 @@ async def test_the_payer_is_the_session_never_a_parameter(client, db, monkeypatc
 
 
 async def test_a_read_degrades_but_a_payment_refuses(client, db, monkeypatch):
-    """La console tombe : la lecture rend une liste vide, le paiement rend une erreur."""
+    """The console goes down: reading returns an empty list, paying returns an error."""
 
     async def _down(method, action, user_id, *, json=None, strict=True):
         if strict:
-            raise alice_client.AliceUnavailable("Le service d'abonnement est indisponible.")
+            raise alice_client.AliceUnavailable(
+                "Le service d'abonnement est indisponible."
+            )
         return None
 
     monkeypatch.setattr(alice_client, "billing", _down)
@@ -122,18 +128,20 @@ async def test_a_read_degrades_but_a_payment_refuses(client, db, monkeypatch):
     lecture = await client.get("/api/v1/billing/plans", headers=_auth(manager))
     assert lecture.status_code == 200 and lecture.json() == []
 
-    paiement = await client.post("/api/v1/billing/checkout", headers=_auth(manager), json={})
+    paiement = await client.post(
+        "/api/v1/billing/checkout", headers=_auth(manager), json={}
+    )
     assert paiement.status_code == 503
-    # Jamais un « Erreur » nu : le message est celui que l'utilisateur lira.
+    # Never a bare « Erreur »: the message is the one the user will read.
     assert "indisponible" in paiement.json()["detail"].lower()
 
 
 async def test_the_fund_limit_reads_alices_shared_field_name(monkeypatch):
-    """⚠️ Alice nomme cette limite `property_limit` POUR TOUS LES PRODUITS.
+    """⚠️ Alice names this limit `property_limit` FOR EVERY PRODUCT.
 
-    C'est le contrat inter-produits. La renommer côté console casserait les trois autres ;
-    la lire sous un autre nom ici la rendrait toujours vide, et un plan limité passerait
-    pour un plan illimité.
+    It is the cross-product contract. Renaming it on the console side would break the other
+    three; reading it under another name here would always leave it empty, and a limited
+    plan would pass for an unlimited one.
     """
     info = billing_api._as_info(
         {"plan_name": "Fonds Pro", "monthly_price": 149.0, "property_limit": 3}

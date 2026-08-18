@@ -144,6 +144,56 @@ def amount_due(
     return Due(money.quantize(interest, currency), money.quantize(capital, currency))
 
 
+#: The basis the preferred return accrues on: the loans' day count, simple interest.
+#:
+#: It is a clause of the contract, not an implementation detail: over eight years at 8 %,
+#: the compounded version owes nearly a third more than the simple one, and that gap is
+#: exactly what the manager takes home less. A fund written on another basis must record it
+#: rather than be run through this.
+#:
+#: ⚠️ DERIVED FROM `DAY_COUNT`, NEVER RESTATED. Two constants spelling the same convention
+#: drift, and the one nobody reads is the one that stays wrong. It also keeps this string
+#: out of the shape a stored domain value has — which it is not, and which the inventory
+#: guard rightly refuses.
+PREFERRED_RETURN_BASIS = f"{DAY_COUNT}, simple interest"
+
+
+def preferred_return_accrued(
+    *,
+    capital_at_work: Decimal,
+    rate: float,
+    since: date,
+    until: date,
+    currency: str,
+    already_served: Decimal = Decimal("0"),
+) -> Decimal:
+    """The preferred return still owed to a subscriber on a date.
+
+    🔴 A HURDLE IS NOT A DEBT, and this function does not pretend otherwise. It computes a
+    THRESHOLD: what subscribers must have received before the manager takes anything. If the
+    fund earns nothing, nobody is owed anything, and the shortfall does not carry forward the
+    way an unpaid coupon does. That is the whole difference with `amount_due`, which measures
+    a claim the lender can enforce.
+
+    ⚠️ IT ACCRUES ON CAPITAL AT WORK, never on capital subscribed. A subscriber whose money
+    has already come halfway back cannot claim a preferred return on what they got back, and
+    serving it to them comes out of the other subscribers' share.
+
+    ⚠️ NET OF WHAT WAS ALREADY SERVED, for the same reason as with lenders: without it every
+    distribution would re-owe the preference from inception, and the manager would never
+    reach any carried interest at all.
+    """
+    gross = interest_accrued(
+        principal=capital_at_work,
+        rate=rate,
+        since=since,
+        until=until,
+        currency=currency,
+    )
+    remaining = gross - already_served
+    return remaining if remaining > 0 else Decimal("0")
+
+
 def allocate(amount: Decimal, weights: list[Decimal], currency: str) -> list[Decimal]:
     """Split `amount` in proportion to `weights`, losing nothing.
 

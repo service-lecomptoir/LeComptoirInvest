@@ -33,17 +33,17 @@ class Settings(BaseSettings):
     #: products: a manager is never minted here.
     ALICE_URL: str = ""
 
-    #: 🔴 DEUX CLÉS, DEUX SENS, ET ELLES NE SONT PAS INTERCHANGEABLES.
+    #: 🔴 TWO KEYS, TWO DIRECTIONS, AND THEY ARE NOT INTERCHANGEABLE.
     #:
-    #: `ALICE_INTERNAL_KEY` est la clé ENTRANTE : celle qu'Alice présente en appelant
-    #: `/internal`, et que ce produit vérifie. `ALICE_API_KEY` est la clé SORTANTE : celle
-    #: que ce produit présente en interrogeant Alice sur son propre abonnement.
+    #: `ALICE_INTERNAL_KEY` is the INBOUND key: the one Alice presents when calling
+    #: `/internal`, and that this product verifies. `ALICE_API_KEY` is the OUTBOUND key:
+    #: the one this product presents when asking Alice about its own subscription.
     #:
-    #: Les confondre sous un seul nom ne casse rien de visible : les appels sortants sont
-    #: simplement refusés en 401, l'écran d'abonnement se dégrade en « non piloté », et on
-    #: en conclut qu'aucune console ne gère l'instance. Pire, réutiliser la clé entrante
-    #: pour sortir reviendrait à faire circuler le secret qui protège l'administration des
-    #: comptes du fonds dans des appels qui n'en ont pas besoin.
+    #: Merging them under one name breaks nothing visible: outbound calls are simply
+    #: refused with a 401, the subscription screen degrades to « not managed », and one
+    #: concludes no console drives the instance. Worse, reusing the inbound key for
+    #: outbound calls would circulate the secret that protects the fund's account
+    #: administration through calls that have no need of it.
     ALICE_INTERNAL_KEY: str = ""
     ALICE_API_KEY: str = ""
 

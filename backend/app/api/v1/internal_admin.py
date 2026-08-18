@@ -105,8 +105,8 @@ class ManagerIn(BaseModel):
     owner_national_id: str | None = None
 
 
-#: Les champs reçus d'Alice que ce produit ne conserve PAS. Nommés ici pour qu'une garde
-#: puisse tenir la décision immobile, et pour qu'ajouter une colonne un jour soit une ligne.
+#: The fields Alice sends that this product does NOT keep. Named here so a guard can hold
+#: the decision still, and so that adding a column one day is a single line.
 IGNORED_BY_DESIGN: tuple[str, ...] = (
     "owner_kind",
     "owner_account_name",

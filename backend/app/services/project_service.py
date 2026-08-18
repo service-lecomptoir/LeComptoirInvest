@@ -47,16 +47,15 @@ class ProjectResult:
     def multiple(self) -> Decimal | None:
         """Total returned over total deployed. None until something has come back.
 
-        🔴 NONE, PAS ZÉRO, ET LA PREMIÈRE VERSION NE COUVRAIT QUE LA MOITIÉ DU CAS. Elle
-        rendait `None` tant que rien n'était déployé — mais un projet financé hier, qui n'a
-        simplement pas encore eu le temps de rendre quoi que ce soit, affichait « 0,00x ».
-        Vu à l'écran le 18 août : c'est exactement la lecture « il a tout perdu » que le
-        commentaire d'origine disait vouloir éviter, et elle était pire, parce qu'elle
-        portait sur un projet en bonne santé.
+        🔴 NONE, NOT ZERO, AND THE FIRST VERSION COVERED ONLY HALF THE CASE. It returned
+        `None` while nothing was deployed — but a project funded yesterday, which has simply
+        not had time to return anything, displayed « 0.00x ». Seen on screen on 18 August:
+        that is exactly the « it lost everything » reading the original comment said it
+        wanted to avoid, and it was worse, because it landed on a perfectly healthy project.
 
-        Un ratio de ce qui n'est pas encore arrivé n'est pas nul : il est INCONNU. Et une
-        perte réelle est déjà dite par le STATUT (« perte constatée ») et par `outstanding`,
-        qui sont faits pour ça.
+        A ratio of what has not arrived yet is not zero: it is UNKNOWN. And a real loss is
+        already stated by the STATUS (« loss recorded ») and by `outstanding`, which exist
+        for that.
         """
         if self.deployed <= 0:
             return None

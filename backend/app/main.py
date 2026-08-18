@@ -72,6 +72,7 @@ from app.api.v1.billing import router as billing_router  # noqa: E402
 from app.api.v1.internal_admin import router as internal_router  # noqa: E402
 from app.api.v1.distributions import router as distributions_router  # noqa: E402
 from app.api.v1.investors import router as investors_router  # noqa: E402
+from app.api.v1.performance import router as performance_router  # noqa: E402
 from app.api.v1.projects import router as projects_router  # noqa: E402
 from app.api.v1.statements import router as statements_router  # noqa: E402
 from app.api.v1.subscriptions import router as subscriptions_router  # noqa: E402
@@ -85,11 +86,13 @@ app.include_router(projects_router, prefix="/api/v1")
 app.include_router(distributions_router, prefix="/api/v1")
 app.include_router(statements_router, prefix="/api/v1")
 app.include_router(billing_router, prefix="/api/v1")
+app.include_router(performance_router, prefix="/api/v1")
 
-# 🔴 MONTÉ À LA RACINE, SANS `/api`. Le proxy edge ne transmet que `/api/` et `/health` à
-# ce backend ; tout le reste part vers le front, dont le repli SPA répond `index.html`.
+# 🔴 MOUNTED AT THE ROOT, WITHOUT `/api`. The edge proxy forwards only `/api/` and
+# `/health` to this backend; everything else goes to the front end, whose SPA fallback
+# answers `index.html`.
 # `https://invest.lecomptoir.services/internal/managers` atteint donc une page statique et
-# jamais ce routeur : il n'est joignable que depuis le réseau Docker, où vit Alice.
-# Le déplacer sous `/api` publierait l'administration des comptes du fonds sur Internet,
-# derrière un simple en-tête partagé. Le préfixe n'est pas cosmétique.
+# never this router: it is reachable only from the Docker network, where Alice lives.
+# Moving it under `/api` would publish the fund's account administration on the open
+# internet, behind a single shared header. The prefix is not cosmetic.
 app.include_router(internal_router)
