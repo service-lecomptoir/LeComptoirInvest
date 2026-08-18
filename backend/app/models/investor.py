@@ -18,8 +18,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import date
+from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, ForeignKey, String, Text
+from sqlalchemy import Boolean, Date, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -118,6 +119,23 @@ class Investor(Base, TimestampMixin):
     #: Politically exposed person. A fact recorded on its own rather than folded into the
     #: risk level, because the risk level can be raised for other causes and folding them
     #: together loses which one applied.
+    #: 🔴 WHICH PROTECTIONS APPLY TO THIS INVESTOR, and it is not the same question as the
+    #: KYC verdict. KYC says whether the fund may deal with them at all; this says how much
+    #: they may commit before a warning is owed, and whether a reflection period runs.
+    #:
+    #: ⚠️ NO SERVER DEFAULT, and that is deliberate: an unrecorded category is read as
+    #: PROTECTED by `eligibility.is_protected`, which is the safe direction. Writing
+    #: « retail » into the column would make the same reading look like a decision somebody
+    #: took, and the day the default is changed every silent row changes with it.
+    category: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
+
+    #: What the investor declared they could afford to lose, as the warning threshold is
+    #: computed on a share of it. NULL means undeclared, never zero and never unlimited:
+    #: `eligibility.warning_threshold` refuses to produce a figure rather than guess one.
+    loss_bearing_capacity: Mapped[Decimal | None] = mapped_column(
+        Numeric(18, 2), nullable=True
+    )
+
     is_pep: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )

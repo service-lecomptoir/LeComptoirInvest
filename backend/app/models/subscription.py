@@ -89,6 +89,17 @@ class SubscriptionRequest(Base, TimestampMixin):
     #: WHICH VERSION OF THE INFORMATION DOCUMENT THE INVESTOR HAD IN FRONT OF THEM. Recorded
     #: at the moment of the request, not looked up later: the document changes, and « what
     #: they were shown » is only answerable if it was written down then.
+    #: The last day this investor may still step back, when a reflection period applies.
+    #: NULL for those it does not protect. Stored rather than recomputed because the rule
+    #: may change, and a request must keep the delay it was made under.
+    reflection_ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    #: 🔴 WHEN THE INVESTOR ACKNOWLEDGED THE RISK WARNING, for a commitment above their
+    #: threshold. NULL means they did not: the fund may then refuse to bind them, and the
+    #: refusal is checkable years later. A boolean would have said « yes » without saying
+    #: when, which is precisely what an auditor asks.
+    risk_acknowledged_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+
     information_document_version: Mapped[str | None] = mapped_column(
         String(50), nullable=True
     )

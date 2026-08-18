@@ -89,6 +89,10 @@ async def attribute(
     amount: Decimal,
     capital_call: CapitalCall | None,
     attributed_by: str,
+    #: ⚠️ THE DAY THE CHECK IS MADE, PASSED IN. Whether an acceptance has aged out depends on
+    #: a date, and a service that read the machine's own clock would answer differently for
+    #: two callers in different timezones, on the same file.
+    today: date,
     third_party_reason: str | None = None,
 ) -> Contribution:
     """Record that this share of this transfer belongs to this subscription.
@@ -105,11 +109,17 @@ async def attribute(
     investor = await db.get(Investor, subscription.investor_id)
     if investor is None:
         raise ValueError("Souscription sans investisseur : imputation impossible.")
-    if kyc.blocks_money(investor.kyc_status):
-        raise ValueError(
-            f"Le dossier de {investor.display_name} est « {investor.kyc_status} » : "
-            f"aucun versement ne peut lui être imputé tant qu'il n'est pas accepté."
-        )
+    # 🔴 ONE HOME FOR THE RULE, and it now covers an acceptance that aged out. Reading the
+    # status alone let a file whose review was three years overdue keep taking money, with
+    # the due date displayed on the record the whole time.
+    refusal = kyc.refusal_reason(
+        status=investor.kyc_status,
+        accepted_on=investor.kyc_decided_on,
+        risk_level=investor.kyc_risk_level,
+        today=today,
+    )
+    if refusal:
+        raise ValueError(f"{investor.display_name} : {refusal}")
     if movement.currency != subscription.currency:
         raise ValueError(
             f"Le virement est en {movement.currency} et la souscription en "

@@ -201,6 +201,7 @@ class TestTheTreasuryIdentityHolds:
             subscription=subscription,
             amount=Decimal("200000"),
             capital_call=None,
+            today=date.today(),
             attributed_by="tests",
         )
 

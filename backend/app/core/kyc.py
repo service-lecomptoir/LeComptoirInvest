@@ -105,6 +105,41 @@ def is_stale(
     return due is not None and today > due
 
 
+def refusal_reason(
+    *,
+    status: str | None,
+    accepted_on: date | None,
+    risk_level: str | None,
+    today: date,
+) -> str | None:
+    """Why the fund may not take this investor's money, or None when it may.
+
+    🔴 THE HOME OF THE RULE, AND IT NOW INCLUDES STALENESS. `blocks_money` reads the status
+    alone, so an acceptance that aged past its review date still answered « accepted » and
+    money kept flowing. `is_stale` existed from the first day and was CALLED NOWHERE: the
+    review date was displayed on the record and enforced by nothing. A verdict that expires
+    on screen and not in the code has not expired.
+
+    ⚠️ IT RETURNS THE REASON, NOT A BOOLEAN, because the two refusals are not the same fact
+    and the person reading the message has to act differently on them. « Never accepted »
+    means start a file; « acceptance is out of date » means review one that exists. A shared
+    « refused » would send both to the same wrong place.
+    """
+    if blocks_money(status):
+        return (
+            f"Le dossier de cet investisseur est « {status} » : aucun mouvement ne peut "
+            f"lui être imputé tant qu'il n'est pas accepté."
+        )
+    if is_stale(status, accepted_on, risk_level, today):
+        due = review_due_on(accepted_on, risk_level)
+        return (
+            f"L'acceptation de cet investisseur devait être revue le "
+            f"{due.isoformat() if due else '?'} : elle n'est plus à jour, et aucun "
+            f"mouvement ne peut lui être imputé avant une nouvelle décision."
+        )
+    return None
+
+
 @dataclass(frozen=True)
 class Verdict:
     """A decision, with who took it and when. All three or none.

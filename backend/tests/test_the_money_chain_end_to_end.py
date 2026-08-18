@@ -82,6 +82,7 @@ class TestTheVerdictActuallyBlocks:
                 subscription=subscription,
                 amount=Decimal("50000"),
                 capital_call=None,
+                today=date.today(),
                 attributed_by="tests",
             )
 
@@ -96,6 +97,7 @@ class TestTheVerdictActuallyBlocks:
             subscription=subscription,
             amount=Decimal("50000"),
             capital_call=None,
+            today=date.today(),
             attributed_by="tests",
         )
         assert contribution.amount == Decimal("50000")
@@ -157,6 +159,7 @@ class TestATransferIsNeverSplitIntoMoreThanItCarried:
             subscription=subscription,
             amount=Decimal("30000"),
             capital_call=None,
+            today=date.today(),
             attributed_by="tests",
         )
         with pytest.raises(ValueError, match="ne porte plus que"):
@@ -166,6 +169,7 @@ class TestATransferIsNeverSplitIntoMoreThanItCarried:
                 subscription=subscription,
                 amount=Decimal("25000"),
                 capital_call=None,
+                today=date.today(),
                 attributed_by="tests",
             )
 
@@ -182,6 +186,7 @@ class TestATransferIsNeverSplitIntoMoreThanItCarried:
             subscription=first,
             amount=Decimal("30000"),
             capital_call=None,
+            today=date.today(),
             attributed_by="tests",
         )
         rest = await treasury_service.attribute(
@@ -190,6 +195,7 @@ class TestATransferIsNeverSplitIntoMoreThanItCarried:
             subscription=second,
             amount=Decimal("20000"),
             capital_call=None,
+            today=date.today(),
             attributed_by="tests",
         )
         assert rest.amount == Decimal("20000")
@@ -211,6 +217,7 @@ class TestCurrenciesNeverMeet:
                 subscription=subscription,
                 amount=Decimal("50000"),
                 capital_call=None,
+                today=date.today(),
                 attributed_by="tests",
             )
 
@@ -236,6 +243,7 @@ class TestThePileOfUnnamedMoney:
             subscription=subscription,
             amount=Decimal("50000"),
             capital_call=None,
+            today=date.today(),
             attributed_by="tests",
         )
         assert movement.id not in {
@@ -257,6 +265,7 @@ class TestAThirdPartyPayerIsRecorded:
             subscription=subscription,
             amount=Decimal("50000"),
             capital_call=None,
+            today=date.today(),
             attributed_by="tests",
             third_party_reason="Paiement par la SCI du souscripteur",
         )
@@ -274,6 +283,7 @@ class TestAThirdPartyPayerIsRecorded:
             subscription=subscription,
             amount=Decimal("50000"),
             capital_call=None,
+            today=date.today(),
             attributed_by="tests",
         )
         assert contribution.third_party_payer is False

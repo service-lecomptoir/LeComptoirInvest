@@ -14,7 +14,7 @@ from app.database import get_db
 from app.models.subscription import Subscription
 from app.models.treasury import IN, BankMovement, CapitalCall
 from app.models.user import User
-from app.services import treasury_service
+from app.services import call_chasing_service, treasury_service
 
 router = APIRouter(prefix="/treasury", tags=["treasury"])
 
@@ -156,6 +156,7 @@ async def attribute(
             capital_call=call,
             attributed_by=user.email,
             third_party_reason=data.third_party_reason,
+            today=date.today(),
         )
     except ValueError as exc:
         # 409 rather than 422: nothing about the request is malformed — the fund's state
@@ -286,6 +287,69 @@ def _call_out(call: CapitalCall) -> CallOut:
         notified_on=call.notified_on,
         epc_qr=qr,
     )
+
+
+class LateCallOut(BaseModel):
+    call_id: uuid.UUID
+    reference: str
+    investor_id: uuid.UUID
+    investor_name: str
+    currency: str
+    called: Decimal
+    received: Decimal
+    outstanding: Decimal
+    due_on: date
+    days_late: int
+    late_interest: Decimal
+    #: 🔴 CARRIED TO THE SCREEN. True means the notice was never sent: the fund is late,
+    #: not the investor, and a reminder would blame them for the fund's own omission.
+    never_notified: bool
+    last_reminded_on: date | None = None
+    #: Whether a reminder is due today, and the reason when it is not.
+    reminder_due: bool = False
+    reminder_blocked_reason: str | None = None
+
+
+@router.get("/late-calls", response_model=list[LateCallOut])
+async def late_calls(
+    as_of: date | None = None,
+    _: User = Depends(current_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """Calls past their due date and still short, oldest first.
+
+    ⚠️ `as_of` IS REQUIRED. Whether a call is late depends on a date, and a server reading
+    its own clock would answer differently for two readers in different timezones, on the
+    same call, on the day it falls due.
+    """
+    if as_of is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Préciser la date à laquelle les retards sont constatés.",
+        )
+    out = []
+    for late in await call_chasing_service.late_calls(db, as_of=as_of):
+        due, why = call_chasing_service.due_for_reminder(late, as_of=as_of)
+        out.append(
+            LateCallOut(
+                call_id=late.call_id,
+                reference=late.reference,
+                investor_id=late.investor_id,
+                investor_name=late.investor_name,
+                currency=late.currency,
+                called=late.called,
+                received=late.received,
+                outstanding=late.outstanding,
+                due_on=late.due_on,
+                days_late=late.days_late,
+                late_interest=late.late_interest,
+                never_notified=late.never_notified,
+                last_reminded_on=late.last_reminded_on,
+                reminder_due=due,
+                reminder_blocked_reason=why,
+            )
+        )
+    return out
 
 
 @router.get("/calls", response_model=list[CallOut])

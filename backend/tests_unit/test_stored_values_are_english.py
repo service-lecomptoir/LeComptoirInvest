@@ -63,6 +63,11 @@ APPROVED: dict[str, str] = {
     "BY_REFERENCE": "reference",
     "BY_PAYER_IBAN": "payer_iban",
     "UNMATCHED": "unmatched",
+    # Investor categories: which protections apply to whom. Stored on `investors.category`,
+    # and NULL there is meaningful — `eligibility.is_protected` reads it as protected.
+    "RETAIL": "retail",
+    "SOPHISTICATED": "sophisticated",
+    "PROFESSIONAL": "professional",
     # Accounts
     "ADMIN": "admin",
     "MANAGER": "manager",

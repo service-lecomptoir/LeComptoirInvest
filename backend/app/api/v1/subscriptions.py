@@ -10,13 +10,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_manager, current_user, investor_scope
-from app.core import instruments, kyc
+from app.core import eligibility, instruments, kyc
 from app.database import get_db
 from app.models.investor import Investor
 from app.models.subscription import (
     REQUEST_ACCEPTED,
     REQUEST_PENDING,
     REQUEST_REFUSED,
+    REQUEST_WITHDRAWN,
     Subscription,
     SubscriptionConversion,
     SubscriptionRequest,
@@ -46,9 +47,13 @@ class RequestOut(BaseModel):
     #: subscription are two distinct objects on purpose; but without this link, a screen
     #: acting on the commitment only has the request's id to hand, and sends that — to get
     #: back a 404 whose cause is anything but obvious. NULL while it is pending, and NULL
-    #: for good if it is refused: which is exactly what makes the two
-    #: lignes utiles séparément.
+    #: for good if it is refused: which is exactly what makes the two rows useful
+    #: separately.
     subscription_id: uuid.UUID | None = None
+    #: The last day this investor may still step back. NULL when none protects them.
+    reflection_ends_on: date | None = None
+    #: When they acknowledged the risk warning, for a commitment above their threshold.
+    risk_acknowledged_on: date | None = None
 
 
 @router.post(
@@ -86,15 +91,89 @@ async def request_subscription(
             status.HTTP_422_UNPROCESSABLE_ENTITY, "Le montant doit être positif."
         )
 
+    investor = await db.get(Investor, scope)
+    requested_on = date.today()
     request = SubscriptionRequest(
         investor_id=scope,
         instrument=data.instrument,
         amount=data.amount,
         currency=data.currency.upper(),
-        requested_on=date.today(),
+        requested_on=requested_on,
+        # 🔴 STORED, NOT RECOMPUTED LATER. The delay belongs to the investor and to the
+        # rule in force the day they asked; a request read next year must keep the period
+        # it was made under, not the one the regulation moved to since.
+        reflection_ends_on=eligibility.reflection_period_ends(
+            requested_on=requested_on,
+            category=investor.category if investor else None,
+        ),
         information_document_version=data.information_document_version,
     )
     db.add(request)
+    await db.flush()
+    return RequestOut(**{k: getattr(request, k) for k in RequestOut.model_fields})
+
+
+@router.post(
+    "/subscription-requests/{request_id}/acknowledge-risk", response_model=RequestOut
+)
+async def acknowledge_risk(
+    request_id: uuid.UUID,
+    scope: uuid.UUID | None = Depends(investor_scope),
+    db: AsyncSession = Depends(get_db),
+):
+    """The investor states they have read the risk warning for a commitment above their cap.
+
+    🔴 ONLY THE INVESTOR MAY DO THIS, AND THAT IS THE WHOLE PROTECTION. A manager who could
+    tick it on their behalf would turn the safeguard into a formality: the acknowledgement
+    exists precisely to record that the person bearing the loss saw the warning. A fund
+    holding both ends of that is a fund with no warning at all.
+
+    ⚠️ IT IS NOT UNDONE BY REPEATING IT. The date recorded is the FIRST one: an
+    acknowledgement re-clicked after a dispute must not quietly move to a later day.
+    """
+    if scope is None:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Seul l'investisseur peut reconnaître l'avertissement qui le concerne.",
+        )
+    request = await db.get(SubscriptionRequest, request_id)
+    if request is None or request.investor_id != scope:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Demande introuvable.")
+    if request.status != REQUEST_PENDING:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"Cette demande est déjà « {request.status} »."
+        )
+    if request.risk_acknowledged_on is None:
+        request.risk_acknowledged_on = date.today()
+        await db.flush()
+    return RequestOut(**{k: getattr(request, k) for k in RequestOut.model_fields})
+
+
+@router.post("/subscription-requests/{request_id}/withdraw", response_model=RequestOut)
+async def withdraw(
+    request_id: uuid.UUID,
+    scope: uuid.UUID | None = Depends(investor_scope),
+    db: AsyncSession = Depends(get_db),
+):
+    """The investor steps back, which is what the reflection period is FOR.
+
+    ⚠️ A PERIOD NOBODY CAN ACT ON IS A DELAY, NOT A RIGHT. Enforcing the wait without
+    offering the way out would leave an investor who changed their mind waiting four days to
+    be bound by something they no longer want.
+    """
+    if scope is None:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Seul l'investisseur peut retirer sa demande."
+        )
+    request = await db.get(SubscriptionRequest, request_id)
+    if request is None or request.investor_id != scope:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Demande introuvable.")
+    if request.status != REQUEST_PENDING:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Cette demande est « {request.status} » : elle ne peut plus être retirée.",
+        )
+    request.status = REQUEST_WITHDRAWN
     await db.flush()
     return RequestOut(**{k: getattr(request, k) for k in RequestOut.model_fields})
 
@@ -158,11 +237,50 @@ async def decide(
         return RequestOut(**{k: getattr(request, k) for k in RequestOut.model_fields})
 
     investor = await db.get(Investor, request.investor_id)
-    if kyc.blocks_money(investor.kyc_status):
+    signed_on = data.signed_on or date.today()
+
+    refusal = kyc.refusal_reason(
+        status=investor.kyc_status,
+        accepted_on=investor.kyc_decided_on,
+        risk_level=investor.kyc_risk_level,
+        today=signed_on,
+    )
+    if refusal:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"{investor.display_name} : {refusal}"
+        )
+
+    # 🔴 THE REFLECTION PERIOD IS ENFORCED, NOT DISPLAYED. A screen that showed the date and
+    # signed anyway would record a binding engagement the investor may still revoke — and
+    # the fund would have called capital on it.
+    allowed, why = eligibility.may_bind(
+        requested_on=request.requested_on,
+        category=investor.category,
+        on=signed_on,
+    )
+    if not allowed:
+        raise HTTPException(status.HTTP_409_CONFLICT, why)
+
+    # ⚠️ ABOVE THEIR THRESHOLD, THE WARNING MUST HAVE BEEN ACKNOWLEDGED — and an
+    # unmeasurable threshold is refused rather than waved through. An investor whose
+    # loss-bearing capacity was never declared is precisely the one nobody assessed.
+    needs_consent, unmeasurable = eligibility.needs_explicit_consent(
+        category=investor.category,
+        amount=request.amount,
+        loss_bearing_capacity=investor.loss_bearing_capacity,
+    )
+    if unmeasurable:
+        raise HTTPException(status.HTTP_409_CONFLICT, unmeasurable)
+    if needs_consent and request.risk_acknowledged_on is None:
+        threshold = eligibility.warning_threshold(
+            category=investor.category,
+            loss_bearing_capacity=investor.loss_bearing_capacity,
+        )
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            f"Le dossier de {investor.display_name} est « {investor.kyc_status} » : "
-            f"aucun engagement ne peut être signé tant qu'il n'est pas accepté.",
+            f"Ce montant dépasse le seuil de {threshold.amount} {request.currency} "
+            f"applicable à cet investisseur : l'avertissement sur les risques doit avoir "
+            f"été reconnu avant tout engagement.",
         )
 
     subscription = Subscription(
@@ -170,7 +288,7 @@ async def decide(
         instrument=request.instrument,
         amount=request.amount,
         currency=request.currency,
-        signed_on=data.signed_on or date.today(),
+        signed_on=signed_on,
         ends_on=data.ends_on,
         terms=data.terms,
     )

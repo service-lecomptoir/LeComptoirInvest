@@ -45,7 +45,17 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, ForeignKey, Index, Numeric, String, Text, text
+from sqlalchemy import (
+    Boolean,
+    Date,
+    Float,
+    ForeignKey,
+    Index,
+    Numeric,
+    String,
+    Text,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -140,6 +150,18 @@ class CapitalCall(Base, TimestampMixin):
     #: When the call notice was actually sent, and by what means. A call nobody received is
     #: not a late investor, it is an unsent letter, and the two must not look alike.
     notified_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    #: 🔴 THE LATE-PAYMENT RATE THIS CALL WAS ISSUED UNDER, carried by the call and not by
+    #: a setting. The notice states it; changing a fund-wide parameter later would rewrite
+    #: what an investor was told when they received the demand, retroactively and for every
+    #: call already out. NULL means this call carries no late interest, which is a decision
+    #: and not an omission — a rate of zero would say the same thing less clearly.
+    late_interest_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    #: The last time a reminder went out for this call. Distinct from `notified_on`, which
+    #: is the FIRST notice: a fund that overwrote one with the other could no longer say
+    #: whether an investor was ever told in the first place.
+    last_reminded_on: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     def __repr__(self) -> str:
         return f"<CapitalCall {self.reference} {self.amount} {self.currency} due {self.due_on}>"

@@ -58,6 +58,7 @@ async def _pay(db, subscription, amount, currency="EUR"):
         amount=amount,
         capital_call=None,
         attributed_by="tests",
+        today=date(2026, 3, 1),
     )
 
 
