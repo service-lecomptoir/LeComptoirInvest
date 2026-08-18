@@ -1,0 +1,174 @@
+name: Build & Deploy (Le Comptoir Invest)
+
+# Gardes -> build images -> push ghcr.io -> le VPS PULL.
+# Secrets requis : VPS_HOST, VPS_PORT, VPS_USER, VPS_SSH_KEY. Variable : DEPLOY_ENABLED=true.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'docker/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-invest
+  cancel-in-progress: true
+
+env:
+  BACKEND_IMAGE: ghcr.io/service-lecomptoir/invest-backend
+  FRONTEND_IMAGE: ghcr.io/service-lecomptoir/invest-frontend
+
+jobs:
+  # Les gardes tournent AVANT le build, et le build en depend. Les produits freres
+  # deploient sans les passer ; ici la valeur du produit EST l'arithmetique -- ce qu'un
+  # preteur est du, ce qui revient a chaque souscripteur, ce qui figure sur un releve
+  # fiscal. Une erreur y est invisible : personne ne recalcule son coupon a la main.
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: invest_user
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: lecomptoirinvest
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U invest_user -d lecomptoirinvest"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Dependances
+        working-directory: backend
+        run: pip install -r requirements.txt
+      - name: Gardes serveur
+        working-directory: backend
+        env:
+          SECRET_KEY: ci-only-not-a-real-key
+          INVEST_TEST_PASSWORD: ci-only-password
+        run: |
+          python -m ruff check app tests tests_unit
+          python -m pytest -q
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Gardes interface
+        working-directory: frontend
+        run: |
+          npm ci
+          node scripts/i18n-check.mjs
+          npx tsc --noEmit
+          npx vitest run
+
+  build-push:
+    needs: tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Connexion a ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build & push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:latest
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build & push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          build-args: |
+            VITE_API_URL=https://invest.lecomptoir.services
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:latest
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      # Preuve que le compose du VPS est bien celui du depot. Un televersement peut
+      # « reussir » sans que le fichier attendu soit arrive : on compare les empreintes
+      # des deux cotes plutot que de le supposer.
+      - name: Empreinte des composes du depot
+        id: composes
+        run: echo "sha=$(sha256sum docker/docker-compose.deploy.yml docker/docker-compose.prod.yml | sha256sum | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+
+      - name: Copier les composes
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          # Liste separee par des virgules et non un bloc multi-ligne : le bloc laisse une
+          # ligne vide finale, que l'action prend pour un chemin vide et rejette.
+          source: "docker/docker-compose.deploy.yml,docker/docker-compose.prod.yml"
+          target: ~/LeComptoirInvest
+
+      - name: Pull & up sur le VPS
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          COMPOSE_SHA: ${{ steps.composes.outputs.sha }}
+        with:
+          envs: COMPOSE_SHA
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            cd ~/LeComptoirInvest
+            actual=$(sha256sum docker/docker-compose.deploy.yml docker/docker-compose.prod.yml | sha256sum | cut -d' ' -f1)
+            if [ "$actual" != "$COMPOSE_SHA" ]; then
+              echo "ECHEC : compose du VPS different du depot (attendu $COMPOSE_SHA, trouve $actual)"
+              exit 1
+            fi
+            export IMAGE_TAG=${{ github.sha }}
+            COMPOSE="docker compose -p invest -f docker/docker-compose.deploy.yml"
+            # ghcr met parfois quelques minutes a propager les droits du tag fraichement
+            # pousse (403). `</dev/null` est indispensable : sans lui, `docker compose pull`
+            # avale le reste du script envoye sur stdin et le retry n'est jamais execute.
+            pulled=0; i=1; while [ "$i" -le 8 ]; do echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin >/dev/null 2>&1 || true; $COMPOSE pull invest-backend invest-frontend </dev/null && pulled=1 || pulled=0; if [ "$pulled" = 1 ]; then break; fi; echo "ghcr pas pret, tentative $i/8 ; retry dans 30s"; sleep 30; i=$((i+1)); done; if [ "$pulled" != 1 ]; then echo "pull KO apres 8 essais (~4 min)"; exit 1; fi
+            # `--pull never` : `--force-recreate` refait sinon un pull implicite, deuxieme
+            # source de 403 alors que l'image est deja locale.
+            $COMPOSE up -d --force-recreate --no-deps --pull never invest-backend invest-frontend </dev/null
+            running=$(docker inspect invest_backend --format '{{.Config.Image}}')
+            case "$running" in *"${IMAGE_TAG}"*) echo "OK deploiement : $running" ;; *) echo "ECHEC : conteneur sur $running au lieu de ${IMAGE_TAG}"; exit 1 ;; esac
+            docker image prune -af --filter "until=72h"
+            docker logout ghcr.io
+            echo "Deploye : $IMAGE_TAG"

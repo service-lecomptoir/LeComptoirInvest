@@ -1,0 +1,73 @@
+# ── Déploiement par BUILD LOCAL — Le Comptoir Invest ──────────────────────────
+# Repli manuel quand le pipeline d'images n'est pas disponible. Le chemin normal est
+# `docker-compose.deploy.yml`, alimenté par GitHub Actions.
+#   docker compose -p invest -f docker/docker-compose.prod.yml up -d --build
+#
+# ⚠️ Les deux fichiers déclarent LES MÊMES noms de conteneurs, de volume et de réseau.
+# S'ils divergeaient, le repli créerait un second jeu de conteneurs à côté du premier et
+# le domaine continuerait de servir l'ancien.
+
+services:
+  invest-db:
+    image: postgres:16-alpine
+    container_name: invest_db
+    restart: always
+    env_file:
+      - ../backend/.env.prod
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - invest_pgdata:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shared
+
+  invest-backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: invest_backend
+    restart: always
+    env_file:
+      - ../backend/.env.prod
+    environment:
+      ENV: production
+      DEBUG: "false"
+    depends_on:
+      invest-db:
+        condition: service_healthy
+    expose:
+      - "8001"
+    networks:
+      - shared
+
+  invest-frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        VITE_API_URL: https://invest.lecomptoir.services
+    container_name: invest_frontend
+    restart: always
+    depends_on:
+      - invest-backend
+    expose:
+      - "80"
+    networks:
+      - shared
+
+volumes:
+  invest_pgdata:
+
+networks:
+  shared:
+    external: true
+    name: lecomptoir_net

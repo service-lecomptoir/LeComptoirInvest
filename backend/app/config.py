@@ -34,6 +34,14 @@ class Settings(BaseSettings):
     ALICE_URL: str = ""
     ALICE_INTERNAL_KEY: str = ""
 
+    #: The first fund-wide account, created ONLY when nobody can administer the fund yet.
+    #: See `app/startup/bootstrap.py`: it is an escape hatch until Alice drives this
+    #: product, and it is inert the moment anybody can sign in as a manager.
+    #: ⚠️ No default password: a generated one would have to be logged to be usable, and a
+    #: credential in a log is a credential everybody with log access holds.
+    BOOTSTRAP_MANAGER_EMAIL: str = ""
+    BOOTSTRAP_MANAGER_PASSWORD: str = ""
+
     @property
     def is_production(self) -> bool:
         return self.ENV.lower() in {"production", "prod"}

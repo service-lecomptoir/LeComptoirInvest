@@ -23,6 +23,31 @@ async def lifespan(app: FastAPI):
             "SECRET_KEY is not set: it derives the key that encrypts investors' bank "
             "details. Refusing to start rather than write them in clear."
         )
+
+    # The first account, and only when nobody can administer yet. A failure here must not
+    # stop the API: a fund that cannot be signed into is bad, a fund that will not start is
+    # worse, and the reason is logged either way.
+    if settings.BOOTSTRAP_MANAGER_EMAIL:
+        if not settings.BOOTSTRAP_MANAGER_PASSWORD:
+            logger.warning(
+                "BOOTSTRAP_MANAGER_EMAIL est defini sans BOOTSTRAP_MANAGER_PASSWORD : "
+                "aucun compte d'amorcage. Un mot de passe genere devrait etre journalise "
+                "pour servir, et un identifiant dans un journal n'est plus un secret."
+            )
+        else:
+            from app.database import AsyncSessionLocal
+            from app.startup.bootstrap import ensure_first_manager
+
+            try:
+                async with AsyncSessionLocal() as db:
+                    await ensure_first_manager(
+                        db,
+                        email=settings.BOOTSTRAP_MANAGER_EMAIL,
+                        password=settings.BOOTSTRAP_MANAGER_PASSWORD,
+                    )
+            except Exception:  # noqa: BLE001
+                logger.exception("Amorcage du premier gestionnaire impossible")
+
     yield
 
 

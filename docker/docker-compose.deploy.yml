@@ -1,0 +1,72 @@
+# ── Déploiement par IMAGES — Le Comptoir Invest ───────────────────────────────
+# Le CI construit et pousse les images sur ghcr.io ; le VPS ne fait que tirer.
+#   export IMAGE_TAG=<sha>
+#   docker compose -p invest -f docker/docker-compose.deploy.yml pull
+#   docker compose -p invest -f docker/docker-compose.deploy.yml up -d
+#
+# ⚠️ PROJET COMPOSE `invest`, JAMAIS `docker`. Le préfixe du projet nomme les volumes :
+# déployer sous un autre projet monterait un volume VIDE et la base aurait l'air perdue.
+# C'est arrivé sur Alice et Séjour, et ça ne se voit qu'une fois le conteneur démarré.
+#
+# 🔴 CE PRODUIT A SA PROPRE BASE, ici comme en local. Le registre des investisseurs et les
+# mouvements bancaires du fonds ne partagent ni sauvegarde, ni restauration, ni export
+# mal cadré avec un outil de gestion locative.
+
+services:
+  invest-db:
+    image: postgres:16-alpine
+    container_name: invest_db
+    restart: always
+    env_file:
+      - ../backend/.env.prod
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - invest_pgdata:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shared
+
+  invest-backend:
+    image: ghcr.io/service-lecomptoir/invest-backend:${IMAGE_TAG:-latest}
+    pull_policy: always
+    container_name: invest_backend
+    restart: always
+    env_file:
+      - ../backend/.env.prod
+    environment:
+      ENV: production
+      DEBUG: "false"
+    depends_on:
+      invest-db:
+        condition: service_healthy
+    expose:
+      - "8001"
+    networks:
+      - shared
+
+  invest-frontend:
+    image: ghcr.io/service-lecomptoir/invest-frontend:${IMAGE_TAG:-latest}
+    pull_policy: always
+    container_name: invest_frontend
+    restart: always
+    depends_on:
+      - invest-backend
+    expose:
+      - "80"
+    networks:
+      - shared
+
+volumes:
+  invest_pgdata:
+
+networks:
+  shared:
+    external: true
+    name: lecomptoir_net
