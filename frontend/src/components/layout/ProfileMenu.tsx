@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ChevronDown, KeyRound, LogOut } from 'lucide-react'
+import { ChevronDown, CreditCard, KeyRound, LogOut } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { confirmDialog } from '@/store/confirm'
 
@@ -23,6 +23,7 @@ export function ProfileMenu() {
   const email = useAuthStore((state) => state.email)
   const role = useAuthStore((state) => state.role)
   const logout = useAuthStore((state) => state.logout)
+  const seesWholeFund = useAuthStore((state) => state.seesWholeFund)
 
   // Un menu se ferme quand on clique ailleurs. Sans cela il reste ouvert derrière le
   // premier clic suivant, et ce clic-là est perdu pour l'écran qu'il visait.
@@ -103,6 +104,26 @@ export function ProfileMenu() {
               <KeyRound size={15} className="text-gray-400" />
               {t('password.title')}
             </button>
+            {/* 🔴 RÉSERVÉ À QUI PAIE. `/billing` est un écran de la gestion du fonds :
+                l'afficher à un investisseur lui proposerait une page qui le renvoie chez
+                lui. Une ligne de menu qui ne mène nulle part est pire qu'une absente, elle
+                laisse croire à un droit qu'on n'a pas.
+
+                ⚠️ Et ce n'est PAS une protection : l'API refuse ces lectures d'elle-même.
+                C'est de la politesse, comme le `FundOnly` du routeur. */}
+            {seesWholeFund && (
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false)
+                  navigate('/billing')
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <CreditCard size={15} className="text-gray-400" />
+                {t('nav.billing')}
+              </button>
+            )}
             <div className="border-t border-gray-100 my-1" />
             <button
               role="menuitem"

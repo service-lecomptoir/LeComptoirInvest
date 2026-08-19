@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import {
-  Banknote, Building2, CreditCard, FileText, LayoutDashboard, Menu,
+  Banknote, Building2, FileText, LayoutDashboard, Menu,
   AlarmClock, Layers, PieChart, Receipt, TrendingUp, Users, Wallet, X,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
@@ -45,14 +45,6 @@ const FUND_NAV: { section: string; items: Item[] }[] = [
       { to: '/investors', key: 'nav.register', icon: Users },
       { to: '/subscriptions', key: 'nav.subscriptions', icon: Receipt },
     ],
-  },
-  {
-    // ⚠️ SA PROPRE SECTION, et non une ligne de plus sous « Investisseurs ». Ce que le
-    // gestionnaire paie pour utiliser le produit n'a rien à voir avec ce que les
-    // investisseurs engagent dans le fonds : les ranger ensemble ferait lire « Abonnement »
-    // comme un abonnement d'investisseur, dans le seul menu où ce contresens coûte cher.
-    section: 'nav.myAccount',
-    items: [{ to: '/billing', key: 'nav.billing', icon: CreditCard }],
   },
 ]
 
@@ -129,6 +121,10 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
  *  account sees first. A tab reading just « Le Comptoir Invest » there says nothing. */
 const OFF_MENU_TITLES: Record<string, string> = {
   '/change-password': 'password.title',
+  // 🔴 SORTI DU MENU, DONC SORTI DE LA CARTE DES TITRES qui en est dérivée. La garde l'a
+  // signalé à la seconde où la ligne a quitté `FUND_NAV` : c'est exactement ce qu'elle
+  // existe pour attraper, un écran qui reste servi et dont l'onglet retombe sur la marque.
+  '/billing': 'nav.billing',
 }
 
 /** Path -> catalogue key, built from the menu itself.
