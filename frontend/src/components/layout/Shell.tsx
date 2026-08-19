@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import {
@@ -122,13 +122,57 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
+/** The pages a reader can be on that have no menu entry of their own.
+ *
+ *  ⚠️ Written out because they exist, not because a list is nice: `/change-password` is
+ *  reached from the footer and is where a forced change lands, so it is the ONE page a new
+ *  account sees first. A tab reading just « Le Comptoir Invest » there says nothing. */
+const OFF_MENU_TITLES: Record<string, string> = {
+  '/change-password': 'password.title',
+}
+
+/** Path -> catalogue key, built from the menu itself.
+ *
+ *  🔴 NOT A SECOND LIST. The sibling products each keep a hand-written `PAGE_TITLES`, and a
+ *  hand-written list is one that drifts the day a screen is added - this repository has
+ *  already forgotten « invest » in four of them. The menu already pairs a path with a key;
+ *  reading it here means a new screen carries its own tab title in.
+ *
+ *  ⚠️ `/` IS NOT IN HERE, and it cannot be: it resolves to the dashboard for the fund and to
+ *  the portfolio for an investor. It is answered below, where the role is known. */
+const MENU_TITLES: Record<string, string> = Object.fromEntries(
+  [...FUND_NAV, ...INVESTOR_NAV]
+    .flatMap((group) => group.items)
+    .filter((item) => item.to !== '/')
+    .map((item) => [item.to, item.key]),
+)
+
 export function Shell() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [open, setOpen] = useState(false)
   const logout = useAuthStore((s) => s.logout)
   const role = useAuthStore((s) => s.role)
   const email = useAuthStore((s) => s.email)
   const navigate = useNavigate()
+  const location = useLocation()
+  const seesWholeFund = useAuthStore((state) => state.seesWholeFund)
+
+  // 🔴 THE TAB IS A LABEL TOO, so it is translated like every other one. The siblings write
+  // theirs in French because they are French-only; this product is not, and a French tab
+  // over an English screen is the kind of half-translation a reader notices immediately.
+  //
+  // ⚠️ `i18n.language` IS IN THE DEPENDENCIES, and that is not decoration: switching
+  // language re-renders the screen but would leave the tab on the old wording, which is
+  // exactly the corner nobody thinks to look at.
+  useEffect(() => {
+    const key =
+      location.pathname === '/'
+        ? seesWholeFund
+          ? 'nav.dashboard'
+          : 'nav.myPortfolio'
+        : (MENU_TITLES[location.pathname] ?? OFF_MENU_TITLES[location.pathname])
+    document.title = key ? `Le Comptoir Invest | ${t(key)}` : 'Le Comptoir Invest'
+  }, [location.pathname, seesWholeFund, t, i18n.language])
 
   // ⚠️ Une fenêtre du PRODUIT, jamais `window.confirm`. Se déconnecter d'un clic mal placé
   // fait perdre ce qu'un formulaire ouvert contenait, et la boîte du navigateur ne sait ni

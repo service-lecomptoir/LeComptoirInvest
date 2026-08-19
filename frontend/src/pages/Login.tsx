@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button, Input } from '@/components/ui'
@@ -7,7 +7,14 @@ import { errorMessage } from '@/api/client'
 import { useAuthStore } from '@/store/authStore'
 
 export default function Login() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+
+  // ⚠️ LA CONNEXION EST HORS DU SHELL, donc hors de l'effet qui nomme les onglets. C'est
+  // pourtant le seul écran qu'un lecteur voit AVANT d'avoir un compte ouvert, et souvent
+  // celui qu'il laisse dans un onglet en cherchant son mot de passe ailleurs.
+  useEffect(() => {
+    document.title = `Le Comptoir Invest | ${t('login.title')}`
+  }, [t, i18n.language])
   const { login, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
