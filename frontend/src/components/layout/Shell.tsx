@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import {
-  Banknote, Building2, CreditCard, FileText, KeyRound, LayoutDashboard, LogOut, Menu,
+  Banknote, Building2, CreditCard, FileText, LayoutDashboard, Menu,
   AlarmClock, Layers, PieChart, Receipt, TrendingUp, Users, Wallet, X,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
-import { confirmDialog } from '@/store/confirm'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
+import { ProfileMenu } from '@/components/layout/ProfileMenu'
 
 interface Item {
   to: string
@@ -150,10 +150,6 @@ const MENU_TITLES: Record<string, string> = Object.fromEntries(
 export function Shell() {
   const { t, i18n } = useTranslation()
   const [open, setOpen] = useState(false)
-  const logout = useAuthStore((s) => s.logout)
-  const role = useAuthStore((s) => s.role)
-  const email = useAuthStore((s) => s.email)
-  const navigate = useNavigate()
   const location = useLocation()
   const seesWholeFund = useAuthStore((state) => state.seesWholeFund)
 
@@ -174,43 +170,10 @@ export function Shell() {
     document.title = key ? `Le Comptoir Invest | ${t(key)}` : 'Le Comptoir Invest'
   }, [location.pathname, seesWholeFund, t, i18n.language])
 
-  // ⚠️ Une fenêtre du PRODUIT, jamais `window.confirm`. Se déconnecter d'un clic mal placé
-  // fait perdre ce qu'un formulaire ouvert contenait, et la boîte du navigateur ne sait ni
-  // nommer le compte ni distinguer « annuler » de « partir ».
-  const signOut = async () => {
-    const ok = await confirmDialog({
-      title: t('signOut.title'),
-      message: email ? t('signOut.messageWithAccount', { email }) : t('signOut.message'),
-      confirmLabel: t('common.signOut'),
-    })
-    if (!ok) return
-    logout()
-    navigate('/login')
-  }
-
   const aside = (
     <>
       <Brand />
       <NavList onNavigate={() => setOpen(false)} />
-      <div className="px-2 pb-3 pt-2 border-t border-white/10 space-y-2">
-        <div className="px-1.5">
-          <LanguageSwitcher dark />
-        </div>
-        <p className="px-2.5 text-[11px] text-white/40 capitalize">{role ?? ''}</p>
-        <NavLink
-          to="/change-password"
-          onClick={() => setOpen(false)}
-          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] text-white/70 hover:bg-white/5 hover:text-white"
-        >
-          <KeyRound size={16} /> {t('password.title')}
-        </NavLink>
-        <button
-          onClick={signOut}
-          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] text-white/70 hover:bg-white/5 hover:text-white"
-        >
-          <LogOut size={16} /> {t('common.signOut')}
-        </button>
-      </div>
     </>
   )
 
@@ -239,13 +202,30 @@ export function Shell() {
       )}
 
       <div className="lg:pl-60">
-        <header className="lg:hidden sticky top-0 z-30 flex items-center gap-3 h-14 px-4 bg-brand-navy">
-          <button onClick={() => setOpen(true)} className="text-white" aria-label={t('common.openMenu')}>
+        {/* ⚠️ UNE SEULE BARRE, PAS UNE PAR TAILLE D'ECRAN. Elle portait le menu burger en
+            mobile ; elle porte maintenant la langue et le compte partout. En faire deux
+            aurait laisse l'une des deux prendre du retard sur l'autre, et c'est toujours
+            celle qu'on ne regarde pas qui le prend.
+
+            Le bandeau navy reste en mobile parce qu'il y remplace le menu lateral, absent ;
+            en grand ecran le menu est la, et la barre s'efface en blanc. */}
+        <header className="sticky top-0 z-30 flex items-center gap-3 h-14 px-4 lg:px-8 bg-brand-navy lg:bg-white lg:border-b lg:border-gray-200">
+          <button
+            onClick={() => setOpen(true)}
+            className="lg:hidden text-white"
+            aria-label={t('common.openMenu')}
+          >
             <Menu size={20} />
           </button>
-          <span className="text-[15px] font-semibold text-white">
+          <span className="lg:hidden text-[15px] font-semibold text-white">
             {t('brand.first')} <span className="text-brand-teal">{t('brand.second')}</span>
           </span>
+
+          {/* Pousse le reste a droite : c'est la seule chose que cette barre a a dire. */}
+          <div className="ml-auto flex items-center gap-2">
+            <LanguageSwitcher />
+            <ProfileMenu />
+          </div>
         </header>
         <main className="px-4 sm:px-6 lg:px-8 py-6 max-w-[1400px]">
           <Outlet />

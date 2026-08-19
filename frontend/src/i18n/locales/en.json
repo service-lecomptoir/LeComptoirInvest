@@ -576,5 +576,8 @@
     "noQr": "No transfer QR",
     "sendingNotSetUp": "E-mail sending is not configured",
     "sendingNotSetUpHint": "This product's sending address has not been set. It is entered in Le Comptoir Alice, « Systeme de communication » tab, « Invest » scope. It is never taken from another product: a capital call sent from a property-management tool's domain reads as a phishing attempt. Meanwhile, copy the text above into your own mail client; the call will not be recorded as notified, since the product will not have notified it."
+  },
+  "profile": {
+    "open": "Open the account menu"
   }
 }
