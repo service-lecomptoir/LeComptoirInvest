@@ -88,7 +88,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
   const seesWholeFund = useAuthStore((s) => s.seesWholeFund)
   const groups = seesWholeFund ? FUND_NAV : INVESTOR_NAV
   return (
-    <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-5">
+    <nav className="no-scrollbar flex-1 overflow-y-auto px-2 py-2 space-y-5">
       {groups.map((group) => (
         <div key={group.section}>
           <p className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/40">

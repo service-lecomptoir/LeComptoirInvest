@@ -27,3 +27,22 @@
     }
   }
 }
+
+@layer utilities {
+  /* The sidebar scrolls without saying so.
+
+     A menu is not read, it is scanned; a grey bar running down a navy panel is the only
+     thing moving on an otherwise still screen. The content still scrolls - wheel, trackpad,
+     keyboard, and a finger on mobile. Only the bar is hidden.
+
+     Both halves are required: Firefox honours `scrollbar-width`, WebKit and Blink only
+     answer to the pseudo-element. Writing one and not the other hides it in half the
+     browsers, which is worse than not hiding it at all. */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
