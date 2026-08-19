@@ -32,6 +32,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import Decimal
+from app.core.i18n import pick
 
 #: The account it landed on belongs to exactly one investor.
 BY_VIRTUAL_IBAN = "virtual_iban"
@@ -138,9 +139,12 @@ def propose(
                     third_party_payer=not _names_agree(
                         payer_name, candidate.display_name
                     ),
-                    explanation=(
+                    explanation=pick(
                         f"Virement reçu sur le compte dédié de {candidate.display_name}. "
-                        f"Reste à choisir l'appel de fonds qu'il règle."
+                        f"Reste à choisir l'appel de fonds qu'il règle.",
+                        f"Transfer received on the account dedicated to "
+                        f"{candidate.display_name}. Which capital call it settles is still "
+                        f"to be chosen.",
                     ),
                 )
 
@@ -157,7 +161,10 @@ def propose(
                     third_party_payer=not _names_agree(
                         payer_name, candidate.display_name
                     ),
-                    explanation=f"Référence {found} trouvée dans le libellé.",
+                    explanation=pick(
+                        f"Référence {found} trouvée dans le libellé.",
+                        f"Reference {found} found in the label.",
+                    ),
                 )
 
     # 3. THE PAYER'S ACCOUNT. Identifies the investor, never which call.
@@ -172,9 +179,11 @@ def propose(
                 capital_call_id=None,
                 basis=BY_PAYER_IBAN,
                 third_party_payer=False,
-                explanation=(
+                explanation=pick(
                     f"Compte émetteur connu : celui de {candidate.display_name}. "
-                    f"L'appel de fonds réglé reste à désigner."
+                    f"L'appel de fonds réglé reste à désigner.",
+                    f"The paying account is known: it is {candidate.display_name}'s. Which "
+                    f"capital call it settles is still to be named.",
                 ),
             )
         if len(matches) > 1:
@@ -186,27 +195,43 @@ def propose(
                 investor_id=None,
                 capital_call_id=None,
                 basis=UNMATCHED,
-                explanation=(
+                explanation=pick(
                     f"Ce compte émetteur est enregistré pour plusieurs investisseurs "
-                    f"({names}) : l'imputation doit être choisie."
+                    f"({names}) : l'imputation doit être choisie.",
+                    f"This paying account is recorded for several investors ({names}): the "
+                    f"attribution has to be chosen.",
                 ),
             )
 
     # 4. NOTHING. Said plainly, with what was looked at, so the operator knows what to fix.
     tried = []
     if found:
-        tried.append(f"la référence {found} ne correspond à aucun appel ouvert")
+        tried.append(
+            pick(
+                f"la référence {found} ne correspond à aucun appel ouvert",
+                f"reference {found} matches no open call",
+            )
+        )
     elif label:
-        tried.append("aucune référence exploitable dans le libellé")
+        tried.append(
+            pick(
+                "aucune référence exploitable dans le libellé",
+                "no usable reference in the label",
+            )
+        )
     if payer_iban_fingerprint:
-        tried.append("compte émetteur inconnu")
+        tried.append(pick("compte émetteur inconnu", "paying account unknown"))
     if not by_id:
-        tried.append("aucun investisseur candidat")
+        tried.append(pick("aucun investisseur candidat", "no candidate investor"))
     return Proposal(
         investor_id=None,
         capital_call_id=None,
         basis=UNMATCHED,
-        explanation="Non identifié : "
-        + (", ".join(tried) if tried else "aucun indice exploitable")
+        explanation=pick("Non identifié : ", "Not identified: ")
+        + (
+            ", ".join(tried)
+            if tried
+            else pick("aucun indice exploitable", "no usable clue")
+        )
         + ".",
     )

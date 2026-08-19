@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from xml.etree import ElementTree
+from app.core.i18n import pick
 
 #: ISO 20022 ships a new minor version every few years and the tag names do not move. Rather
 #: than list the ones seen so far — a list that is wrong the day the bank upgrades — the
@@ -188,13 +189,21 @@ def parse(content: bytes | str) -> Parsed:
             content if isinstance(content, bytes) else content.encode("utf-8")
         )
     except ElementTree.ParseError as exc:
-        parsed.refused.append(f"Le fichier n'est pas un XML lisible : {exc}")
+        parsed.refused.append(
+            pick(
+                f"Le fichier n'est pas un XML lisible : {exc}",
+                f"This file is not readable XML: {exc}",
+            )
+        )
         return parsed
 
     statements = [node for node in root.iter() if _local(node.tag) == "Stmt"]
     if not statements:
         parsed.refused.append(
-            "Aucun relevé (<Stmt>) dans ce fichier : ce n'est pas un CAMT.053."
+            pick(
+                "Aucun relevé (<Stmt>) dans ce fichier : ce n'est pas un CAMT.053.",
+                "No statement (<Stmt>) in this file: it is not a CAMT.053.",
+            )
         )
         return parsed
 
@@ -203,41 +212,64 @@ def parse(content: bytes | str) -> Parsed:
         iban = _text(_find(account, "IBAN")) if account is not None else None
         if not iban:
             parsed.refused.append(
-                f"Relevé {statement_index} : aucun IBAN de compte. Un mouvement sans compte "
-                f"ne peut pas être rapproché."
+                pick(
+                    f"Relevé {statement_index} : aucun IBAN de compte. Un mouvement sans "
+                    f"compte ne peut pas être rapproché.",
+                    f"Statement {statement_index}: no account IBAN. A movement with no "
+                    f"account cannot be reconciled.",
+                )
             )
             continue
         iban = iban.replace(" ", "").upper()
 
         entries = [node for node in statement.iter() if _local(node.tag) == "Ntry"]
         for entry_index, entry in enumerate(entries, 1):
-            where = f"Relevé {statement_index}, écriture {entry_index}"
+            where = pick(
+                f"Relevé {statement_index}, écriture {entry_index}",
+                f"Statement {statement_index}, entry {entry_index}",
+            )
 
             if (_text(_find(entry, "RvslInd")) or "").lower() == "true":
                 parsed.refused.append(
-                    f"{where} : contre-passation, ignorée volontairement."
+                    pick(
+                        f"{where} : contre-passation, ignorée volontairement.",
+                        f"{where}: reversal, deliberately skipped.",
+                    )
                 )
                 continue
 
             indicator = _text(_find(entry, "CdtDbtInd"))
             if indicator not in (_CREDIT, _DEBIT):
                 parsed.refused.append(
-                    f"{where} : sens du mouvement illisible ({indicator!r}). Il ne sera pas "
-                    f"importé plutôt que deviné."
+                    pick(
+                        f"{where} : sens du mouvement illisible ({indicator!r}). Il ne sera "
+                        f"pas importé plutôt que deviné.",
+                        f"{where}: the direction of this movement is unreadable "
+                        f"({indicator!r}). It will not be imported rather than guessed.",
+                    )
                 )
                 continue
             direction = "in" if indicator == _CREDIT else "out"
 
             entry_amount = _amount_of(entry)
             if entry_amount is None:
-                parsed.refused.append(f"{where} : montant ou devise illisible.")
+                parsed.refused.append(
+                    pick(
+                        f"{where} : montant ou devise illisible.",
+                        f"{where}: amount or currency unreadable.",
+                    )
+                )
                 continue
 
             value_date = _date_of(entry)
             if value_date is None:
                 parsed.refused.append(
-                    f"{where} : aucune date exploitable. Un mouvement sans date ne peut ni "
-                    f"porter d'intérêt ni entrer dans un relevé daté."
+                    pick(
+                        f"{where} : aucune date exploitable. Un mouvement sans date ne peut "
+                        f"ni porter d'intérêt ni entrer dans un relevé daté.",
+                        f"{where}: no usable date. A movement with no date can neither bear "
+                        f"interest nor appear on a dated statement.",
+                    )
                 )
                 continue
 

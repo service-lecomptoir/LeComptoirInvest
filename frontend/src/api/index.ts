@@ -4,7 +4,7 @@ import type {
   Statement, SubscriptionRequest, Waterfall,
   BillingSubscription, PaymentMethods, BillingPlan, BillingInvoice, BillingStatus,
   PerformanceBlock, CapitalAccountLine, ProjectValuation, LateCall, InvestorCategory,
-  CamtImport,
+  CamtImport, Fund, FundNetAssetValue,
 } from '@/types'
 
 export const authApi = {
@@ -147,4 +147,17 @@ export const performanceApi = {
     apiClient.get<CapitalAccountLine[]>('/capital-account', {
       params: { since, until, ...(investorId ? { investor_id: investorId } : {}) },
     }),
+}
+
+export const fundsApi = {
+  list: () => apiClient.get<Fund[]>('/funds'),
+  create: (body: Record<string, unknown>) => apiClient.post<Fund>('/funds', body),
+  setStatus: (id: string, body: { status: string; closed_on?: string | null }) =>
+    apiClient.post<Fund>(`/funds/${id}/status`, body),
+  // ⚠️ `fund_id` OMITTED MEANS « the vehicle no fund row was created for », not « all of
+  // them added together ». The server reads it that way in the waterfall and in the
+  // performance too; sending a different meaning from here would produce a total that
+  // reconciles with nothing.
+  netAssetValue: (params: { as_of: string; currency: string; fund_id?: string }) =>
+    apiClient.get<FundNetAssetValue[]>('/funds/net-asset-value', { params }),
 }

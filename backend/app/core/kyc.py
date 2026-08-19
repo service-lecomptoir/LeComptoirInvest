@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+from app.core.i18n import pick
 
 #: Never reviewed. The state every investor starts in.
 PENDING = "pending"
@@ -126,16 +127,21 @@ def refusal_reason(
     « refused » would send both to the same wrong place.
     """
     if blocks_money(status):
-        return (
+        return pick(
             f"Le dossier de cet investisseur est « {status} » : aucun mouvement ne peut "
-            f"lui être imputé tant qu'il n'est pas accepté."
+            f"lui être imputé tant qu'il n'est pas accepté.",
+            f"This investor's file reads « {status} »: nothing can be attributed to them "
+            f"until it is accepted.",
         )
     if is_stale(status, accepted_on, risk_level, today):
         due = review_due_on(accepted_on, risk_level)
-        return (
-            f"L'acceptation de cet investisseur devait être revue le "
-            f"{due.isoformat() if due else '?'} : elle n'est plus à jour, et aucun "
-            f"mouvement ne peut lui être imputé avant une nouvelle décision."
+        when = due.isoformat() if due else "?"
+        return pick(
+            f"L'acceptation de cet investisseur devait être revue le {when} : elle n'est "
+            f"plus à jour, et aucun mouvement ne peut lui être imputé avant une nouvelle "
+            f"décision.",
+            f"This investor's acceptance was due for review on {when}: it is no longer "
+            f"current, and nothing can be attributed to them before a fresh decision.",
         )
     return None
 
@@ -160,6 +166,10 @@ class Verdict:
             raise ValueError(f"Unknown KYC status {self.status!r}.")
         if self.status in (REFUSED, REVIEW) and not (self.reason or "").strip():
             raise ValueError(
-                f"A {self.status!r} verdict needs a reason: without one it can neither be "
-                f"reconsidered nor explained to the investor."
+                pick(
+                    f"Un verdict {self.status!r} exige un motif : sans lui, il ne peut "
+                    f"être ni reconsidéré ni expliqué à l'investisseur.",
+                    f"A {self.status!r} verdict needs a reason: without one it can neither "
+                    f"be reconsidered nor explained to the investor.",
+                )
             )

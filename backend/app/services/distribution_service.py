@@ -35,9 +35,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import accrual, instruments, money
 from app.core.instruments import EquityTerms, LoanTerms
+from app.models.fund import Fund
 from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.treasury import OUT, BankMovement, Contribution, Distribution
+from app.core.i18n import pick
 
 
 @dataclass(frozen=True)
@@ -128,7 +130,9 @@ class _Holding:
         return self.contributed - self.capital_repaid
 
 
-async def _holdings(db: AsyncSession, currency: str, as_of: date) -> list[_Holding]:
+async def _holdings(
+    db: AsyncSession, currency: str, as_of: date, fund_id: uuid.UUID | None = None
+) -> list[_Holding]:
     """Every open subscription in one currency, with what has been paid in and back out.
 
     ⚠️ « ALREADY SERVED » COUNTS DECIDED DISTRIBUTIONS, NOT ONLY PAID ONES, and that is a
@@ -145,6 +149,13 @@ async def _holdings(db: AsyncSession, currency: str, as_of: date) -> list[_Holdi
                 .where(
                     Subscription.currency == currency,
                     Subscription.converted_on.is_(None),
+                    # 🔴 THE VEHICLE IS PART OF THE SCOPE, and NULL is a scope of its own.
+                    # `== None` would be a comparison SQLAlchemy turns into `IS NULL`, which
+                    # is what we want; written explicitly so nobody « fixes » it into an
+                    # equality that silently matches nothing.
+                    Subscription.fund_id.is_(fund_id)
+                    if fund_id is None
+                    else Subscription.fund_id == fund_id,
                 )
                 .order_by(Subscription.signed_on)
             )
@@ -259,22 +270,31 @@ def _equity_terms(raw: dict | None) -> EquityTerms:
 
 
 def _shared_equity_terms(
-    equity: list[_Holding],
+    equity: list[_Holding], fund: Fund | None = None
 ) -> tuple[EquityTerms | None, str | None]:
-    """The terms common to every subscriber, or the reason to refuse.
+    """The terms that govern this distribution, or the reason to refuse.
 
-    🔴 A HURDLE AND A CARRY ARE THE FUND'S ECONOMICS, NOT ONE INVESTOR'S. They are stored on
-    the subscription because that is where `terms` lives, but they describe the vehicle: the
-    carry is computed on EVERYBODY'S surplus, and two subscribers carrying different rates do
-    not describe two contracts — they describe a waterfall this module cannot compute.
+    🔴 A HURDLE AND A CARRY ARE THE FUND'S ECONOMICS, NOT ONE INVESTOR'S. The carry is
+    computed on EVERYBODY'S surplus at once, so two subscribers carrying different rates do
+    not describe two contracts — they describe a waterfall with no single answer.
 
-    ⚠️ SO IT REFUSES, IT DOES NOT AVERAGE. Taking the first rate, or the mean, or the lowest,
-    would produce a plausible and wrong number, and the gap would come out of somebody's
-    share. Share classes on distinct terms exist and are legitimate; serving them needs a
-    per-class waterfall, which remains to be written.
+    🔴 AND THE VEHICLE NOW ANSWERS. Until it existed, these terms lived on each subscription
+    because that is where a terms column happened to be, and this function had to refuse
+    whenever two subscribers disagreed — a refusal that was correct and that NOBODY COULD
+    RESOLVE, since no object held the fund's own agreement. When a fund states its terms they
+    govern, and the disagreement stops being a dead end.
+
+    ⚠️ WITHOUT A FUND IT STILL REFUSES RATHER THAN AVERAGES. Taking the first rate, or the
+    mean, or the lowest, would produce a plausible and wrong number, and the gap would come
+    out of somebody's share.
     """
     if not equity:
         return None, None
+
+    if fund is not None and fund.terms:
+        # The vehicle's own agreement. It does not merely win a tie: it is the statement the
+        # subscribers signed up to, and a per-subscription copy is at best an echo of it.
+        return _equity_terms(fund.terms), None
     # 🔴 EVERY ECONOMIC TERM IS COMPARED, NOT A CHOSEN FEW. A tuple that named only two of
     # the three silently dropped the management fee: the rebuilt terms carried a fee of zero,
     # the waterfall took nothing, and no test of the fee itself would have caught it because
@@ -287,14 +307,16 @@ def _shared_equity_terms(
         for t in (_equity_terms(h.subscription.terms) for h in equity)
     }
     if len(distinct) > 1:
-        lisible = " ; ".join(
+        readable = " ; ".join(
             ", ".join(f"{name} {value:.2%}" for name, value in zip(_FIELDS, values))
             for values in sorted(distinct)
         )
-        return None, (
-            f"Les souscripteurs ne portent pas les mêmes conditions ({lisible}). Une cascade "
-            f"par classe de parts n'est pas calculée ici : tant que les conditions divergent, "
-            f"aucune répartition n'est proposée."
+        return None, pick(
+            f"Les souscripteurs ne portent pas les mêmes conditions ({readable}). Une "
+            f"cascade par classe de parts n'est pas calculée ici : tant que les conditions "
+            f"divergent, aucune répartition n'est proposée.",
+            f"The subscribers do not carry the same terms ({readable}). A waterfall by share "
+            f"class is not computed here: while the terms differ, no split is proposed.",
         )
     return EquityTerms(**dict(zip(_FIELDS, distinct.pop()))), None
 
@@ -305,6 +327,7 @@ async def propose(
     currency: str,
     amount: Decimal,
     as_of: date,
+    fund_id: uuid.UUID | None = None,
     repay_capital: bool = False,
 ) -> Waterfall:
     """Who gets what out of `amount`, and what stops it.
@@ -315,13 +338,17 @@ async def propose(
     the amount alone. Guessing would mislabel capital as income on somebody's tax statement,
     and the investor cannot detect it from the figure they receive.
     """
-    holdings = await _holdings(db, currency, as_of)
+    fund = await db.get(Fund, fund_id) if fund_id is not None else None
+    holdings = await _holdings(db, currency, as_of, fund_id)
     if not holdings:
         return Waterfall(
             currency=currency,
             available=amount,
             as_of=as_of,
-            blocked_reason=f"Aucune souscription ouverte en {currency}.",
+            blocked_reason=pick(
+                f"Aucune souscription ouverte en {currency}.",
+                f"No open subscription in {currency}.",
+            ),
         )
 
     unknown = [
@@ -335,10 +362,13 @@ async def propose(
             available=amount,
             as_of=as_of,
             unknown=unknown,
-            blocked_reason=(
+            blocked_reason=pick(
                 f"{len(unknown)} prêt(s) dont le montant dû n'est pas calculable : tant "
-                f"qu'il l'est pas, « les prêteurs sont-ils couverts » n'a pas de réponse, "
-                f"et rien ne peut être proposé aux souscripteurs."
+                f"qu'il ne l'est pas, « les prêteurs sont-ils couverts » n'a pas de "
+                f"réponse, et rien ne peut être proposé aux souscripteurs.",
+                f"{len(unknown)} loan(s) whose amount due cannot be measured: until it is, "
+                f"« are the lenders covered » has no answer, and nothing can be proposed to "
+                f"the subscribers.",
             ),
         )
 
@@ -391,17 +421,20 @@ async def propose(
         # 🔴 THE GUARD, and the reason the ordering is worth anything. Not « subscribers
         # come second »: subscribers come after the debt is COVERED, because paying them out
         # of the cash owed on the next instalment is what causes the default.
-        blocked = (
+        blocked = pick(
             f"Les prêteurs restent dus de {debt_remaining} {currency} : aucune somme ne "
-            f"peut aller aux souscripteurs tant que cette dette n'est pas couverte."
+            f"peut aller aux souscripteurs tant que cette dette n'est pas couverte.",
+            f"The lenders are still owed {debt_remaining} {currency}: nothing can go to the "
+            f"subscribers while that debt stands.",
         )
     elif remaining > 0 and equity:
         weights = [h.capital_at_work for h in equity]
-        terms, disagreement = _shared_equity_terms(equity)
+        terms, disagreement = _shared_equity_terms(equity, fund)
         if sum(weights, Decimal("0")) <= 0:
-            blocked = (
+            blocked = pick(
                 "Aucun souscripteur n'a de capital au travail : il n'y a rien à répartir "
-                "au prorata."
+                "au prorata.",
+                "No subscriber has capital at work: there is nothing to split pro rata.",
             )
         elif disagreement is not None:
             blocked = disagreement
@@ -572,17 +605,30 @@ async def pay(
     """
     if movement.direction != OUT:
         raise ValueError(
-            "Une distribution s'impute sur un virement SORTANT : ce mouvement est une "
-            "entrée."
+            pick(
+                "Une distribution s'impute sur un virement SORTANT : ce mouvement est une "
+                "entrée.",
+                "A distribution is attributed to an OUTGOING transfer: this movement is an "
+                "incoming one.",
+            )
         )
     if movement.currency != distribution.currency:
         raise ValueError(
-            f"Le virement est en {movement.currency} et la distribution en "
-            f"{distribution.currency}. Une conversion est un événement daté, à un cours "
-            f"donné."
+            pick(
+                f"Le virement est en {movement.currency} et la distribution en "
+                f"{distribution.currency}. Une conversion est un événement daté, à un "
+                f"cours donné.",
+                f"The transfer is in {movement.currency} and the distribution in "
+                f"{distribution.currency}. A conversion is a dated event, at a stated rate.",
+            )
         )
     if distribution.paid_on is not None:
-        raise ValueError("Cette distribution est déjà payée.")
+        raise ValueError(
+            pick(
+                "Cette distribution est déjà payée.",
+                "This distribution has already been paid.",
+            )
+        )
 
     already = (
         await db.execute(
@@ -594,8 +640,12 @@ async def pay(
     used = sum((c + i for c, i in already), Decimal("0"))
     if distribution.net_paid > movement.amount - used:
         raise ValueError(
-            f"Ce virement ne porte plus que {movement.amount - used} {movement.currency} "
-            f"à imputer, et {distribution.net_paid} sont demandés."
+            pick(
+                f"Ce virement ne porte plus que {movement.amount - used} "
+                f"{movement.currency} à imputer, et {distribution.net_paid} sont demandés.",
+                f"This transfer has only {movement.amount - used} {movement.currency} left "
+                f"to attribute, and {distribution.net_paid} is being asked for.",
+            )
         )
 
     distribution.bank_movement_id = movement.id
@@ -605,14 +655,14 @@ async def pay(
 
 
 async def owed_to_lenders(
-    db: AsyncSession, *, currency: str, as_of: date
+    db: AsyncSession, *, currency: str, as_of: date, fund_id: uuid.UUID | None = None
 ) -> tuple[Decimal, list[tuple[uuid.UUID, str]]]:
     """What the fund owes its lenders right now, and what it could not measure.
 
     Read by the treasury screen so the fund sees its debt beside its cash. A balance shown
     without the debt it already carries is the figure that gets distributed.
     """
-    holdings = await _holdings(db, currency, as_of)
+    holdings = await _holdings(db, currency, as_of, fund_id)
     loans = [h for h in holdings if h.subscription.instrument == instruments.LOAN]
     unknown = [
         (h.subscription.id, h.due.unavailable_reason)

@@ -27,6 +27,7 @@ from app.api.deps import current_manager
 from app.models.user import User
 from app.services import alice_client
 from app.services.alice_client import AliceUnavailable
+from app.core.i18n import pick
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/billing", tags=["billing"])
@@ -69,12 +70,14 @@ def _as_info(license_: dict | None) -> SubscriptionInfo:
     )
 
 
-@router.get("", response_model=SubscriptionInfo, summary="Mon abonnement")
+@router.get(
+    "", response_model=SubscriptionInfo, summary="The manager's own subscription"
+)
 async def my_subscription(user: User = Depends(current_manager)) -> SubscriptionInfo:
     return _as_info(await alice_client.get_license(user.id))
 
 
-@router.get("/payment-methods", summary="Moyens de paiement proposés")
+@router.get("/payment-methods", summary="Payment methods on offer")
 async def payment_methods(_: User = Depends(current_manager)) -> dict:
     """What this product can actually collect: card/SEPA through Stripe, and/or transfer.
 
@@ -98,14 +101,14 @@ async def payment_methods(_: User = Depends(current_manager)) -> dict:
     }
 
 
-@router.get("/status", summary="État de l'abonnement payant")
+@router.get("/status", summary="State of the paid subscription")
 async def billing_status(user: User = Depends(current_manager)) -> dict:
     """The Stripe subscription in force, if there is one. Degrades softly."""
     data = await alice_client.billing("GET", "status", user.id, strict=False)
     return data or {"stripe_enabled": False, "has_subscription": False}
 
 
-@router.get("/plans", summary="Offres auxquelles souscrire")
+@router.get("/plans", summary="Plans available to subscribe to")
 async def available_plans(user: User = Depends(current_manager)) -> list:
     """The sellable « fund » plans, and only those.
 
@@ -126,7 +129,7 @@ def _unavailable(exc: AliceUnavailable) -> HTTPException:
     return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc))
 
 
-@router.post("/checkout", summary="Payer par carte ou prélèvement SEPA")
+@router.post("/checkout", summary="Pay by card or SEPA direct debit")
 async def checkout(
     body: _PlanIn | None = None, user: User = Depends(current_manager)
 ) -> dict:
@@ -142,7 +145,7 @@ async def checkout(
         raise _unavailable(exc)
 
 
-@router.post("/portal", summary="Gérer son moyen de paiement")
+@router.post("/portal", summary="Manage the payment method")
 async def portal(user: User = Depends(current_manager)) -> dict:
     """The portal where a card is changed, receipts read, and the subscription stopped."""
     try:
@@ -151,7 +154,7 @@ async def portal(user: User = Depends(current_manager)) -> dict:
         raise _unavailable(exc)
 
 
-@router.post("/declare-transfer", summary="Déclarer un paiement par virement")
+@router.post("/declare-transfer", summary="Declare a payment made by transfer")
 async def declare_transfer(user: User = Depends(current_manager)) -> dict:
     """The manager reports having sent the transfer: the console waits and reconciles.
 
@@ -164,7 +167,7 @@ async def declare_transfer(user: User = Depends(current_manager)) -> dict:
         raise _unavailable(exc)
 
 
-@router.post("/cancel-transfer", summary="Annuler sa déclaration de virement")
+@router.post("/cancel-transfer", summary="Cancel a declared transfer")
 async def cancel_transfer(user: User = Depends(current_manager)) -> dict:
     try:
         return await alice_client.billing("POST", "cancel-transfer", user.id) or {}
@@ -172,10 +175,13 @@ async def cancel_transfer(user: User = Depends(current_manager)) -> dict:
         raise _unavailable(exc)
 
 
-@router.post("/change-plan", summary="Changer d'offre")
+@router.post("/change-plan", summary="Change plan")
 async def change_plan(body: _PlanIn, user: User = Depends(current_manager)) -> dict:
     if not body.plan_id:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Préciser l'offre choisie.")
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            pick("Préciser l'offre choisie.", "Say which plan was chosen."),
+        )
     try:
         return (
             await alice_client.billing(
@@ -190,14 +196,17 @@ async def change_plan(body: _PlanIn, user: User = Depends(current_manager)) -> d
         raise _unavailable(exc)
 
 
-@router.post("/change-plan-preview", summary="Estimer le coût d'un changement d'offre")
+@router.post("/change-plan-preview", summary="Estimate the cost of changing plan")
 async def change_plan_preview(
     body: _PlanIn, user: User = Depends(current_manager)
 ) -> dict:
     """The prorated amount, before committing. Degrades softly: a missing estimate beats a
     plan-change screen nobody can open."""
     if not body.plan_id:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Préciser l'offre choisie.")
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            pick("Préciser l'offre choisie.", "Say which plan was chosen."),
+        )
     data = await alice_client.billing(
         "POST",
         "change-plan-preview",
@@ -208,12 +217,12 @@ async def change_plan_preview(
     return data or {}
 
 
-@router.get("/invoices", summary="Mes factures d'abonnement")
+@router.get("/invoices", summary="The manager's own invoices")
 async def invoices(user: User = Depends(current_manager)) -> list:
     return await alice_client.invoices(user.id)
 
 
-@router.get("/invoices/{invoice_id}/pdf", summary="Le PDF d'une facture")
+@router.get("/invoices/{invoice_id}/pdf", summary="An invoice as a PDF")
 async def invoice_pdf(
     invoice_id: str, user: User = Depends(current_manager)
 ) -> Response:
@@ -222,7 +231,10 @@ async def invoice_pdf(
     by changing one digit in the address."""
     found = await alice_client.invoice_pdf(user.id, invoice_id)
     if found is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Facture introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Facture introuvable.", "Invoice not found."),
+        )
     content, disposition = found
     return Response(
         content=content,
@@ -231,7 +243,7 @@ async def invoice_pdf(
     )
 
 
-@router.get("/payments", summary="Historique des paiements")
+@router.get("/payments", summary="Payment history")
 async def payments(user: User = Depends(current_manager)) -> list:
     data = await alice_client.billing("GET", "payments", user.id, strict=False)
     return data if isinstance(data, list) else []

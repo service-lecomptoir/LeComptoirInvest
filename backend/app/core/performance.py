@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
+from app.core.i18n import pick
 
 #: The day count an IRR is computed on. Stated rather than implied: an annualised rate
 #: means nothing until the length of a year is agreed, and ACT/365 is the convention this
@@ -119,21 +120,26 @@ def internal_rate_of_return(flows: list[Flow]) -> tuple[Decimal | None, str | No
     hundred per cent — it is that the question has no solution yet, and the reason says so.
     """
     if len(flows) < 2:
-        return None, (
+        return None, pick(
             "Un taux de rendement demande au moins deux mouvements datés : un versement et "
-            "un retour."
+            "un retour.",
+            "A rate of return needs at least two dated movements: money in and money back.",
         )
     ordered = sorted(flows, key=lambda f: f.on)
     if all(f.amount >= 0 for f in ordered) or all(f.amount <= 0 for f in ordered):
-        return None, (
+        return None, pick(
             "Tous les mouvements vont dans le même sens : tant que rien n'est revenu (ou "
-            "que rien n'a été versé), aucun taux de rendement n'existe."
+            "que rien n'a été versé), aucun taux de rendement n'existe.",
+            "Every movement goes the same way: while nothing has come back (or nothing was "
+            "paid in), no rate of return exists.",
         )
     origin = ordered[0].on
     if ordered[-1].on == origin:
-        return None, (
+        return None, pick(
             "Tous les mouvements portent la même date : un rendement annualisé n'a pas de "
-            "sens sur une durée nulle."
+            "sens sur une durée nulle.",
+            "Every movement carries the same date: an annualised return means nothing over "
+            "no time at all.",
         )
 
     low, high = _LOWER_BOUND, _UPPER_BOUND
@@ -143,9 +149,11 @@ def internal_rate_of_return(flows: list[Flow]) -> tuple[Decimal | None, str | No
         # No sign change across the whole bracket: nothing to converge on. Non-conventional
         # flows (several sign changes) can genuinely have several roots or none, and
         # picking one would be arbitrary.
-        return None, (
+        return None, pick(
             "Aucun taux ne rend la valeur actuelle nulle sur la plage recherchée : la suite "
-            "de mouvements n'admet pas de rendement unique."
+            "de mouvements n'admet pas de rendement unique.",
+            "No rate brings the present value to zero across the searched range: this set of "
+            "movements admits no single return.",
         )
 
     for _ in range(_MAX_ITERATIONS):
@@ -161,7 +169,10 @@ def internal_rate_of_return(flows: list[Flow]) -> tuple[Decimal | None, str | No
     # ever getting small, which is a degenerate flow set rather than a slow one.
     if abs(high - low) < 1e-9:
         return Decimal(str(round((low + high) / 2, 6))), None
-    return None, "Le taux de rendement n'a pas convergé sur cette suite de mouvements."
+    return None, pick(
+        "Le taux de rendement n'a pas convergé sur cette suite de mouvements.",
+        "The rate of return did not converge on this set of movements.",
+    )
 
 
 def measure(
@@ -187,9 +198,11 @@ def measure(
             paid_in=Decimal("0"),
             distributed=distributed,
             residual_value=residual_value,
-            unavailable_reason=(
+            unavailable_reason=pick(
                 "Aucun versement n'a encore été constaté : il n'y a pas de capital investi "
-                "sur lequel mesurer un rendement."
+                "sur lequel mesurer un rendement.",
+                "No contribution has been recorded yet: there is no invested capital to "
+                "measure a return on.",
             ),
         )
 
@@ -211,10 +224,13 @@ def measure(
 
     reason = None
     if residual_value is None:
-        reason = (
+        reason = pick(
             "Aucune valorisation des positions ouvertes n'a été enregistrée : le TVPI, le "
             "RVPI et le rendement complet ne peuvent pas être calculés. Les chiffres "
-            "affichés ne portent que sur ce qui est déjà revenu."
+            "affichés ne portent que sur ce qui est déjà revenu.",
+            "No valuation of the open positions has been recorded: TVPI, RVPI and the full "
+            "rate of return cannot be computed. The figures shown cover only what has "
+            "already come back.",
         )
     if irr_reason:
         reason = f"{reason} {irr_reason}".strip() if reason else irr_reason

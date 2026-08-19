@@ -16,27 +16,40 @@ from app.core.security import read_access_token
 from app.database import get_db
 from app.models.investor import Investor
 from app.models.user import User
+from app.core.i18n import pick
 
 
 async def current_user(
     authorization: str | None = Header(default=None), db: AsyncSession = Depends(get_db)
 ) -> User:
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Authentification requise.")
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            pick("Authentification requise.", "Sign in required."),
+        )
     claims = read_access_token(authorization.split(" ", 1)[1])
     if not claims or not claims.get("sub"):
         raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED, "Session expirée ou invalide."
+            status.HTTP_401_UNAUTHORIZED,
+            pick("Session expirée ou invalide.", "Session expired or invalid."),
         )
     user = await db.get(User, uuid.UUID(claims["sub"]))
     if user is None or not user.is_active:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Compte inactif.")
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            pick("Compte inactif.", "This account is inactive."),
+        )
     return user
 
 
 async def current_manager(user: User = Depends(current_user)) -> User:
     if not user.sees_whole_fund:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé à la gestion du fonds.")
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            pick(
+                "Réservé à la gestion du fonds.", "Restricted to the fund's management."
+            ),
+        )
     return user
 
 
@@ -59,6 +72,9 @@ async def investor_scope(
     if found is None:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
-            "Ce compte n'est rattaché à aucun investisseur : rien à afficher.",
+            pick(
+                "Ce compte n'est rattaché à aucun investisseur : rien à afficher.",
+                "This account is attached to no investor: there is nothing to show.",
+            ),
         )
     return found

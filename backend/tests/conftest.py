@@ -213,3 +213,22 @@ async def db(migrated_schema: str) -> AsyncSession:
             await session.rollback()
             await session.close()
     await engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def the_language_never_survives_one_test():
+    """🔴 THE LEAK THIS PRODUCT'S OWN GUARD WARNS ABOUT, CAUGHT BY ITS OWN TEST SUITE.
+
+    The reader's language is a `ContextVar`, which is what lets a refusal built deep in a
+    pure function know who is reading it. A test that sets it and does not put it back leaves
+    every later test reading English - and the first version of
+    `test_the_reader_is_refused_in_their_own_language` did exactly that, turning three
+    unrelated assertions on French sentences red.
+
+    Resetting here rather than in each test is deliberate: a rule that every author has to
+    remember is a rule that one of them will not.
+    """
+    from app.core import i18n
+
+    with i18n.use_lang(i18n.DEFAULT):
+        yield

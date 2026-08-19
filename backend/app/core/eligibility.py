@@ -25,6 +25,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
+from app.core.i18n import pick
 
 #: An individual investing their own savings. The category the protections exist for.
 RETAIL = "retail"
@@ -89,15 +90,20 @@ def warning_threshold(
     if loss_bearing_capacity is None:
         return Threshold(
             amount=None,
-            unavailable_reason=(
+            unavailable_reason=pick(
                 "La capacité de perte de cet investisseur n'a pas été déclarée : le seuil "
-                "au-delà duquel un avertissement est requis ne peut pas être établi."
+                "au-delà duquel un avertissement est requis ne peut pas être établi.",
+                "This investor's loss-bearing capacity has not been declared: the threshold "
+                "above which a warning is required cannot be established.",
             ),
         )
     if loss_bearing_capacity < 0:
         return Threshold(
             amount=None,
-            unavailable_reason="La capacité de perte déclarée est négative.",
+            unavailable_reason=pick(
+                "La capacité de perte déclarée est négative.",
+                "The declared loss-bearing capacity is negative.",
+            ),
         )
     return Threshold(amount=max(FLAT_THRESHOLD, loss_bearing_capacity * CAPACITY_SHARE))
 
@@ -149,9 +155,11 @@ def may_bind(
     ends = reflection_period_ends(requested_on=requested_on, category=category)
     if ends is None or on > ends:
         return True, None
-    return False, (
+    return False, pick(
         f"Le délai de réflexion de cet investisseur court jusqu'au {ends.isoformat()} : "
-        f"aucun engagement ne peut être signé avant, et il peut se rétracter d'ici là."
+        f"aucun engagement ne peut être signé avant, et il peut se rétracter d'ici là.",
+        f"This investor's reflection period runs until {ends.isoformat()}: no commitment may "
+        f"be signed before then, and they may step back until it ends.",
     )
 
 

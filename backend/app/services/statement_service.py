@@ -30,6 +30,7 @@ from app.core import instruments
 from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.treasury import BankMovement, Contribution, Distribution
+from app.core.i18n import pick
 
 
 @dataclass
@@ -97,7 +98,7 @@ async def statement_for(
     """Everything one investor was PAID in one calendar year, split as a return needs it."""
     investor = await db.get(Investor, investor_id)
     if investor is None:
-        raise ValueError("Investisseur introuvable.")
+        raise ValueError(pick("Investisseur introuvable.", "Investor not found."))
 
     subscriptions = (
         (

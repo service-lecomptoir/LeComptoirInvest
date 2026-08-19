@@ -19,6 +19,7 @@ from app.api.deps import current_user, investor_scope
 from app.database import get_db
 from app.models.user import User
 from app.services import performance_service, portfolio_service
+from app.core.i18n import pick
 
 router = APIRouter(tags=["performance"])
 
@@ -44,6 +45,7 @@ class PerformanceOut(BaseModel):
 async def performance(
     as_of: date | None = None,
     investor_id: uuid.UUID | None = None,
+    fund_id: uuid.UUID | None = None,
     scope: uuid.UUID | None = Depends(investor_scope),
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
@@ -58,7 +60,10 @@ async def performance(
     if as_of is None:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            "Préciser la date à laquelle la performance est arrêtée.",
+            pick(
+                "Préciser la date à laquelle la performance est arrêtée.",
+                "Say which date the performance is measured to.",
+            ),
         )
     if scope is not None:
         target = scope
@@ -71,11 +76,15 @@ async def performance(
             not user.sees_whole_fund
         ):  # pragma: no cover - investor_scope already refused
             raise HTTPException(
-                status.HTTP_403_FORBIDDEN, "Réservé à la gestion du fonds."
+                status.HTTP_403_FORBIDDEN,
+                pick(
+                    "Réservé à la gestion du fonds.",
+                    "Restricted to the fund's management.",
+                ),
             )
 
     measured = await performance_service.performance(
-        db, as_of=as_of, investor_id=target
+        db, as_of=as_of, investor_id=target, fund_id=fund_id
     )
     return [PerformanceOut(**vars(m)) for m in measured]
 
@@ -112,7 +121,10 @@ async def capital_account(
     if target is None:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            "Préciser l'investisseur dont on veut le relevé de compte.",
+            pick(
+                "Préciser l'investisseur dont on veut le relevé de compte.",
+                "Say which investor the capital account is for.",
+            ),
         )
     try:
         lines = await portfolio_service.capital_account(

@@ -68,6 +68,15 @@ APPROVED: dict[str, str] = {
     "RETAIL": "retail",
     "SOPHISTICATED": "sophisticated",
     "PROFESSIONAL": "professional",
+    # The vehicle's life. `CLOSED` above is shared with a project's: both mean « nothing
+    # left to do here », and one word for one meaning is the point of an inventory.
+    "RAISING": "raising",
+    "INVESTING": "investing",
+    "HARVESTING": "harvesting",
+    # ⚠️ A LANGUAGE TAG, NOT FRENCH PROSE. `users.locale` stores it, so it belongs in this
+    # inventory; but « fr » is BCP 47 and translating it would be the defect. It is listed
+    # here so the next reader sees it was looked at rather than missed.
+    "DEFAULT": "fr",
     # Accounts
     "ADMIN": "admin",
     "MANAGER": "manager",

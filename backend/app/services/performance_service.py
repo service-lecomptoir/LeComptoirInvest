@@ -31,7 +31,10 @@ from app.services import valuation_service
 
 
 async def flows_by_currency(
-    db: AsyncSession, *, investor_id: uuid.UUID | None = None
+    db: AsyncSession,
+    *,
+    investor_id: uuid.UUID | None = None,
+    fund_id: uuid.UUID | None = None,
 ) -> dict[str, list[Flow]]:
     """Every dated movement, grouped by currency.
 
@@ -40,12 +43,28 @@ async def flows_by_currency(
     more here: a mixed IRR is not merely unreadable, it is arithmetically meaningless.
 
     `investor_id` limits it to one holder; without it the answer is the fund's own.
+
+    🔴 AND `fund_id` IS NOT AN OPTIONAL REFINEMENT ONCE A SECOND VEHICLE EXISTS. Without it
+    an investor who subscribed to two funds gets ONE rate covering both, which is a return on
+    a holding that exists nowhere - and the two funds have different terms, different
+    projects and different lives. Left as None it means « every vehicle », which is the right
+    answer for a platform with one.
     """
     subscriptions_query = select(Subscription.id, Subscription.currency)
     if investor_id is not None:
         subscriptions_query = subscriptions_query.where(
             Subscription.investor_id == investor_id
         )
+    # 🔴 None MEANS « THE UNATTACHED VEHICLE », NOT « ALL OF THEM », and it means that in
+    # `distribution_service._holdings` and in `valuation_service.net_asset_value` too. One
+    # convention, because the residual value below comes from those: flows covering every
+    # fund divided by a residual covering one produces a TVPI of nothing in particular, and
+    # it is a plausible figure.
+    subscriptions_query = subscriptions_query.where(
+        Subscription.fund_id.is_(fund_id)
+        if fund_id is None
+        else Subscription.fund_id == fund_id
+    )
     currency_of = {
         sub_id: currency
         for sub_id, currency in (await db.execute(subscriptions_query)).all()
@@ -96,6 +115,7 @@ async def performance(
     *,
     as_of: date,
     investor_id: uuid.UUID | None = None,
+    fund_id: uuid.UUID | None = None,
 ) -> list[Performance]:
     """One measure per currency, for one investor or for the whole fund.
 
@@ -108,11 +128,17 @@ async def performance(
     asset value unknown; the measure then reports what has come back and says why the rest
     is missing, exactly as before. Nothing here invents a figure.
     """
-    flows_per_currency = await flows_by_currency(db, investor_id=investor_id)
+    flows_per_currency = await flows_by_currency(
+        db, investor_id=investor_id, fund_id=fund_id
+    )
     out: list[Performance] = []
     for currency, flows in sorted(flows_per_currency.items()):
         residual = await valuation_service.residual_value_of(
-            db, currency=currency, as_of=as_of, investor_id=investor_id
+            db,
+            currency=currency,
+            as_of=as_of,
+            investor_id=investor_id,
+            fund_id=fund_id,
         )
         out.append(
             measure(

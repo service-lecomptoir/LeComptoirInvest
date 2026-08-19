@@ -22,6 +22,7 @@ from uuid import UUID
 import httpx
 
 from app.config import get_settings
+from app.core.i18n import pick
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,12 @@ async def _call(
     target = _target()
     if target is None:
         if strict:
-            raise AliceUnavailable("Aucune console d'abonnement n'est configurée.")
+            raise AliceUnavailable(
+                pick(
+                    "Aucune console d'abonnement n'est configurée.",
+                    "No subscription console is configured.",
+                )
+            )
         return None
     base, headers = target
     try:
@@ -72,7 +78,10 @@ async def _call(
         logger.warning("Alice %s %s injoignable : %s", method, path, exc)
         if strict:
             raise AliceUnavailable(
-                "Le service d'abonnement est momentanément indisponible."
+                pick(
+                    "Le service d'abonnement est momentanément indisponible.",
+                    "The subscription service is temporarily unavailable.",
+                )
             )
         return None
     if resp.status_code == 404:
@@ -86,7 +95,11 @@ async def _call(
         logger.warning("Alice %s %s -> %s %s", method, path, resp.status_code, detail)
         if strict:
             raise AliceUnavailable(
-                detail or "Le service d'abonnement a refusé la demande."
+                detail
+                or pick(
+                    "Le service d'abonnement a refusé la demande.",
+                    "The subscription service refused the request.",
+                )
             )
         return None
     if not resp.content:

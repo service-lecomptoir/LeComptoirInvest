@@ -15,6 +15,7 @@ from app.core.security import (
 )
 from app.database import get_db
 from app.models.user import User
+from app.core.i18n import pick
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -39,9 +40,15 @@ async def login(data: LoginIn, db: AsyncSession = Depends(get_db)):
     # ⚠️ ONE MESSAGE FOR BOTH FAILURES. Saying « unknown e-mail » tells whoever is asking
     # which addresses hold accounts, and on a fund that list is worth something on its own.
     if user is None or not verify_password(data.password, user.hashed_password):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Identifiants incorrects.")
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            pick("Identifiants incorrects.", "Wrong credentials."),
+        )
     if not user.is_active:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Ce compte est désactivé.")
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            pick("Ce compte est désactivé.", "This account is disabled."),
+        )
     return LoginOut(
         access_token=create_access_token(str(user.id), user.role),
         role=user.role,
@@ -98,13 +105,19 @@ async def change_password(
     """
     if not verify_password(data.current_password, user.hashed_password):
         raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Le mot de passe actuel est incorrect."
+            status.HTTP_400_BAD_REQUEST,
+            pick(
+                "Le mot de passe actuel est incorrect.",
+                "The current password is wrong.",
+            ),
         )
     if verify_password(data.new_password, user.hashed_password):
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            "Le nouveau mot de passe est identique à l'ancien : il n'a pas cessé d'être "
-            "connu de qui vous l'a transmis.",
+            pick(
+                "Le nouveau mot de passe est identique à l'ancien : il n'a pas cessé d'être connu de qui vous l'a transmis.",
+                "The new password is the same as the old one: whoever handed it to you still knows it.",
+            ),
         )
     user.hashed_password = hash_password(data.new_password)
     user.must_change_password = False

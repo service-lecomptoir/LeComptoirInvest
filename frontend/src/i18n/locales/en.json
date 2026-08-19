@@ -48,7 +48,8 @@
     "myAccount": "My account",
     "billing": "Subscription",
     "performance": "Performance",
-    "lateCalls": "Late calls"
+    "lateCalls": "Late calls",
+    "funds": "The vehicles"
   },
   "login": {
     "title": "Sign in",
@@ -514,5 +515,45 @@
     "unsentTitle_one": "{{count}} call never notified",
     "unsentTitle_other": "{{count}} calls never notified",
     "unsentHint": "These calls were never sent: it is the first notice that is missing, not a reminder. Chasing them would blame the investor for the fund's own omission."
+  },
+  "funds": {
+    "title": "The vehicles",
+    "subtitle": "What groups the projects and the subscribers, and whose terms they share.",
+    "open": "Open a vehicle",
+    "name": "Name",
+    "status": "Status",
+    "currency": "Currency",
+    "iban": "The vehicle's account",
+    "ibanHint": "Its own account. Without one, and with another vehicle in existence, the cash cannot be split between them and the net asset value cannot be totalled.",
+    "terms": "Terms",
+    "opened": "Opened on",
+    "mandate": "Mandate",
+    "preferredReturn": "Preferred return (%)",
+    "carriedInterest": "Carried interest (%)",
+    "managementFee": "Management fee (%)",
+    "hurdle": "Preferred",
+    "carry": "Carry",
+    "fee": "Fee",
+    "noTerms": "No terms recorded",
+    "none": "No vehicle recorded",
+    "noneHint": "While no vehicle is open, the projects and the subscriptions belong to the implicit vehicle, and everything is computed for it.",
+    "cashNotSeparable": "No account of its own while another vehicle exists: its net asset value cannot be totalled.",
+    "statusChanged": "{{name}} changed status.",
+    "statuses": {
+      "raising": "Raising",
+      "investing": "Investing",
+      "harvesting": "Harvesting",
+      "closed": "Closed"
+    },
+    "whichVehicle": "Which vehicle",
+    "unattached": "The implicit vehicle",
+    "asOf": "Measured to",
+    "projects": "Projects",
+    "cash": "Cash",
+    "debt": "Owed to lenders",
+    "netAssetValue": "Net asset value",
+    "cannotTotal": "The net asset value cannot be totalled",
+    "noValue": "No net asset value on that date",
+    "noValueHint": "Pick a vehicle and a date: the net asset value adds the projects to the cash, then deducts what the lenders are owed."
   }
 }

@@ -120,6 +120,15 @@ class Subscription(Base, TimestampMixin):
     __tablename__ = "subscriptions"
 
     id: Mapped[uuid.UUID] = uuid_pk()
+    #: 🔴 WHICH VEHICLE THIS COMMITMENT IS IN, and the waterfall now asks. Without it every
+    #: distribution scoped by currency alone would serve one fund's cash to another fund's
+    #: subscribers, and reconcile perfectly while doing it. NULL is the unattached pool.
+    fund_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("funds.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
     investor_id: Mapped[uuid.UUID] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("investors.id", ondelete="RESTRICT"),

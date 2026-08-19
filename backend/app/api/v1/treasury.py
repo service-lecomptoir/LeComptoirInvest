@@ -13,10 +13,12 @@ from app.api.deps import current_manager, investor_scope
 from app.core import camt
 from app.core import fund_time
 from app.database import get_db
+from app.models.fund import Fund
 from app.models.subscription import Subscription
 from app.models.treasury import IN, BankMovement, CapitalCall
 from app.models.user import User
 from app.services import call_chasing_service, treasury_service
+from app.core.i18n import pick
 
 router = APIRouter(prefix="/treasury", tags=["treasury"])
 
@@ -134,12 +136,15 @@ async def import_camt(
     """
     raw = await file.read()
     if not raw:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Fichier vide.")
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, pick("Fichier vide.", "Empty file.")
+        )
     parsed = camt.parse(raw)
     if not parsed.lines and parsed.refused:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "Aucun mouvement n'a pu être lu : " + " | ".join(parsed.refused[:5]),
+            pick("Aucun mouvement n'a pu être lu : ", "No movement could be read: ")
+            + " | ".join(parsed.refused[:5]),
         )
 
     created: list[BankMovement] = []
@@ -230,10 +235,16 @@ async def attribute(
     """A human says whose money this is. The proposal never does it on its own."""
     movement = await db.get(BankMovement, movement_id)
     if movement is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Mouvement introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Mouvement introuvable.", "Movement not found."),
+        )
     subscription = await db.get(Subscription, data.subscription_id)
     if subscription is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Souscription introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Souscription introuvable.", "Subscription not found."),
+        )
     call = (
         await db.get(CapitalCall, data.capital_call_id)
         if data.capital_call_id
@@ -306,15 +317,22 @@ async def open_call(
     """
     subscription = await db.get(Subscription, data.subscription_id)
     if subscription is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Souscription introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Souscription introuvable.", "Subscription not found."),
+        )
     if data.amount <= 0:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "Le montant doit être positif."
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            pick("Le montant doit être positif.", "The amount has to be positive."),
         )
     if data.due_on < data.called_on:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "L'échéance d'un appel ne peut pas précéder sa date d'émission.",
+            pick(
+                "L'échéance d'un appel ne peut pas précéder sa date d'émission.",
+                "A call cannot fall due before the day it was issued.",
+            ),
         )
 
     already = sum(
@@ -335,9 +353,14 @@ async def open_call(
     if already + data.amount > subscription.amount:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            f"L'engagement est de {subscription.amount} {subscription.currency} et "
-            f"{already} ont déjà été appelés : il ne reste que "
-            f"{subscription.amount - already} à appeler.",
+            pick(
+                f"L'engagement est de {subscription.amount} {subscription.currency} et "
+                f"{already} ont déjà été appelés : il ne reste que "
+                f"{subscription.amount - already} à appeler.",
+                f"The commitment is {subscription.amount} {subscription.currency} and "
+                f"{already} has already been called: only "
+                f"{subscription.amount - already} is left to call.",
+            ),
         )
 
     call = await treasury_service.open_call(
@@ -347,23 +370,46 @@ async def open_call(
         due_on=data.due_on,
         called_on=data.called_on,
     )
-    return _call_out(call)
+    return _call_out(call, await _iban_for(db, call))
 
 
-def _call_out(call: CapitalCall) -> CallOut:
+async def _iban_for(db: AsyncSession, call: CapitalCall) -> str | None:
+    """The account this call is to be paid into: its own vehicle's, or the platform's.
+
+    🔴 THE VEHICLE'S ACCOUNT WINS. A QR code is an instruction to a bank, and the amount is
+    already in it; pointing it at another fund's IBAN moves real money to the wrong entity
+    and produces no error anywhere. `FUND_IBANS` stays as the answer for an installation
+    that has not created a fund row - which is every one of them today.
+    """
+    from app.config import get_settings
+
+    fund_id = (
+        await db.execute(
+            select(Subscription.fund_id).where(Subscription.id == call.subscription_id)
+        )
+    ).scalar_one_or_none()
+    if fund_id is not None:
+        fund = await db.get(Fund, fund_id)
+        if fund is not None and fund.iban:
+            return fund.iban
+
+    ibans = get_settings().fund_ibans
+    return ibans[0] if ibans else None
+
+
+def _call_out(call: CapitalCall, iban: str | None = None) -> CallOut:
     """One shape for a call, so the portal and the fund never see two different ones."""
     from app.config import get_settings
     from app.core import money, references
 
     settings = get_settings()
-    ibans = settings.fund_ibans
     qr = None
-    if call.currency == "EUR" and ibans:
+    if call.currency == "EUR" and iban:
         # ⚠️ EURO ONLY. The EPC standard is euro-denominated; producing one for an XOF call
         # would encode an amount the investor's bank will read as euros.
         qr = references.epc_qr_payload(
             beneficiary=settings.APP_NAME,
-            iban=ibans[0],
+            iban=iban,
             amount=str(money.quantize(call.amount, call.currency)),
             currency=call.currency,
             reference=call.reference,
@@ -417,7 +463,10 @@ async def late_calls(
     if as_of is None:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            "Préciser la date à laquelle les retards sont constatés.",
+            pick(
+                "Préciser la date à laquelle les retards sont constatés.",
+                "Say which date the arrears are measured on.",
+            ),
         )
     out = []
     for late in await call_chasing_service.late_calls(db, as_of=as_of):
@@ -459,4 +508,5 @@ async def list_calls(
         query = query.join(
             Subscription, Subscription.id == CapitalCall.subscription_id
         ).where(Subscription.investor_id == scope)
-    return [_call_out(c) for c in (await db.execute(query)).scalars().all()]
+    calls = (await db.execute(query)).scalars().all()
+    return [_call_out(c, await _iban_for(db, c)) for c in calls]

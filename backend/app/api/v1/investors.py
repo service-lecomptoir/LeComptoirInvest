@@ -15,6 +15,7 @@ from app.core import fund_time
 from app.database import get_db
 from app.models.investor import Investor
 from app.models.user import User
+from app.core.i18n import pick
 
 router = APIRouter(prefix="/investors", tags=["investors"])
 
@@ -139,7 +140,11 @@ async def create_investor(
     if data.kind not in landlord_kind_values.KINDS:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            f"Forme juridique inconnue : {data.kind!r}. Attendu « personne » ou « societe ».",
+            pick(
+                f"Forme juridique inconnue : {data.kind!r}. Attendu « personne » ou "
+                f"« societe ».",
+                f"Unknown legal form: {data.kind!r}. Expected « personne » or « societe ».",
+            ),
         )
     payload = data.model_dump(exclude={"iban"})
     investor = Investor(**payload)
@@ -171,10 +176,14 @@ async def record_verdict(
     """
     investor = await db.get(Investor, investor_id)
     if investor is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Investisseur introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Investisseur introuvable.", "Investor not found."),
+        )
     if data.risk_level not in kyc.RISK_LEVELS:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "Niveau de risque inconnu."
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            pick("Niveau de risque inconnu.", "Unknown risk level."),
         )
     try:
         verdict = kyc.Verdict(
@@ -230,17 +239,27 @@ async def set_eligibility(
     """
     investor = await db.get(Investor, investor_id)
     if investor is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Investisseur introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Investisseur introuvable.", "Investor not found."),
+        )
     if data.category not in eligibility.CATEGORIES:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            f"Catégorie inconnue : {data.category!r}. Attendu : "
-            f"{', '.join(eligibility.CATEGORIES)}.",
+            pick(
+                f"Catégorie inconnue : {data.category!r}. Attendu : "
+                f"{', '.join(eligibility.CATEGORIES)}.",
+                f"Unknown category: {data.category!r}. Expected: "
+                f"{', '.join(eligibility.CATEGORIES)}.",
+            ),
         )
     if data.loss_bearing_capacity is not None and data.loss_bearing_capacity < 0:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "Une capacité de perte négative n'a pas de sens.",
+            pick(
+                "Une capacité de perte négative n'a pas de sens.",
+                "A negative loss-bearing capacity makes no sense.",
+            ),
         )
     investor.category = data.category
     investor.loss_bearing_capacity = data.loss_bearing_capacity
@@ -262,7 +281,10 @@ async def bank_details(
     """
     investor = await db.get(Investor, investor_id)
     if investor is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Investisseur introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Investisseur introuvable.", "Investor not found."),
+        )
     return BankDetailsOut(
         iban=investor.iban, bic=investor.bic, virtual_iban=investor.virtual_iban
     )
@@ -278,7 +300,10 @@ async def me(
     if scope is None:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            "Ce compte gère le fonds : il n'est rattaché à aucun investisseur.",
+            pick(
+                "Ce compte gère le fonds : il n'est rattaché à aucun investisseur.",
+                "This account manages the fund: it is attached to no investor.",
+            ),
         )
     investor = await db.get(Investor, scope)
     return _out(investor)

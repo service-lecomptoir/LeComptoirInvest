@@ -29,6 +29,7 @@ from app.core import accrual, money
 from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.treasury import CapitalCall, Contribution
+from app.core.i18n import pick
 
 
 @dataclass(frozen=True)
@@ -141,16 +142,20 @@ def due_for_reminder(
     investors to filter its e-mails.
     """
     if late.never_notified:
-        return False, (
+        return False, pick(
             f"L'appel {late.reference} n'a jamais été notifié : c'est le premier avis qui "
-            f"manque, pas une relance."
+            f"manque, pas une relance.",
+            f"Call {late.reference} has never been notified: what is missing is the first "
+            f"notice, not a reminder.",
         )
     if late.last_reminded_on is not None:
         next_allowed = late.last_reminded_on + timedelta(days=every_days)
         if as_of < next_allowed:
-            return False, (
+            return False, pick(
                 f"Dernière relance le {late.last_reminded_on.isoformat()} : la suivante "
-                f"n'est pas due avant le {next_allowed.isoformat()}."
+                f"n'est pas due avant le {next_allowed.isoformat()}.",
+                f"Last reminded on {late.last_reminded_on.isoformat()}: the next one is not "
+                f"due before {next_allowed.isoformat()}.",
             )
     return True, None
 

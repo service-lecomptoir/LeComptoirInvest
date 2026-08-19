@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
+from app.core.i18n import pick
 
 #: Currencies whose minor unit is not the hundredth. Rounding a Japanese yen to two decimals
 #: invents a subdivision that does not exist, and a Kuwaiti dinar to two loses one.
@@ -82,7 +83,12 @@ class Money:
     def __post_init__(self) -> None:
         object.__setattr__(self, "currency", (self.currency or "").upper())
         if len(self.currency) != 3:
-            raise ValueError(f"Currency {self.currency!r} is not an ISO 4217 code.")
+            raise ValueError(
+                pick(
+                    f"La devise {self.currency!r} n'est pas un code ISO 4217.",
+                    f"Currency {self.currency!r} is not an ISO 4217 code.",
+                )
+            )
         object.__setattr__(self, "amount", quantize(self.amount, self.currency))
 
     def _same(self, other: "Money") -> None:

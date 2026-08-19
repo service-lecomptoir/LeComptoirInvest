@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import investor_scope
 from app.database import get_db
 from app.services import statement_service
+from app.core.i18n import pick
 
 router = APIRouter(tags=["statements"])
 
@@ -30,10 +31,16 @@ async def statement(
     if target is None:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            "Préciser l'investisseur dont on veut le relevé.",
+            pick(
+                "Préciser l'investisseur dont on veut le relevé.",
+                "Say which investor the statement is for.",
+            ),
         )
     if year < 2000 or year > 2200:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Année invalide.")
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            pick("Année invalide.", "Invalid year."),
+        )
     try:
         built = await statement_service.statement_for(db, investor_id=target, year=year)
     except ValueError as exc:

@@ -21,6 +21,7 @@ from app.models.subscription import Subscription
 from app.models.treasury import BankMovement, Distribution
 from app.models.user import User
 from app.services import distribution_service
+from app.core.i18n import pick
 
 router = APIRouter(tags=["distributions"])
 
@@ -84,6 +85,10 @@ def _to_out(waterfall) -> WaterfallOut:
 
 class ProposeIn(BaseModel):
     currency: str
+    #: Which vehicle is distributing. ⚠️ OMITTED MEANS « the one no fund row was created
+    #: for », not « all of them »: `distribution_service` reads it that way, and so do the
+    #: net asset value and the performance. One convention, or two funds share a waterfall.
+    fund_id: uuid.UUID | None = None
     amount: Decimal
     as_of: date
     repay_capital: bool = False
@@ -103,13 +108,15 @@ async def propose(
     """
     if data.amount <= 0:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "Le montant doit être positif."
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            pick("Le montant doit être positif.", "The amount has to be positive."),
         )
     waterfall = await distribution_service.propose(
         db,
         currency=data.currency.upper(),
         amount=data.amount,
         as_of=data.as_of,
+        fund_id=data.fund_id,
         repay_capital=data.repay_capital,
     )
     return _to_out(waterfall)
@@ -141,12 +148,17 @@ async def decide(
         currency=data.currency.upper(),
         amount=data.amount,
         as_of=data.as_of,
+        fund_id=data.fund_id,
         repay_capital=data.repay_capital,
     )
     if waterfall.unknown or not waterfall.shares:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            waterfall.blocked_reason or "Cette répartition ne distribue rien.",
+            waterfall.blocked_reason
+            or pick(
+                "Cette répartition ne distribue rien.",
+                "This split distributes nothing.",
+            ),
         )
     created = await distribution_service.record(
         db, waterfall, decided_on=data.decided_on, withholding=data.withholding
@@ -202,10 +214,16 @@ async def pay(
     """The transfer left. Attach it, and only then is the investor paid."""
     distribution = await db.get(Distribution, distribution_id)
     if distribution is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Distribution introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Distribution introuvable.", "Distribution not found."),
+        )
     movement = await db.get(BankMovement, data.bank_movement_id)
     if movement is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Mouvement introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Mouvement introuvable.", "Movement not found."),
+        )
     try:
         await distribution_service.pay(
             db, distribution=distribution, movement=movement, paid_on=data.paid_on

@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core import i18n
+
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -30,9 +32,9 @@ async def lifespan(app: FastAPI):
     if settings.BOOTSTRAP_MANAGER_EMAIL:
         if not settings.BOOTSTRAP_MANAGER_PASSWORD:
             logger.warning(
-                "BOOTSTRAP_MANAGER_EMAIL est defini sans BOOTSTRAP_MANAGER_PASSWORD : "
-                "aucun compte d'amorcage. Un mot de passe genere devrait etre journalise "
-                "pour servir, et un identifiant dans un journal n'est plus un secret."
+                "BOOTSTRAP_MANAGER_EMAIL is set without BOOTSTRAP_MANAGER_PASSWORD: "
+                "no bootstrap account. A generated password would have to be logged to be "
+                "of any use, and a credential in a log has stopped being a secret."
             )
         else:
             from app.database import AsyncSessionLocal
@@ -46,12 +48,31 @@ async def lifespan(app: FastAPI):
                         password=settings.BOOTSTRAP_MANAGER_PASSWORD,
                     )
             except Exception:  # noqa: BLE001
-                logger.exception("Amorcage du premier gestionnaire impossible")
+                logger.exception("The first manager could not be bootstrapped")
 
     yield
 
 
 app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
+
+
+@app.middleware("http")
+async def carry_the_readers_language(request, call_next):
+    """Set the request's language before anything can produce a message.
+
+    🔴 A MIDDLEWARE RATHER THAN A DEPENDENCY, because the refusals are built deep in pure
+    functions that no dependency reaches: `accrual`, `eligibility`, `performance` have no
+    request. The ContextVar is ambient by design, and this is the one place that fills it.
+
+    ⚠️ IT MUST RUN BEFORE THE ROUTE, not after: a message rendered while the variable still
+    holds the previous request's language is exactly the bug a per-process cache would have
+    caused, one request later.
+    """
+    i18n.set_current_lang(
+        i18n.lang_from_accept_language(request.headers.get("accept-language"))
+    )
+    return await call_next(request)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -71,6 +92,7 @@ from app.api.v1.auth import router as auth_router  # noqa: E402
 from app.api.v1.billing import router as billing_router  # noqa: E402
 from app.api.v1.internal_admin import router as internal_router  # noqa: E402
 from app.api.v1.distributions import router as distributions_router  # noqa: E402
+from app.api.v1.funds import router as funds_router  # noqa: E402
 from app.api.v1.investors import router as investors_router  # noqa: E402
 from app.api.v1.performance import router as performance_router  # noqa: E402
 from app.api.v1.projects import router as projects_router  # noqa: E402
@@ -82,6 +104,7 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(investors_router, prefix="/api/v1")
 app.include_router(subscriptions_router, prefix="/api/v1")
 app.include_router(treasury_router, prefix="/api/v1")
+app.include_router(funds_router, prefix="/api/v1")
 app.include_router(projects_router, prefix="/api/v1")
 app.include_router(distributions_router, prefix="/api/v1")
 app.include_router(statements_router, prefix="/api/v1")

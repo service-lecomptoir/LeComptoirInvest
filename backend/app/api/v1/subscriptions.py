@@ -25,6 +25,7 @@ from app.models.subscription import (
 )
 from app.models.user import User
 from app.services import portfolio_service
+from app.core.i18n import pick
 
 router = APIRouter(tags=["subscriptions"])
 
@@ -80,16 +81,24 @@ async def request_subscription(
     """
     if scope is None:
         raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Ce compte gère le fonds : il ne souscrit pas."
+            status.HTTP_400_BAD_REQUEST,
+            pick(
+                "Ce compte gère le fonds : il ne souscrit pas.",
+                "This account manages the fund: it does not subscribe.",
+            ),
         )
     if data.instrument not in instruments.INSTRUMENTS:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            f"Instrument inconnu : {data.instrument!r}.",
+            pick(
+                f"Instrument inconnu : {data.instrument!r}.",
+                f"Unknown instrument: {data.instrument!r}.",
+            ),
         )
     if data.amount <= 0:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "Le montant doit être positif."
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            pick("Le montant doit être positif.", "The amount has to be positive."),
         )
 
     investor = await db.get(Investor, scope)
@@ -141,14 +150,24 @@ async def acknowledge_risk(
     if scope is None:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
-            "Seul l'investisseur peut reconnaître l'avertissement qui le concerne.",
+            pick(
+                "Seul l'investisseur peut reconnaître l'avertissement qui le concerne.",
+                "Only the investor can acknowledge the warning addressed to them.",
+            ),
         )
     request = await db.get(SubscriptionRequest, request_id)
     if request is None or request.investor_id != scope:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Demande introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Demande introuvable.", "Request not found."),
+        )
     if request.status != REQUEST_PENDING:
         raise HTTPException(
-            status.HTTP_409_CONFLICT, f"Cette demande est déjà « {request.status} »."
+            status.HTTP_409_CONFLICT,
+            pick(
+                f"Cette demande est déjà « {request.status} ».",
+                f"This request already reads « {request.status} ».",
+            ),
         )
     if request.risk_acknowledged_on is None:
         # Theirs too: they are the one acknowledging.
@@ -174,15 +193,25 @@ async def withdraw(
     """
     if scope is None:
         raise HTTPException(
-            status.HTTP_403_FORBIDDEN, "Seul l'investisseur peut retirer sa demande."
+            status.HTTP_403_FORBIDDEN,
+            pick(
+                "Seul l'investisseur peut retirer sa demande.",
+                "Only the investor can withdraw their own request.",
+            ),
         )
     request = await db.get(SubscriptionRequest, request_id)
     if request is None or request.investor_id != scope:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Demande introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Demande introuvable.", "Request not found."),
+        )
     if request.status != REQUEST_PENDING:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            f"Cette demande est « {request.status} » : elle ne peut plus être retirée.",
+            pick(
+                f"Cette demande est « {request.status} » : elle ne peut plus être retirée.",
+                f"This request reads « {request.status} »: it can no longer be withdrawn.",
+            ),
         )
     request.status = REQUEST_WITHDRAWN
     await db.flush()
@@ -228,17 +257,27 @@ async def decide(
     """
     request = await db.get(SubscriptionRequest, request_id)
     if request is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Demande introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Demande introuvable.", "Request not found."),
+        )
     if request.status != REQUEST_PENDING:
         raise HTTPException(
-            status.HTTP_409_CONFLICT, f"Cette demande est déjà « {request.status} »."
+            status.HTTP_409_CONFLICT,
+            pick(
+                f"Cette demande est déjà « {request.status} ».",
+                f"This request already reads « {request.status} ».",
+            ),
         )
 
     if not data.accept:
         if not (data.reason or "").strip():
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
-                "Un refus sans motif ne peut être ni reconsidéré ni expliqué à l'investisseur.",
+                pick(
+                    "Un refus sans motif ne peut être ni reconsidéré ni expliqué à l'investisseur.",
+                    "A refusal with no reason can be neither reconsidered nor explained to the investor.",
+                ),
             )
         request.status = REQUEST_REFUSED
         request.decision_reason = data.reason
@@ -290,9 +329,14 @@ async def decide(
         )
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            f"Ce montant dépasse le seuil de {threshold.amount} {request.currency} "
-            f"applicable à cet investisseur : l'avertissement sur les risques doit avoir "
-            f"été reconnu avant tout engagement.",
+            pick(
+                f"Ce montant dépasse le seuil de {threshold.amount} {request.currency} "
+                f"applicable à cet investisseur : l'avertissement sur les risques doit "
+                f"avoir été reconnu avant tout engagement.",
+                f"This amount is over the {threshold.amount} {request.currency} threshold "
+                f"that applies to this investor: the risk warning has to have been "
+                f"acknowledged before any commitment.",
+            ),
         )
 
     subscription = Subscription(
@@ -340,17 +384,27 @@ async def convert(
     """
     loan = await db.get(Subscription, subscription_id)
     if loan is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Souscription introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Souscription introuvable.", "Subscription not found."),
+        )
     if not loan.is_open:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Cette ligne est déjà convertie.")
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            pick(
+                "Cette ligne est déjà convertie.",
+                "This line has already been converted.",
+            ),
+        )
     if not instruments.may_convert(
         loan.instrument, None if loan.terms is None else _Terms(loan.terms)
     ):
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            "Seul un prêt convertible devient une souscription, et jamais l'inverse : "
-            "transformer du capital en dette placerait cet investisseur devant les autres "
-            "en liquidation, après coup.",
+            pick(
+                "Seul un prêt convertible devient une souscription, et jamais l'inverse : transformer du capital en dette placerait cet investisseur devant les autres en liquidation, après coup.",
+                "Only a convertible loan becomes a subscription, never the other way round: turning equity into debt would put this investor ahead of the others in a wind-up, after the fact.",
+            ),
         )
 
     total = data.principal_converted + data.interest_converted
@@ -407,7 +461,10 @@ async def portfolio(
     if target is None:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            "Préciser l'investisseur dont on veut la position.",
+            pick(
+                "Préciser l'investisseur dont on veut la position.",
+                "Say which investor the position is for.",
+            ),
         )
     positions = await portfolio_service.positions_of(db, target)
     return {

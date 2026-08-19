@@ -19,6 +19,7 @@ from app.core.matching import Candidate, Proposal, propose
 from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.treasury import IN, BankMovement, CapitalCall, Contribution
+from app.core.i18n import pick
 
 
 async def _candidates(db: AsyncSession) -> list[Candidate]:
@@ -108,7 +109,12 @@ async def attribute(
     """
     investor = await db.get(Investor, subscription.investor_id)
     if investor is None:
-        raise ValueError("Souscription sans investisseur : imputation impossible.")
+        raise ValueError(
+            pick(
+                "Souscription sans investisseur : imputation impossible.",
+                "Subscription with no investor: nothing can be attributed to it.",
+            )
+        )
     # 🔴 ONE HOME FOR THE RULE, and it now covers an acceptance that aged out. Reading the
     # status alone let a file whose review was three years overdue keep taking money, with
     # the due date displayed on the record the whole time.
@@ -122,9 +128,14 @@ async def attribute(
         raise ValueError(f"{investor.display_name} : {refusal}")
     if movement.currency != subscription.currency:
         raise ValueError(
-            f"Le virement est en {movement.currency} et la souscription en "
-            f"{subscription.currency}. Une conversion est un événement daté, à un cours "
-            f"donné, pas une imputation."
+            pick(
+                f"Le virement est en {movement.currency} et la souscription en "
+                f"{subscription.currency}. Une conversion est un événement daté, à un "
+                f"cours donné, pas une imputation.",
+                f"The transfer is in {movement.currency} and the subscription in "
+                f"{subscription.currency}. A conversion is a dated event at a stated rate, "
+                f"not an attribution.",
+            )
         )
 
     already = (
@@ -141,8 +152,12 @@ async def attribute(
     remaining = movement.amount - sum(already, Decimal("0"))
     if amount > remaining:
         raise ValueError(
-            f"Ce virement ne porte plus que {remaining} {movement.currency} à imputer, "
-            f"et {amount} sont demandés."
+            pick(
+                f"Ce virement ne porte plus que {remaining} {movement.currency} à imputer, "
+                f"et {amount} sont demandés.",
+                f"This transfer has only {remaining} {movement.currency} left to attribute, "
+                f"and {amount} is being asked for.",
+            )
         )
 
     # A payer who is not the investor is recorded as such rather than blocked: it is often
@@ -200,9 +215,7 @@ async def next_call_reference(db: AsyncSession) -> str:
         ).first()
         if exists is None:
             return candidate
-    raise RuntimeError(
-        "Impossible de générer une référence libre après dix tentatives."
-    )
+    raise RuntimeError("No free reference could be generated after ten attempts.")
 
 
 async def open_call(

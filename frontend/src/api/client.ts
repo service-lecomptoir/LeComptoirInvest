@@ -21,6 +21,13 @@ export const TOKEN_KEY = 'lecomptoirinvest-token'
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEY)
   if (token) config.headers.Authorization = `Bearer ${token}`
+  // 🔴 THE SERVER REFUSES IN THE READER'S LANGUAGE, AND ONLY IF IT IS TOLD WHICH ONE.
+  //
+  // `errorMessage` below shows `detail` verbatim, so every refusal that matters is written
+  // on the server. The browser sends its own `Accept-Language` from the operating system,
+  // which is precisely NOT the choice the user made in the language switcher: leaving it
+  // alone would translate the screen and leave the sentences behind.
+  config.headers['Accept-Language'] = i18n.language || 'fr'
   return config
 })
 

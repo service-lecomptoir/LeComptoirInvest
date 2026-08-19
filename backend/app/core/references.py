@@ -25,6 +25,7 @@ impossible.
 from __future__ import annotations
 
 import secrets
+from app.core.i18n import pick
 
 #: 0/O and 1/I/L are out. So is U, which is read as V in some hands.
 _ALPHABET = "23456789ABCDEFGHJKMNPQRSTVWXYZ"
@@ -123,8 +124,12 @@ def epc_qr_payload(
     """
     if currency.upper() != "EUR":
         raise ValueError(
-            f"The EPC QR standard covers euro transfers only; this call is in {currency}. "
-            f"Show the account details instead."
+            pick(
+                f"La norme EPC du QR de virement ne couvre que l'euro ; cet appel est en "
+                f"{currency}. Afficher les coordonnées bancaires à la place.",
+                f"The EPC QR standard covers euro transfers only; this call is in "
+                f"{currency}. Show the account details instead.",
+            )
         )
     return "\n".join(
         [

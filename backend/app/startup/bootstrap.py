@@ -91,15 +91,13 @@ async def ensure_first_manager(db: AsyncSession, *, email: str, password: str) -
     except IntegrityError:
         # Another worker got there first. The fund IS administrable, which is the only
         # thing this function was asked about.
-        logger.info(
-            "Compte d'amorçage déjà créé par un autre processus : rien à faire."
-        )
+        logger.info("Another process already created the bootstrap account.")
         return False
 
     await db.commit()
     logger.warning(
-        "Aucun compte ne pouvait administrer le fonds : compte d'amorçage créé pour %s. "
-        "Il doit changer son mot de passe à la première connexion.",
+        "No account could administer the fund: bootstrap account created for %s. "
+        "They have to change the password at first sign-in.",
         email,
     )
     return True

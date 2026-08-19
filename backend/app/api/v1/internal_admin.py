@@ -31,6 +31,7 @@ from app.database import get_db
 from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.user import FUND_WIDE_ROLES, MANAGER, User
+from app.core.i18n import pick
 
 router = APIRouter(prefix="/internal", tags=["internal"])
 
@@ -53,7 +54,10 @@ def require_internal_key(x_internal_key: str | None = Header(default=None)) -> N
         or not cfg.ALICE_INTERNAL_KEY
         or not hmac.compare_digest(x_internal_key, cfg.ALICE_INTERNAL_KEY)
     ):
-        raise HTTPException(status_code=401, detail="Clé interne invalide.")
+        raise HTTPException(
+            status_code=401,
+            detail=pick("Clé interne invalide.", "Invalid internal key."),
+        )
 
 
 # ── Contract schemas ─────────────────────────────────────────────────────────────
@@ -147,7 +151,12 @@ class ResetPasswordIn(BaseModel):
 async def _managed(db: AsyncSession, manager_id: uuid.UUID) -> User:
     user = await db.get(User, manager_id)
     if user is None or user.role not in _MANAGED_ROLES:
-        raise HTTPException(status_code=404, detail="Compte gestionnaire introuvable.")
+        raise HTTPException(
+            status_code=404,
+            detail=pick(
+                "Compte gestionnaire introuvable.", "Manager account not found."
+            ),
+        )
     return user
 
 
@@ -171,8 +180,10 @@ async def _refuse_if_last_administrator(db: AsyncSession, target: User) -> None:
         raise HTTPException(
             status_code=409,
             detail=(
-                "C'est le dernier compte actif capable d'administrer ce fonds : le "
-                "supprimer ou le bloquer fermerait la porte de l'extérieur, sans recours."
+                pick(
+                    "C'est le dernier compte actif capable d'administrer ce fonds : le supprimer ou le bloquer fermerait la porte de l'extérieur, sans recours.",
+                    "This is the last active account able to administer this fund: deleting or blocking it would lock the door from the outside, with no way back.",
+                )
             ),
         )
 
@@ -219,7 +230,9 @@ async def billing_identity(
     """
     user = await db.get(User, user_id)
     if user is None:
-        raise HTTPException(status_code=404, detail="Compte introuvable.")
+        raise HTTPException(
+            status_code=404, detail=pick("Compte introuvable.", "Account not found.")
+        )
     return {"id": user.id, "full_name": user.account_name, "email": user.email}
 
 
@@ -238,17 +251,29 @@ async def create_manager(
     if data.role not in _MANAGED_ROLES:
         raise HTTPException(
             status_code=422,
-            detail=f"Rôle « {data.role} » inconnu de ce produit.",
+            detail=pick(
+                f"Rôle « {data.role} » inconnu de ce produit.",
+                f"Role « {data.role} » is unknown to this product.",
+            ),
         )
     if not data.password:
-        raise HTTPException(status_code=422, detail="Un mot de passe est requis.")
+        raise HTTPException(
+            status_code=422,
+            detail=pick("Un mot de passe est requis.", "A password is required."),
+        )
 
     email = data.email.lower().strip()
     already = (
         await db.execute(select(User.id).where(User.email == email))
     ).scalar_one_or_none()
     if already:
-        raise HTTPException(status_code=409, detail="Cette adresse a déjà un compte.")
+        raise HTTPException(
+            status_code=409,
+            detail=pick(
+                "Cette adresse a déjà un compte.",
+                "This address already has an account.",
+            ),
+        )
 
     user = User(
         email=email,
@@ -290,14 +315,23 @@ async def update_manager(
         ).scalar_one_or_none()
         if clash:
             raise HTTPException(
-                status_code=409, detail="Cette adresse a déjà un compte."
+                status_code=409,
+                detail=pick(
+                    "Cette adresse a déjà un compte.",
+                    "This address already has an account.",
+                ),
             )
         user.email = email
     if "full_name" in sent:
         user.account_name = (sent["full_name"] or "").strip() or None
     if "role" in sent and sent["role"]:
         if sent["role"] not in _MANAGED_ROLES:
-            raise HTTPException(status_code=422, detail="Rôle inconnu de ce produit.")
+            raise HTTPException(
+                status_code=422,
+                detail=pick(
+                    "Rôle inconnu de ce produit.", "Role unknown to this product."
+                ),
+            )
         # Demoting the last administrator is the same lock-out as deleting them.
         if user.role in _MANAGED_ROLES and sent["role"] != user.role:
             await _refuse_if_last_administrator(db, user)
@@ -411,7 +445,10 @@ async def login_link(
     if not user.is_active:
         raise HTTPException(
             status_code=409,
-            detail="Ce compte est bloqué : un lien de connexion contournerait le blocage.",
+            detail=pick(
+                "Ce compte est bloqué : un lien de connexion contournerait le blocage.",
+                "This account is blocked: a sign-in link would work around the block.",
+            ),
         )
     token = create_access_token(str(user.id), user.role)
     return {"token": token, "url": f"/login?token={token}"}

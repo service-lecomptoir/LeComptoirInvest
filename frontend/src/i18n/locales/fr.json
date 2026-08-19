@@ -48,7 +48,8 @@
     "myAccount": "Mon compte",
     "billing": "Abonnement",
     "performance": "Performance",
-    "lateCalls": "Appels en retard"
+    "lateCalls": "Appels en retard",
+    "funds": "Les véhicules"
   },
   "login": {
     "title": "Connexion",
@@ -514,5 +515,45 @@
     "unsentTitle_one": "{{count}} appel jamais notifié",
     "unsentTitle_other": "{{count}} appels jamais notifiés",
     "unsentHint": "Ces appels n'ont jamais été envoyés : c'est le premier avis qui manque, pas une relance. Relancer reviendrait à reprocher à l'investisseur une omission du fonds."
+  },
+  "funds": {
+    "title": "Les véhicules",
+    "subtitle": "Ce qui regroupe les projets et les souscripteurs, et dont ils partagent les conditions.",
+    "open": "Ouvrir un véhicule",
+    "name": "Nom",
+    "status": "Statut",
+    "currency": "Devise",
+    "iban": "Compte du véhicule",
+    "ibanHint": "Son propre compte. Sans lui, et si un autre véhicule existe, la trésorerie ne peut pas être répartie entre eux et l'actif net ne peut pas être totalisé.",
+    "terms": "Conditions",
+    "opened": "Ouvert le",
+    "mandate": "Mandat",
+    "preferredReturn": "Rendement préférentiel (%)",
+    "carriedInterest": "Intéressement (%)",
+    "managementFee": "Frais de gestion (%)",
+    "hurdle": "Préférentiel",
+    "carry": "Intéressement",
+    "fee": "Gestion",
+    "noTerms": "Aucune condition enregistrée",
+    "none": "Aucun véhicule enregistré",
+    "noneHint": "Tant qu'aucun véhicule n'est ouvert, les projets et les souscriptions appartiennent au véhicule implicite, et tout est calculé pour lui.",
+    "cashNotSeparable": "Pas de compte propre alors qu'un autre véhicule existe : son actif net ne peut pas être totalisé.",
+    "statusChanged": "{{name}} a changé de statut.",
+    "statuses": {
+      "raising": "En levée",
+      "investing": "En investissement",
+      "harvesting": "En désinvestissement",
+      "closed": "Clos"
+    },
+    "whichVehicle": "Quel véhicule",
+    "unattached": "Le véhicule implicite",
+    "asOf": "Arrêté au",
+    "projects": "Projets",
+    "cash": "Trésorerie",
+    "debt": "Dû aux prêteurs",
+    "netAssetValue": "Actif net",
+    "cannotTotal": "L'actif net ne peut pas être totalisé",
+    "noValue": "Aucun actif net à cette date",
+    "noValueHint": "Choisissez un véhicule et une date : l'actif net additionne les projets et la trésorerie, puis déduit ce que les prêteurs sont dus."
   }
 }

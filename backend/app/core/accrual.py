@@ -25,6 +25,7 @@ from decimal import Decimal
 
 from app.core import money
 from app.core.instruments import LoanTerms
+from app.core.i18n import pick
 
 #: Actual days over a fixed 365-day year. Stated rather than implied, and applied to every
 #: loan this module sees. A contract on 30/360 or ACT/360 is a different arithmetic and must
@@ -105,8 +106,12 @@ def amount_due(
         return Due(
             Decimal("0"),
             Decimal("0"),
-            "Ce prêt ne porte aucune condition : ni taux, ni échéance, ni mode de "
-            "remboursement. Rien ne peut être dû tant qu'elles ne sont pas enregistrées.",
+            pick(
+                "Ce prêt ne porte aucune condition : ni taux, ni échéance, ni mode de "
+                "remboursement. Rien ne peut être dû tant qu'elles ne sont pas enregistrées.",
+                "This loan carries no terms: no rate, no maturity, no repayment shape. "
+                "Nothing can be owed until they are recorded.",
+            ),
         )
     if not terms.bullet:
         # A schedule is a contract, not a shape this module may assume. Straight-line and
@@ -114,8 +119,12 @@ def amount_due(
         return Due(
             Decimal("0"),
             Decimal("0"),
-            "Ce prêt est amortissable : son échéancier vient du contrat et n'est pas "
-            "enregistré. Le montant dû ne se déduit pas du taux seul.",
+            pick(
+                "Ce prêt est amortissable : son échéancier vient du contrat et n'est pas "
+                "enregistré. Le montant dû ne se déduit pas du taux seul.",
+                "This loan amortises: its schedule comes from the contract and is not "
+                "recorded. The amount owed does not follow from the rate alone.",
+            ),
         )
 
     outstanding = principal_contributed - capital_already_repaid

@@ -6,9 +6,12 @@ vrai travail — que ces quatre mouvements se recoupent **toujours**.
 
 > État au 18 août 2026 : **en production sur https://invest.lecomptoir.services.**
 > Les quatre mouvements existent de bout en bout, l'invariant de trésorerie est vérifié,
-> la cascade de distribution est appliquée et gardée. 99 gardes côté serveur, 3 côté
-> interface, toutes exigées par le pipeline **avant** que l'image soit construite.
-> ⛔ Reste : le contrat `/internal` et l'inscription dans Alice.
+> la cascade de distribution est appliquée et gardée. Le contrat `/internal` existe et
+> Alice pilote le produit. Toutes les gardes sont exigées par le pipeline **avant** que
+> l'image soit construite.
+>
+> État au 19 août 2026 : **le véhicule est une entité**, et le périmètre par véhicule est
+> atteignable depuis les écrans ; **les refus du serveur sont bilingues**.
 
 ---
 
@@ -84,7 +87,9 @@ Et un prêt dont le montant dû n'est pas calculable **bloque tout** : sans rép
 | `app/core/crypto.py` | chiffrement des IBAN, et l'**empreinte salée** qui permet de rapprocher sans déchiffrer |
 | `app/core/references.py` | la référence que l'investisseur recopie : alphabet sans ambiguïté, caractère de contrôle, QR EPC |
 | `app/core/matching.py` | **à qui appartient ce virement** : quatre indices par ordre de ce qu'ils prouvent, et le refus de deviner |
-| `app/services/distribution_service.py` | **la cascade et sa garde** |
+| `app/services/distribution_service.py` | **la cascade et sa garde**, portée par véhicule |
+| `app/models/fund.py` + `app/api/v1/funds.py` | **le véhicule** : ce qui regroupe projets et souscripteurs, et dont ils partagent les conditions ; l'actif net, qui **refuse** de se totaliser quand deux fonds partagent un compte |
+| `app/core/i18n.py` | **la langue du lecteur**, décidée par requête et jamais par processus ; `pick(fr, en)` au site d'appel, jamais un catalogue ailleurs |
 | `app/services/statement_service.py` | le relevé fiscal : l'année du **paiement**, jamais de la décision |
 | `app/api/v1/` | 25 routes : connexion, registre, KYC, demandes, conversion, trésorerie, appels, projets, distributions, relevés |
 | `alembic/versions/` | **0001** le socle, **0002** les projets. La chaîne va jusqu'à head contre une base vide |
@@ -105,11 +110,21 @@ l'investisseur — et non une seule avec des lignes grisées.
 | `Distributions` | **la cascade, dessinée comme une cascade**, et le refus en toutes lettres |
 | `Investors` | le registre et les verdicts ; l'IBAN n'est **pas** dans la liste |
 | `Subscriptions` | accepter ou refuser une demande, motif obligatoire |
+| `Funds` | les véhicules, leurs conditions, leur compte, et **l'actif net du véhicule choisi** |
 | `Portfolio` `Calls` `MyDistributions` `Statement` | l'espace de l'investisseur |
 
 **Français et anglais**, sélecteur à drapeaux SVG, clé de stockage partagée avec les
 produits frères (`lecomptoir-lang`). Le catalogue anglais est **écrit à la main** et
 `npm run i18n:check` refuse une entrée anglaise identique à sa version française.
+
+🔴 **Et les phrases du serveur se traduisent au serveur.** Ce produit refuse pour des motifs
+qui sont sa raison d'être — les prêteurs ne sont pas couverts, ce prêt n'a pas d'échéancier
+enregistré, ce virement est une entrée — et l'interface affiche `detail` tel quel. Le client
+envoie donc `Accept-Language` depuis le choix fait dans le sélecteur, et non celui du système
+d'exploitation. Deux gardes le tiennent : l'une exige que **toute** phrase posée dans un
+emplacement lu par un humain passe par `pick(fr, en)` sans regarder la langue, l'autre
+cherche du français resté dehors. La première existe parce que la seconde ne peut pas
+suffire : « Statut inconnu » ne porte ni accent ni article, et a traversé trois balayages.
 
 ## Déploiement
 
@@ -131,9 +146,13 @@ conteneur, qui boucle à la vue de tous plutôt que de servir un ancien schéma.
 
 ## Ce qui n'existe pas encore
 
-Le contrat `/internal` (CRUD des gestionnaires) et, une fois qu'il existe, l'inscription
-dans le registre produits d'Alice. En attendant, `app/startup/bootstrap.py` crée le premier
-gestionnaire — et **seulement** si personne ne peut administrer le fonds.
+Un envoi de texte hors requête — relevé en PDF, e-mail de relance — n'existe pas encore.
+`i18n.use_lang()` est le mécanisme prévu pour lui : il force la langue du **destinataire**,
+qui n'est pas celle du gestionnaire qui déclenche l'envoi. Il n'a aucun appelant en
+production aujourd'hui, et c'est écrit ici plutôt que laissé à découvrir.
+
+`app/startup/bootstrap.py` crée le premier gestionnaire — et **seulement** si personne ne
+peut administrer le fonds.
 
 ---
 

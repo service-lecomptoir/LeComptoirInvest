@@ -20,6 +20,7 @@ from app.models.project import PROJECT_STATUSES, STUDY, Project, ProjectValuatio
 from app.models.treasury import BankMovement
 from app.models.user import User
 from app.services import project_service
+from app.core.i18n import pick
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -58,7 +59,12 @@ async def create(
     if data.status not in PROJECT_STATUSES:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            f"Statut inconnu : {data.status!r}. Attendus : {', '.join(PROJECT_STATUSES)}.",
+            pick(
+                f"Statut inconnu : {data.status!r}. Attendus : "
+                f"{', '.join(PROJECT_STATUSES)}.",
+                f"Unknown status: {data.status!r}. Expected: "
+                f"{', '.join(PROJECT_STATUSES)}.",
+            ),
         )
     project = Project(**data.model_dump() | {"currency": data.currency.upper()})
     db.add(project)
@@ -123,10 +129,15 @@ async def deploy(
     """Money leaves for a project, against the outgoing transfer that carried it."""
     project = await db.get(Project, project_id)
     if project is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Projet introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, pick("Projet introuvable.", "Project not found.")
+        )
     movement = await db.get(BankMovement, data.bank_movement_id)
     if movement is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Mouvement introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Mouvement introuvable.", "Movement not found."),
+        )
     try:
         deployment = await project_service.deploy(
             db,
@@ -160,10 +171,15 @@ async def record_return(
     """Money comes back, split between the fund's own capital and what was earned."""
     project = await db.get(Project, project_id)
     if project is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Projet introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, pick("Projet introuvable.", "Project not found.")
+        )
     movement = await db.get(BankMovement, data.bank_movement_id)
     if movement is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Mouvement introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Mouvement introuvable.", "Movement not found."),
+        )
     try:
         returned = await project_service.record_return(
             db,
@@ -198,11 +214,18 @@ async def set_status(
     """
     project = await db.get(Project, project_id)
     if project is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Projet introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, pick("Projet introuvable.", "Project not found.")
+        )
     if data.status not in PROJECT_STATUSES:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            f"Statut inconnu : {data.status!r}. Attendus : {', '.join(PROJECT_STATUSES)}.",
+            pick(
+                f"Statut inconnu : {data.status!r}. Attendus : "
+                f"{', '.join(PROJECT_STATUSES)}.",
+                f"Unknown status: {data.status!r}. Expected: "
+                f"{', '.join(PROJECT_STATUSES)}.",
+            ),
         )
     project.status = data.status
     if data.closed_on is not None:
@@ -272,12 +295,16 @@ async def record_valuation(
     """
     project = await db.get(Project, project_id)
     if project is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Projet introuvable.")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, pick("Projet introuvable.", "Project not found.")
+        )
     if data.amount < 0:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "Une valorisation négative n'a pas de sens : un projet vaut zéro au minimum, et "
-            "une perte se dit par le statut.",
+            pick(
+                "Une valorisation négative n'a pas de sens : un projet vaut zéro au minimum, et une perte se dit par le statut.",
+                "A negative valuation makes no sense: a project is worth zero at the least, and a loss is said through the status.",
+            ),
         )
     valuation = ProjectValuation(
         project_id=project.id,

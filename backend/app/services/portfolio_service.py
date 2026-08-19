@@ -30,6 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.subscription import Subscription
 from app.models.treasury import BankMovement, CapitalCall, Contribution, Distribution
+from app.core.i18n import pick
 
 
 @dataclass(frozen=True)
@@ -212,7 +213,11 @@ async def capital_account(
     """
     if until < since:
         raise ValueError(
-            "La période se termine avant de commencer : aucun relevé ne peut être établi."
+            pick(
+                "La période se termine avant de commencer : aucun relevé ne peut être "
+                "établi.",
+                "The period ends before it begins: no statement can be drawn up.",
+            )
         )
 
     subscriptions = (

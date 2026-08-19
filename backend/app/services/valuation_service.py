@@ -28,14 +28,16 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import instruments
+from app.models.fund import Fund
 from app.models.project import ACTIVE, STUDY, Project, ProjectValuation
 from app.models.subscription import Subscription
 from app.models.treasury import IN, BankMovement, Contribution, Distribution
 from app.services import distribution_service
+from app.core.i18n import pick
 
 #: Projects still holding money. A closed or written-off project has nothing left to value:
 #: what came back is already in the treasury, and what was lost is already a loss.
@@ -69,7 +71,7 @@ class NetAssetValue:
 
 
 async def _latest_valuations(
-    db: AsyncSession, *, currency: str, as_of: date
+    db: AsyncSession, *, currency: str, as_of: date, project_ids: list[uuid.UUID]
 ) -> dict[uuid.UUID, Decimal]:
     """The most recent valuation of each project ON OR BEFORE `as_of`.
 
@@ -87,6 +89,9 @@ async def _latest_valuations(
             .where(
                 ProjectValuation.currency == currency,
                 ProjectValuation.valued_on <= as_of,
+                # Only the projects being valued: reading every valuation in the currency
+                # would carry another vehicle's opinions into this one's total.
+                ProjectValuation.project_id.in_(project_ids),
             )
             .order_by(ProjectValuation.project_id, ProjectValuation.valued_on)
         )
@@ -100,52 +105,88 @@ async def _latest_valuations(
 
 
 async def net_asset_value(
-    db: AsyncSession, *, currency: str, as_of: date
+    db: AsyncSession, *, currency: str, as_of: date, fund_id: uuid.UUID | None = None
 ) -> NetAssetValue:
-    """What the fund is worth on `as_of`, or the reason it cannot be totalled."""
+    """What this vehicle is worth on `as_of`, or the reason it cannot be totalled."""
+    fund = await db.get(Fund, fund_id) if fund_id is not None else None
+
     open_projects = (
         (
             await db.execute(
                 select(Project).where(
-                    Project.currency == currency, Project.status.in_(OPEN_STATUSES)
+                    Project.currency == currency,
+                    Project.status.in_(OPEN_STATUSES),
+                    Project.fund_id.is_(None)
+                    if fund_id is None
+                    else Project.fund_id == fund_id,
                 )
             )
         )
         .scalars()
         .all()
     )
-    valuations = await _latest_valuations(db, currency=currency, as_of=as_of)
+    valuations = await _latest_valuations(
+        db, currency=currency, as_of=as_of, project_ids=[p.id for p in open_projects]
+    )
 
     unvalued = [p.name for p in open_projects if p.id not in valuations]
     projects_worth = sum(
         (valuations[p.id] for p in open_projects if p.id in valuations), Decimal("0")
     )
 
+    # 🔴 THE CASH CANNOT BE SPLIT BETWEEN VEHICLES SHARING AN ACCOUNT. A statement line
+    # says nothing about which fund the euro was for, and any rule inventing one would
+    # produce a total that reconciles and is wrong. A fund with its own IBAN is filtered by
+    # it; one without, while another fund exists, is refused below.
+    cash_query = select(
+        BankMovement.direction, BankMovement.amount, BankMovement.value_date
+    ).where(BankMovement.currency == currency, BankMovement.value_date <= as_of)
+    shared_account_reason: str | None = None
+    if fund is not None:
+        if fund.iban:
+            cash_query = cash_query.where(BankMovement.account_iban == fund.iban)
+        else:
+            others = (
+                await db.execute(
+                    select(func.count()).select_from(Fund).where(Fund.id != fund.id)
+                )
+            ).scalar_one()
+            if others:
+                shared_account_reason = pick(
+                    f"Le fonds « {fund.name} » n'a pas de compte propre et il existe "
+                    f"{others} autre(s) fonds : la trésorerie ne peut pas être répartie "
+                    f"entre eux, et l'actif net ne peut pas être totalisé.",
+                    f"Fund « {fund.name} » has no account of its own and {others} other "
+                    f"fund(s) exist: the cash cannot be split between them, and the net "
+                    f"asset value cannot be totalled.",
+                )
+
     cash = Decimal("0")
-    for direction, amount, value_date in (
-        await db.execute(
-            select(
-                BankMovement.direction, BankMovement.amount, BankMovement.value_date
-            ).where(BankMovement.currency == currency, BankMovement.value_date <= as_of)
-        )
-    ).all():
+    for direction, amount, value_date in (await db.execute(cash_query)).all():
         cash += amount if direction == IN else -amount
 
     debt, unmeasurable = await distribution_service.owed_to_lenders(
-        db, currency=currency, as_of=as_of
+        db, currency=currency, as_of=as_of, fund_id=fund_id
     )
 
-    reason = None
-    if unvalued:
-        reason = (
+    reason = shared_account_reason
+    if reason:
+        pass
+    elif unvalued:
+        reason = pick(
             f"{len(unvalued)} projet(s) ouvert(s) sans valorisation à cette date "
-            f"({', '.join(unvalued)}) : l'actif net ne peut pas être totalisé, et un projet "
-            f"non valorisé ne vaut pas zéro."
+            f"({', '.join(unvalued)}) : l'actif net ne peut pas être totalisé, et un "
+            f"projet non valorisé ne vaut pas zéro.",
+            f"{len(unvalued)} open project(s) with no valuation on that date "
+            f"({', '.join(unvalued)}): the net asset value cannot be totalled, and an "
+            f"unvalued project is not worth zero.",
         )
     elif unmeasurable:
-        reason = (
-            f"{len(unmeasurable)} prêt(s) dont le montant dû n'est pas calculable : la dette "
-            f"à déduire de l'actif net n'a pas de valeur connue."
+        reason = pick(
+            f"{len(unmeasurable)} prêt(s) dont le montant dû n'est pas calculable : la "
+            f"dette à déduire de l'actif net n'a pas de valeur connue.",
+            f"{len(unmeasurable)} loan(s) whose amount due cannot be measured: the debt to "
+            f"deduct from the net asset value has no known figure.",
         )
 
     return NetAssetValue(
@@ -165,6 +206,7 @@ async def residual_value_of(
     currency: str,
     as_of: date,
     investor_id: uuid.UUID | None = None,
+    fund_id: uuid.UUID | None = None,
 ) -> Decimal | None:
     """The share of the net asset value attributable to one investor, or to every subscriber.
 
@@ -181,7 +223,7 @@ async def residual_value_of(
     Returns None when the value is unknown, which the caller must carry as « unknown » and
     never as zero.
     """
-    nav = await net_asset_value(db, currency=currency, as_of=as_of)
+    nav = await net_asset_value(db, currency=currency, as_of=as_of, fund_id=fund_id)
     if not nav.is_known:
         return None
     attributable = nav.total
@@ -197,6 +239,9 @@ async def residual_value_of(
                     Subscription.currency == currency,
                     Subscription.instrument == instruments.EQUITY,
                     Subscription.converted_on.is_(None),
+                    Subscription.fund_id.is_(None)
+                    if fund_id is None
+                    else Subscription.fund_id == fund_id,
                 )
             )
         )

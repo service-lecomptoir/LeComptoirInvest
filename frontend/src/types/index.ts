@@ -307,3 +307,42 @@ export interface CamtImport {
   /** Already known by (account, external id): a re-import must change nothing. */
   already_known: number
 }
+
+export type FundStatus = 'raising' | 'investing' | 'harvesting' | 'closed'
+
+export interface FundTerms {
+  /** The hurdle, as a rate: 0.08 is eight per cent a year. */
+  preferred_return: number
+  carried_interest: number
+  management_fee: number
+}
+
+export interface Fund {
+  id: string
+  name: string
+  status: FundStatus
+  currency: string
+  iban: string | null
+  terms: FundTerms | null
+  opened_on: string | null
+  closed_on: string | null
+  mandate: string | null
+  /** 🔴 FALSE MEANS NO NET ASSET VALUE CAN BE COMPUTED. A vehicle with no account of its
+   *  own, while another exists, shares cash that no rule can split: a bank line says
+   *  nothing about which fund the euro was for. The row says so before the figure page
+   *  has to. */
+  cash_is_separable: boolean
+}
+
+export interface FundNetAssetValue {
+  currency: string
+  as_of: string
+  projects: string
+  cash: string
+  debt_to_lenders: string
+  /** Named, never counted: « 2 projets » sends the reader hunting, the names send them
+   *  to the two records that would produce the total. */
+  unvalued: string[]
+  total: string | null
+  unavailable_reason: string | null
+}

@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.project import Deployment, Project, ProjectReturn
 from app.models.treasury import IN, OUT, BankMovement
+from app.core.i18n import pick
 
 
 @dataclass(frozen=True)
@@ -128,12 +129,22 @@ async def deploy(
     """
     if movement.direction != OUT:
         raise ValueError(
-            "Un déploiement s'impute sur un virement SORTANT : ce mouvement est une entrée."
+            pick(
+                "Un déploiement s'impute sur un virement SORTANT : ce mouvement est une "
+                "entrée.",
+                "A deployment is attributed to an OUTGOING transfer: this movement is an "
+                "incoming one.",
+            )
         )
     if movement.currency != project.currency:
         raise ValueError(
-            f"Le virement est en {movement.currency} et le projet en {project.currency}. "
-            f"Une conversion est un événement daté, à un cours donné."
+            pick(
+                f"Le virement est en {movement.currency} et le projet en "
+                f"{project.currency}. Une conversion est un événement daté, à un cours "
+                f"donné.",
+                f"The transfer is in {movement.currency} and the project in "
+                f"{project.currency}. A conversion is a dated event, at a stated rate.",
+            )
         )
     already = (
         (
@@ -149,8 +160,12 @@ async def deploy(
     remaining = movement.amount - sum(already, Decimal("0"))
     if amount > remaining:
         raise ValueError(
-            f"Ce virement ne porte plus que {remaining} {movement.currency} à imputer, "
-            f"et {amount} sont demandés."
+            pick(
+                f"Ce virement ne porte plus que {remaining} {movement.currency} à imputer, "
+                f"et {amount} sont demandés.",
+                f"This transfer has only {remaining} {movement.currency} left to attribute, "
+                f"and {amount} is being asked for.",
+            )
         )
 
     deployment = Deployment(
@@ -184,16 +199,29 @@ async def record_return(
     """
     if movement.direction != IN:
         raise ValueError(
-            "Un retour de projet s'impute sur un virement ENTRANT : ce mouvement est une sortie."
+            pick(
+                "Un retour de projet s'impute sur un virement ENTRANT : ce mouvement est "
+                "une sortie.",
+                "A project return is attributed to an INCOMING transfer: this movement is "
+                "an outgoing one.",
+            )
         )
     if movement.currency != project.currency:
         raise ValueError(
-            f"Le virement est en {movement.currency} et le projet en {project.currency}."
+            pick(
+                f"Le virement est en {movement.currency} et le projet en "
+                f"{project.currency}.",
+                f"The transfer is in {movement.currency} and the project in "
+                f"{project.currency}.",
+            )
         )
     total = capital_amount + income_amount
     if total <= 0:
         raise ValueError(
-            "Un retour porte au moins un montant : capital, produit, ou les deux."
+            pick(
+                "Un retour porte au moins un montant : capital, produit, ou les deux.",
+                "A return carries at least one amount: capital, income, or both.",
+            )
         )
 
     already = (
@@ -206,8 +234,12 @@ async def record_return(
     used = sum((c + i for c, i in already), Decimal("0"))
     if total > movement.amount - used:
         raise ValueError(
-            f"Ce virement ne porte plus que {movement.amount - used} {movement.currency} "
-            f"à imputer, et {total} sont demandés."
+            pick(
+                f"Ce virement ne porte plus que {movement.amount - used} "
+                f"{movement.currency} à imputer, et {total} sont demandés.",
+                f"This transfer has only {movement.amount - used} {movement.currency} left "
+                f"to attribute, and {total} is being asked for.",
+            )
         )
 
     returned = ProjectReturn(
