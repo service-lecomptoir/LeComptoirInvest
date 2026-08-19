@@ -21,14 +21,14 @@ from decimal import Decimal
 
 import pytest
 
-from app.core import i18n, instruments, kyc, mailer
+from app.core import i18n, instruments, kyc
 from app.core.landlord_kind_values import PERSON
 from app.models.fund import Fund
 from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.treasury import IN, BankMovement, CapitalCall, Contribution
 from app.models.user import INVESTOR, User
-from app.services import notice_service
+from app.services import mailer, notice_service
 
 CURRENCY = "EUR"
 IBAN = "FR7630006000011111111111111"
@@ -259,7 +259,11 @@ async def test_a_send_that_the_relay_refuses_records_nothing(db, monkeypatch):
     against the investor, and the chasing list stops showing the one row that needs acting on.
     """
     call = await _setup(db)
-    monkeypatch.setattr(mailer, "is_configured", lambda: False)
+
+    async def _not_configured() -> bool:
+        return False
+
+    monkeypatch.setattr(mailer, "is_configured", _not_configured)
 
     with pytest.raises(mailer.MailNotSent):
         await notice_service.send(db, call=call, as_of=CALLED_ON)
@@ -276,7 +280,10 @@ async def test_a_send_that_goes_out_records_that_it_did(db, monkeypatch):
     async def _accept(*, to, subject, body):
         sent.append({"to": to, "subject": subject, "body": body})
 
-    monkeypatch.setattr(mailer, "is_configured", lambda: True)
+    async def _configured() -> bool:
+        return True
+
+    monkeypatch.setattr(mailer, "is_configured", _configured)
     monkeypatch.setattr(mailer, "send", _accept)
 
     prepared = await notice_service.send(db, call=call, as_of=CALLED_ON)

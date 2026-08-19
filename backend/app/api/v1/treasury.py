@@ -17,8 +17,12 @@ from app.models.fund import Fund
 from app.models.subscription import Subscription
 from app.models.treasury import IN, BankMovement, CapitalCall
 from app.models.user import User
-from app.core import mailer
-from app.services import call_chasing_service, notice_service, treasury_service
+from app.services import (
+    call_chasing_service,
+    mailer,
+    notice_service,
+    treasury_service,
+)
 from app.core.i18n import pick
 
 router = APIRouter(prefix="/treasury", tags=["treasury"])

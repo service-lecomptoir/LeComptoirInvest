@@ -574,7 +574,7 @@
     "writeReminder": "Relancer",
     "cannotWrite": "Cet avis ne peut pas être écrit",
     "noQr": "Pas de QR de virement",
-    "sendingNotSetUp": "L'envoi d'e-mail n'est pas configuré",
-    "sendingNotSetUpHint": "Le serveur SMTP ou l'adresse d'expédition manque sur cette installation. Vous pouvez copier le texte ci-dessus dans votre propre messagerie ; l'appel ne sera pas enregistré comme notifié, puisqu'il ne l'aura pas été par le produit."
+    "sendingNotSetUp": "L'envoi d'e-mail n'est pas configure",
+    "sendingNotSetUpHint": "L'adresse d'expedition de ce produit n'est pas renseignee. Elle se saisit dans Le Comptoir Alice, onglet « Systeme de communication », portee « Invest ». Elle n'est jamais reprise d'un autre produit : un appel de fonds envoye depuis le domaine d'un logiciel de gestion locative se lit comme une tentative d'hameconnage. En attendant, copiez le texte ci-dessus dans votre propre messagerie ; l'appel ne sera pas enregistre comme notifie, puisqu'il ne l'aura pas ete par le produit."
   }
 }

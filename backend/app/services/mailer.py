@@ -1,5 +1,10 @@
 """Sending an e-mail, and refusing loudly when it cannot be sent.
 
+⚠️ IN `services/` AND NOT `core/`, because it reads the configuration Alice holds. `core/`
+is the pure half of this product - rules that can be argued about with a pencil - and a
+module that makes a network call to a console does not belong there. The sibling product
+puts its own mailer in exactly the same place.
+
 🔴 A FAILED SEND MUST NEVER LOOK LIKE A SENT ONE. This product records `notified_on` on a
 capital call, and `LateCall.never_notified` exists so a fund can tell « this investor is
 late » from « we never wrote to them ». A mailer that swallowed a failure and let the caller
@@ -11,11 +16,17 @@ That is deliberately the opposite of the sister product's choice. Le Comptoir Im
 `send_email` returns False and carries on, because a receipt that failed to send is an
 annoyance. Here the send is the fact being recorded, and a silent failure is a false record.
 
+🔴 THE CONFIGURATION COMES FROM ALICE, THE ENVIRONMENT IS ONLY A FALLBACK. That is the
+platform's rule and the three sibling products already follow it. Reading `Settings` here
+would have made this product the one place where a manager's change in the console does
+nothing - and nothing would have failed, which is the shape of defect that costs most.
+
 🔴 NO IDENTITY BORROWED FROM ANOTHER PRODUCT. The SMTP CONNECTION is shared across the
 platform - one relay, one credential, rotated in one place. The SENDING IDENTITY never is.
-`SMTP_FROM_EMAIL` has no default: an installation that forgets it cannot send, which is the
-right failure. A fallback on a sibling's address would put « Le Comptoir Immo » on a fund's
-capital call, and the investor would be right to treat it as a phishing attempt.
+`SMTP_FROM_EMAIL` has no default anywhere: an installation that never set it cannot send,
+which is the right failure. A fallback on a sibling's address would put a property-management
+tool's domain on a fund's capital call, and the investor would be right to treat it as a
+phishing attempt.
 
 ⚠️ THE RELAY FILTERS BY IP. Brevo refuses with « 525 Unauthorized IP » until the sending
 host's address is on its allow-list, and the message says nothing about IPs. When a send
@@ -29,8 +40,8 @@ from email.message import EmailMessage
 
 import aiosmtplib
 
-from app.config import get_settings
 from app.core.i18n import pick
+from app.services.comm_config import get_effective_comm
 
 logger = logging.getLogger(__name__)
 
@@ -39,15 +50,14 @@ class MailNotSent(Exception):
     """The letter did not go out, and the caller must not record that it did."""
 
 
-def is_configured() -> bool:
+async def is_configured() -> bool:
     """Can this installation send at all?
 
     Both halves are required: a host with no sender address cannot address a message, and a
     sender address with no host has nowhere to hand it to. Reported as one answer so a
     screen can say « sending is not set up » instead of failing at the click.
     """
-    settings = get_settings()
-    return bool(settings.SMTP_HOST and settings.SMTP_FROM_EMAIL)
+    return (await get_effective_comm()).can_send
 
 
 async def send(*, to: str, subject: str, body: str) -> None:
@@ -58,8 +68,8 @@ async def send(*, to: str, subject: str, body: str) -> None:
     reference to be reflowed, hidden behind a link, or eaten by a client's stripping - and
     the reference is the only thing tying their transfer to the call.
     """
-    settings = get_settings()
-    if not is_configured():
+    settings = await get_effective_comm()
+    if not settings.can_send:
         raise MailNotSent(
             pick(
                 "L'envoi d'e-mail n'est pas configuré sur cette installation : le serveur "

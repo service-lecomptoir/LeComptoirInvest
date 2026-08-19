@@ -36,6 +36,18 @@ services:
     container_name: invest_backend
     restart: always
     env_file:
+      # 🔴 Connexion SMTP MUTUALISEE (~/shared/smtp.env sur le VPS). Invest etait le
+      # QUATRIEME produit et le seul absent de ce magasin : quand il a ete cree, ce
+      # produit n'avait pas de messagerie du tout. Y recopier les identifiants aurait
+      # ramene exactement le geste que le magasin a supprime, celui d'editer quatre
+      # .env.prod a la main a chaque rotation.
+      # `required: false` : un poste de developpement n'a pas ce fichier, et son absence
+      # ne doit pas empecher de lire ce compose.
+      # Place AVANT le .env.prod du produit : ce qui suit l'emporte, donc l'identite
+      # d'expedition (SMTP_FROM_EMAIL, SMTP_FROM_NAME) reste celle d'Invest, et une
+      # surcharge locale reste possible en cas d'incident.
+      - path: ../../shared/smtp.env
+        required: false
       - ../backend/.env.prod
     environment:
       ENV: production

@@ -168,11 +168,31 @@ appelant.
 Le relevé annuel porte ses intitulés pour la même raison : c'est un document qui **part**, et
 qui n'a pas d'interface pour le traduire chez son lecteur.
 
-⚠️ **La connexion SMTP est mutualisée, l'identité d'expédition jamais.** `SMTP_FROM_EMAIL`
-n'a aucun défaut : une installation qui l'oublie ne peut pas envoyer, ce qui est la bonne
-panne. Un repli sur l'adresse d'un produit frère mettrait « Le Comptoir Immo » sur l'appel de
-fonds d'un fonds, et l'investisseur aurait raison d'y voir une tentative d'hameçonnage. Le
-relais filtre par IP : un envoi qui échoue depuis un nouvel hôte, c'est d'abord ça.
+### Où se configure l'envoi
+
+🔴 **Dans Alice, pas dans un fichier.** La règle de la plateforme : la configuration passe par
+la console, l'environnement n'est qu'un repli. `app/services/comm_config.py` demande
+`/internal/comm-config?app=invest` (cache 5 min) et pose les valeurs **non vides** d'Alice
+par-dessus l'environnement. Alice injoignable, l'envoi continue sur ce que porte
+l'environnement : une console indisponible ne doit pas empêcher un fonds d'écrire.
+
+| Ce qui est mutualisé | Ce qui ne l'est jamais |
+|---|---|
+| La **connexion** : `~/shared/smtp.env` sur le VPS, monté par le compose **avant** le `.env.prod` du produit. Un relais, un identifiant, une rotation en un seul endroit. | L'**identité** : `SMTP_FROM_EMAIL` et `SMTP_FROM_NAME`, saisis par portée dans « Système de communication ». |
+
+Invest était le **quatrième produit et le seul absent du magasin**, parce qu'au moment où il a
+été créé il n'envoyait rien.
+
+🔴 **`SMTP_FROM_EMAIL` n'a aucun défaut, nulle part.** Il valait « noreply@lecomptoirimmo.fr »
+dans Alice, et le semis l'inscrivait dans la ligne de chaque portée : le nom d'expéditeur
+disait « Le Comptoir Invest » pendant que l'enveloppe disait « lecomptoirimmo.fr », et c'est
+l'enveloppe que regarde la banque du destinataire. Le nom avait été corrigé, l'adresse une
+ligne plus bas dans la même expression ne l'avait pas été. Un nom peut se dériver de la
+portée ; **une adresse ne se devine pas**, personne ne sait quel domaine ce fonds possède.
+Vide, l'envoi se refuse en le disant.
+
+⚠️ Le relais filtre par IP : un envoi qui échoue depuis un nouvel hôte en « 525 Unauthorized
+IP », c'est d'abord ça, et le message ne parle pas d'IP.
 
 ## Ce qui n'existe pas encore
 

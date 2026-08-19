@@ -26,14 +26,14 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import i18n, mailer, notices
+from app.core import i18n, notices
 from app.core.i18n import pick
 from app.models.fund import Fund
 from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.treasury import CapitalCall, Contribution
 from app.models.user import User
-from app.services import call_chasing_service
+from app.services import call_chasing_service, mailer
 
 #: The two letters a fund sends about a call. Named rather than passed as a boolean: a
 #: `is_reminder=True` at a call site reads as a formatting option, and these are two
@@ -194,7 +194,7 @@ async def prepare(
         language=language,
         to=investor.email,
         notice=letter,
-        sending_is_configured=mailer.is_configured(),
+        sending_is_configured=await mailer.is_configured(),
     )
 
 
