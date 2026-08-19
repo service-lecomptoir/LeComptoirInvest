@@ -49,7 +49,7 @@
     "billing": "Subscription",
     "performance": "Performance",
     "lateCalls": "Late calls",
-    "funds": "The vehicles"
+    "funds": "Investment vehicles"
   },
   "login": {
     "title": "Sign in",
@@ -517,14 +517,14 @@
     "unsentHint": "These calls were never sent: it is the first notice that is missing, not a reminder. Chasing them would blame the investor for the fund's own omission."
   },
   "funds": {
-    "title": "The vehicles",
-    "subtitle": "What groups the projects and the subscribers, and whose terms they share.",
+    "title": "Investment vehicles",
+    "subtitle": "A vehicle is a fund: it holds projects, subscribers, its own terms and its own bank account.",
     "open": "Open a vehicle",
     "name": "Name",
     "status": "Status",
     "currency": "Currency",
     "iban": "The vehicle's account",
-    "ibanHint": "Its own account. Without one, and with another vehicle in existence, the cash cannot be split between them and the net asset value cannot be totalled.",
+    "ibanHint": "This fund's bank account. Without it, and with another vehicle in existence, the cash cannot be split between them and the net asset value cannot be totalled.",
     "terms": "Terms",
     "opened": "Opened on",
     "mandate": "Mandate",
@@ -536,7 +536,7 @@
     "fee": "Fee",
     "noTerms": "No terms recorded",
     "none": "No vehicle recorded",
-    "noneHint": "While no vehicle is open, the projects and the subscriptions belong to the implicit vehicle, and everything is computed for it.",
+    "noneHint": "There is nothing to do here while you run only one. Everything you record belongs to that single fund, and the figures are computed for it. Opening a vehicle becomes necessary the day you run a second one.",
     "cashNotSeparable": "No account of its own while another vehicle exists: its net asset value cannot be totalled.",
     "statusChanged": "{{name}} changed status.",
     "statuses": {
@@ -546,7 +546,7 @@
       "closed": "Closed"
     },
     "whichVehicle": "Which vehicle",
-    "unattached": "The implicit vehicle",
+    "unattached": "The default fund",
     "asOf": "Measured to",
     "projects": "Projects",
     "cash": "Cash",

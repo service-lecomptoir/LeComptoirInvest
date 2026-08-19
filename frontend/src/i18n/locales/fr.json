@@ -49,7 +49,7 @@
     "billing": "Abonnement",
     "performance": "Performance",
     "lateCalls": "Appels en retard",
-    "funds": "Les véhicules"
+    "funds": "Véhicules d'investissement"
   },
   "login": {
     "title": "Connexion",
@@ -517,14 +517,14 @@
     "unsentHint": "Ces appels n'ont jamais été envoyés : c'est le premier avis qui manque, pas une relance. Relancer reviendrait à reprocher à l'investisseur une omission du fonds."
   },
   "funds": {
-    "title": "Les véhicules",
-    "subtitle": "Ce qui regroupe les projets et les souscripteurs, et dont ils partagent les conditions.",
+    "title": "Les véhicules d'investissement",
+    "subtitle": "Un véhicule est un fonds : il porte des projets, des souscripteurs, ses propres conditions et son compte bancaire.",
     "open": "Ouvrir un véhicule",
     "name": "Nom",
     "status": "Statut",
     "currency": "Devise",
     "iban": "Compte du véhicule",
-    "ibanHint": "Son propre compte. Sans lui, et si un autre véhicule existe, la trésorerie ne peut pas être répartie entre eux et l'actif net ne peut pas être totalisé.",
+    "ibanHint": "Le compte bancaire de ce fonds. Sans lui, et si un autre véhicule existe, la trésorerie ne peut pas être répartie entre eux et l'actif net ne peut pas être totalisé.",
     "terms": "Conditions",
     "opened": "Ouvert le",
     "mandate": "Mandat",
@@ -536,8 +536,8 @@
     "fee": "Gestion",
     "noTerms": "Aucune condition enregistrée",
     "none": "Aucun véhicule enregistré",
-    "noneHint": "Tant qu'aucun véhicule n'est ouvert, les projets et les souscriptions appartiennent au véhicule implicite, et tout est calculé pour lui.",
-    "cashNotSeparable": "Pas de compte propre alors qu'un autre véhicule existe : son actif net ne peut pas être totalisé.",
+    "noneHint": "Vous n'avez rien à faire ici tant que vous n'en gérez qu'un. Tout ce que vous enregistrez appartient à ce fonds unique, et les calculs portent sur lui. Ouvrir un véhicule devient nécessaire le jour où vous en gérez un second.",
+    "cashNotSeparable": "Pas de compte à lui alors qu'un autre véhicule existe : son actif net ne peut pas être totalisé.",
     "statusChanged": "{{name}} a changé de statut.",
     "statuses": {
       "raising": "En levée",
@@ -546,7 +546,7 @@
       "closed": "Clos"
     },
     "whichVehicle": "Quel véhicule",
-    "unattached": "Le véhicule implicite",
+    "unattached": "Le fonds par défaut",
     "asOf": "Arrêté au",
     "projects": "Projets",
     "cash": "Trésorerie",
