@@ -308,6 +308,24 @@ export interface CamtImport {
   already_known: number
 }
 
+export interface CallNotice {
+  /** Which letter this is. The demand and the reminder are two different statements to
+   *  somebody about their money, never one text with a flag. */
+  kind: 'first_notice' | 'reminder'
+  /** 🔴 THE INVESTOR'S LANGUAGE, NOT THE READER'S. Shown so a French manager previewing an
+   *  English letter reads it as deliberate rather than as a bug. */
+  language: string
+  to: string | null
+  subject: string
+  body: string
+  qr_payload: string | null
+  qr_unavailable_reason: string | null
+  /** False when this installation has no SMTP configured: the screen says so before the
+   *  click rather than after it. */
+  sending_is_configured: boolean
+  sent_on: string | null
+}
+
 export type FundStatus = 'raising' | 'investing' | 'harvesting' | 'closed'
 
 export interface FundTerms {

@@ -59,6 +59,36 @@ class LateCall:
         return self.called - self.received
 
 
+def late_interest_on(call: CapitalCall, *, received: Decimal, as_of: date) -> Decimal:
+    """What the delay on this call has cost, on `as_of`.
+
+    🔴 ONE HOME FOR THE FIGURE. The chasing list shows it and the reminder letter states it
+    to the investor; computing it twice would let the screen and the letter disagree about
+    what somebody owes, and the letter is the one they would act on.
+
+    🔴 INTEREST RUNS FROM THE DAY AFTER THE DUE DATE. Charging the due date itself would bill
+    an investor who paid on the last day they were given, which is the one day the notice
+    told them they still had.
+
+    ⚠️ AND NO RATE MEANS NO INTEREST, not a default one. `late_interest_rate` is NULL when
+    the call was issued without one, which is a decision the call records; substituting a
+    fund-wide figure would charge an investor something they were never told about.
+    """
+    outstanding = call.amount - received
+    if outstanding <= 0 or not call.late_interest_rate:
+        return Decimal("0")
+    return money.quantize(
+        accrual.interest_accrued(
+            principal=outstanding,
+            rate=call.late_interest_rate,
+            since=call.due_on,
+            until=as_of,
+            currency=call.currency,
+        ),
+        call.currency,
+    )
+
+
 async def late_calls(db: AsyncSession, *, as_of: date) -> list[LateCall]:
     """Every call still short on `as_of`, oldest first.
 
@@ -96,18 +126,7 @@ async def late_calls(db: AsyncSession, *, as_of: date) -> list[LateCall]:
         outstanding = call.amount - paid
         if outstanding <= 0:
             continue
-        # 🔴 INTEREST RUNS FROM THE DAY AFTER THE DUE DATE. Charging the due date itself
-        # would bill an investor who paid on the last day they were given, which is the one
-        # day the notice told them they still had.
-        interest = Decimal("0")
-        if call.late_interest_rate:
-            interest = accrual.interest_accrued(
-                principal=outstanding,
-                rate=call.late_interest_rate,
-                since=call.due_on,
-                until=as_of,
-                currency=call.currency,
-            )
+        interest = late_interest_on(call, received=paid, as_of=as_of)
         out.append(
             LateCall(
                 call_id=call.id,
@@ -120,7 +139,7 @@ async def late_calls(db: AsyncSession, *, as_of: date) -> list[LateCall]:
                 received=paid,
                 due_on=call.due_on,
                 days_late=(as_of - call.due_on).days,
-                late_interest=money.quantize(interest, call.currency),
+                late_interest=interest,
                 never_notified=call.notified_on is None,
                 last_reminded_on=call.last_reminded_on,
             )
@@ -160,4 +179,4 @@ def due_for_reminder(
     return True, None
 
 
-__all__ = ["LateCall", "due_for_reminder", "late_calls"]
+__all__ = ["LateCall", "due_for_reminder", "late_calls", "late_interest_on"]

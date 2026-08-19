@@ -90,6 +90,8 @@ Et un prêt dont le montant dû n'est pas calculable **bloque tout** : sans rép
 | `app/services/distribution_service.py` | **la cascade et sa garde**, portée par véhicule |
 | `app/models/fund.py` + `app/api/v1/funds.py` | **le véhicule** : ce qui regroupe projets et souscripteurs, et dont ils partagent les conditions ; l'actif net, qui **refuse** de se totaliser quand deux fonds partagent un compte |
 | `app/core/i18n.py` | **la langue du lecteur**, décidée par requête et jamais par processus ; `pick(fr, en)` au site d'appel, jamais un catalogue ailleurs |
+| `app/core/notices.py` + `app/services/notice_service.py` | **l'avis d'appel et la relance**, écrits dans la langue de l'INVESTISSEUR ; la relance réclame ce qui manque, jamais l'appel entier |
+| `app/core/mailer.py` | l'envoi, qui **lève** au lieu de rendre `False` : un avis non parti ne doit jamais s'enregistrer comme parti |
 | `app/services/statement_service.py` | le relevé fiscal : l'année du **paiement**, jamais de la décision |
 | `app/api/v1/` | 25 routes : connexion, registre, KYC, demandes, conversion, trésorerie, appels, projets, distributions, relevés |
 | `alembic/versions/` | **0001** le socle, **0002** les projets. La chaîne va jusqu'à head contre une base vide |
@@ -111,6 +113,7 @@ l'investisseur — et non une seule avec des lignes grisées.
 | `Investors` | le registre et les verdicts ; l'IBAN n'est **pas** dans la liste |
 | `Subscriptions` | accepter ou refuser une demande, motif obligatoire |
 | `Funds` | les véhicules, leurs conditions, leur compte, et **l'actif net du véhicule choisi** |
+| `LateCalls` | et, sur chaque ligne, **l'avis à envoyer** : lu avant d'être envoyé, dans la langue de l'investisseur |
 | `Portfolio` `Calls` `MyDistributions` `Statement` | l'espace de l'investisseur |
 
 **Français et anglais**, sélecteur à drapeaux SVG, clé de stockage partagée avec les
@@ -144,12 +147,37 @@ valeur du produit **est** l'arithmétique, et une erreur y est invisible.
 Les migrations tournent dans le `CMD` de l'image, **avant** uvicorn : un échec arrête le
 conteneur, qui boucle à la vue de tous plutôt que de servir un ancien schéma.
 
+## 🔴 L'avis d'appel de fonds, et la seule phrase écrite pour quelqu'un d'autre
+
+Partout ailleurs, celui qui lit **est** celui qui appelle : `Accept-Language` suffit. Un avis
+d'appel est différent — un gestionnaire clique, un **investisseur** lit. Le rendre dans la
+langue du gestionnaire enverrait une mise en demeure en français à un investisseur
+britannique, et rien dans le produit n'aurait l'air anormal : le montant, la référence et la
+date seraient justes. C'est ce que `i18n.use_lang()` sert à empêcher, et c'est son seul
+appelant.
+
+| Décision | Pourquoi |
+|---|---|
+| La langue vient de **son compte**, sinon de `investors.locale`, sinon du défaut | son propre choix prime sur ce que le fonds a noté ; **rien** n'est déduit du pays (la Belgique est FR et NL, la Suisse FR, DE et IT, le Canada FR et EN) |
+| **Lire n'est pas envoyer** : deux routes | un écran qui marquerait l'appel notifié en affichant le texte ferait taire la liste de relance pour quiconque a seulement regardé |
+| Un envoi refusé **n'enregistre rien** | `never_notified` distingue « on ne lui a jamais écrit » de « il est en retard » ; une marque fausse transforme l'omission du fonds en reproche à l'investisseur |
+| La relance demande **ce qui manque**, jamais l'appel entier | le paiement partiel est la norme ; réclamer le tout se lit « ils ont perdu mon virement » |
+| Le taux annoncé est **celui que l'appel porte** | changer un paramètre du fonds ne doit pas réécrire ce qu'un investisseur a lu sur une mise en demeure déjà partie |
+| Le texte est en **clair, pas en HTML** | la référence que l'investisseur recopie est le seul lien entre son virement et l'appel |
+
+Le relevé annuel porte ses intitulés pour la même raison : c'est un document qui **part**, et
+qui n'a pas d'interface pour le traduire chez son lecteur.
+
+⚠️ **La connexion SMTP est mutualisée, l'identité d'expédition jamais.** `SMTP_FROM_EMAIL`
+n'a aucun défaut : une installation qui l'oublie ne peut pas envoyer, ce qui est la bonne
+panne. Un repli sur l'adresse d'un produit frère mettrait « Le Comptoir Immo » sur l'appel de
+fonds d'un fonds, et l'investisseur aurait raison d'y voir une tentative d'hameçonnage. Le
+relais filtre par IP : un envoi qui échoue depuis un nouvel hôte, c'est d'abord ça.
+
 ## Ce qui n'existe pas encore
 
-Un envoi de texte hors requête — relevé en PDF, e-mail de relance — n'existe pas encore.
-`i18n.use_lang()` est le mécanisme prévu pour lui : il force la langue du **destinataire**,
-qui n'est pas celle du gestionnaire qui déclenche l'envoi. Il n'a aucun appelant en
-production aujourd'hui, et c'est écrit ici plutôt que laissé à découvrir.
+Le relevé annuel en PDF, et l'envoi programmé (aujourd'hui c'est le gestionnaire qui
+déclenche chaque avis depuis l'écran des appels en retard).
 
 `app/startup/bootstrap.py` crée le premier gestionnaire — et **seulement** si personne ne
 peut administrer le fonds.

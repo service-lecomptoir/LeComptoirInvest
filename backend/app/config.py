@@ -29,6 +29,21 @@ class Settings(BaseSettings):
     #: into this fund is the kind of mistake that is only found at reconciliation.
     FUND_IBANS: str = ""
 
+    # ── Sending a notice to an investor ────────────────────────────────────────────────
+    #: 🔴 THE CONNECTION IS SHARED ACROSS THE PLATFORM, THE IDENTITY NEVER IS. One relay, one
+    #: credential, rotated in one place; but `SMTP_FROM_EMAIL` has NO DEFAULT. An
+    #: installation that forgets it cannot send, which is the right failure. A fallback on a
+    #: sibling's address would put « Le Comptoir Immo » on this fund's capital call, and the
+    #: investor would be right to read that as a phishing attempt.
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = ""
+    #: This product's own name. A default is safe here because it names ITSELF.
+    SMTP_FROM_NAME: str = "Le Comptoir Invest"
+    SMTP_TLS: bool = True
+
     #: Alice, the SaaS console that owns manager accounts. Same contract as the sister
     #: products: a manager is never minted here.
     ALICE_URL: str = ""

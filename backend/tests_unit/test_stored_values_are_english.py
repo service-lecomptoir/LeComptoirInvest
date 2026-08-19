@@ -68,6 +68,12 @@ APPROVED: dict[str, str] = {
     "RETAIL": "retail",
     "SOPHISTICATED": "sophisticated",
     "PROFESSIONAL": "professional",
+    # ⚠️ THESE TWO REACH NO COLUMN, AND THEY BELONG HERE ANYWAY. Which letter a call notice
+    # is travels over the API - a query parameter going in, a discriminator coming back -
+    # and a published value is exactly as hard to rename as a stored one: every caller moves
+    # at once. The inventory is for names that cannot be taken back, not only for columns.
+    "FIRST_NOTICE": "first_notice",
+    "REMINDER": "reminder",
     # The vehicle's life. `CLOSED` above is shared with a project's: both mean « nothing
     # left to do here », and one word for one meaning is the point of an inventory.
     "RAISING": "raising",

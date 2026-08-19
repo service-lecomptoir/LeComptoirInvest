@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlarmClock, MailWarning } from 'lucide-react'
+import { AlarmClock, Mail, MailWarning } from 'lucide-react'
 import { treasuryApi } from '@/api'
-import { Input } from '@/components/ui'
+import { NoticeDialog } from '@/components/NoticeDialog'
+import { Button, Input } from '@/components/ui'
 import {
   Card, EmptyState, Loading, Notice, PageHeader, Pill, TableWrap, Td, Th,
 } from '@/components/common/Primitives'
@@ -23,6 +24,10 @@ export default function LateCalls() {
   const today = new Date().toISOString().slice(0, 10)
   const [asOf, setAsOf] = useState(today)
   const [calls, setCalls] = useState<LateCall[] | null>(null)
+  /** 🔴 THE ROW THAT SAID « JAMAIS NOTIFIÉ » NAMED THE FUND'S OWN OMISSION AND OFFERED
+   *  NOTHING TO DO ABOUT IT. A screen that reports a problem nobody can act on from it is a
+   *  screen people learn to scroll past, and this is the row that most needed acting on. */
+  const [writingTo, setWritingTo] = useState<string | null>(null)
 
   useEffect(() => {
     if (!asOf) return
@@ -80,6 +85,7 @@ export default function LateCalls() {
               <Th right>{t('lateCalls.outstanding')}</Th>
               <Th right>{t('lateCalls.lateInterest')}</Th>
               <Th>{t('lateCalls.reminder')}</Th>
+              <Th>{t('common.actions')}</Th>
             </tr>
           </thead>
           <tbody>
@@ -115,10 +121,38 @@ export default function LateCalls() {
                     <span className="text-xs text-gray-500">{c.reminder_blocked_reason}</span>
                   )}
                 </Td>
+                <Td>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    leftIcon={<Mail size={14} />}
+                    onClick={() => setWritingTo(c.call_id)}
+                  >
+                    {c.never_notified ? t('notice.writeFirst') : t('notice.writeReminder')}
+                  </Button>
+                </Td>
               </tr>
             ))}
           </tbody>
         </TableWrap>
+      )}
+
+      {writingTo && (
+        <NoticeDialog
+          callId={writingTo}
+          asOf={asOf}
+          onClose={() => setWritingTo(null)}
+          onSent={() => {
+            setWritingTo(null)
+            // The call has just stopped being « never notified ». Reloading is what makes
+            // the row say so, instead of showing a state the click already changed.
+            setCalls(null)
+            treasuryApi
+              .lateCalls(asOf)
+              .then((r) => setCalls(r.data))
+              .catch(() => setCalls([]))
+          }}
+        />
       )}
     </>
   )

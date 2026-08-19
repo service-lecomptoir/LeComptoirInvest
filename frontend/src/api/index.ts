@@ -4,7 +4,7 @@ import type {
   Statement, SubscriptionRequest, Waterfall,
   BillingSubscription, PaymentMethods, BillingPlan, BillingInvoice, BillingStatus,
   PerformanceBlock, CapitalAccountLine, ProjectValuation, LateCall, InvestorCategory,
-  CamtImport, Fund, FundNetAssetValue,
+  CamtImport, Fund, FundNetAssetValue, CallNotice,
 } from '@/types'
 
 export const authApi = {
@@ -146,6 +146,21 @@ export const performanceApi = {
   capitalAccount: (since: string, until: string, investorId?: string) =>
     apiClient.get<CapitalAccountLine[]>('/capital-account', {
       params: { since, until, ...(investorId ? { investor_id: investorId } : {}) },
+    }),
+}
+
+export const noticeApi = {
+  // ⚠️ READING IS A GET AND SENDING IS A POST, and they are not the same call with a flag.
+  // A screen that marked the call as notified when it merely rendered the text would
+  // silence the chasing list for anybody who looked at it.
+  preview: (callId: string, asOf: string) =>
+    apiClient.get<CallNotice>(`/treasury/calls/${callId}/notice`, {
+      params: { as_of: asOf },
+      skipErrorToast: true,
+    }),
+  send: (callId: string, asOf: string) =>
+    apiClient.post<CallNotice>(`/treasury/calls/${callId}/notice`, null, {
+      params: { as_of: asOf },
     }),
 }
 

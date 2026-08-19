@@ -23,7 +23,8 @@
     "investor": "Investor",
     "project": "Project",
     "year": "Year",
-    "actions": "Actions"
+    "actions": "Actions",
+    "close": "Close"
   },
   "brand": {
     "name": "Comptoir Invest",
@@ -555,5 +556,25 @@
     "cannotTotal": "The net asset value cannot be totalled",
     "noValue": "No net asset value on that date",
     "noValueHint": "Pick a vehicle and a date: the net asset value adds the projects to the cash, then deducts what the lenders are owed."
+  },
+  "notice": {
+    "title": "The notice to send",
+    "to": "Recipient:",
+    "noAddress": "no address on record",
+    "language": "Written in:",
+    "kind": "Kind:",
+    "kinds": {
+      "first_notice": "First notice",
+      "reminder": "Reminder"
+    },
+    "send": "Send",
+    "sending": "Sending...",
+    "sent": "Notice sent to {{to}}.",
+    "writeFirst": "First notice",
+    "writeReminder": "Remind",
+    "cannotWrite": "This notice cannot be written",
+    "noQr": "No transfer QR",
+    "sendingNotSetUp": "E-mail sending is not configured",
+    "sendingNotSetUpHint": "The SMTP server or the sender address is missing on this installation. You can copy the text above into your own mail client; the call will not be recorded as notified, since the product will not have notified it."
   }
 }

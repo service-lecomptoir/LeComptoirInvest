@@ -23,7 +23,8 @@
     "investor": "Investisseur",
     "project": "Projet",
     "year": "Année",
-    "actions": "Actions"
+    "actions": "Actions",
+    "close": "Fermer"
   },
   "brand": {
     "name": "Comptoir Invest",
@@ -555,5 +556,25 @@
     "cannotTotal": "L'actif net ne peut pas être totalisé",
     "noValue": "Aucun actif net à cette date",
     "noValueHint": "Choisissez un véhicule et une date : l'actif net additionne les projets et la trésorerie, puis déduit ce que les prêteurs sont dus."
+  },
+  "notice": {
+    "title": "L'avis à envoyer",
+    "to": "Destinataire :",
+    "noAddress": "aucune adresse enregistrée",
+    "language": "Écrit en :",
+    "kind": "Nature :",
+    "kinds": {
+      "first_notice": "Premier avis",
+      "reminder": "Relance"
+    },
+    "send": "Envoyer",
+    "sending": "Envoi...",
+    "sent": "Avis envoyé à {{to}}.",
+    "writeFirst": "Premier avis",
+    "writeReminder": "Relancer",
+    "cannotWrite": "Cet avis ne peut pas être écrit",
+    "noQr": "Pas de QR de virement",
+    "sendingNotSetUp": "L'envoi d'e-mail n'est pas configuré",
+    "sendingNotSetUpHint": "Le serveur SMTP ou l'adresse d'expédition manque sur cette installation. Vous pouvez copier le texte ci-dessus dans votre propre messagerie ; l'appel ne sera pas enregistré comme notifié, puisqu'il ne l'aura pas été par le produit."
   }
 }

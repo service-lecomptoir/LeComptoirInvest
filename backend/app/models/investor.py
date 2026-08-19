@@ -159,6 +159,15 @@ class Investor(Base, TimestampMixin):
         index=True,
     )
 
+    #: 🔴 THE LANGUAGE THE FUND WRITES TO THEM IN, and NULL means « they never said ».
+    #:
+    #: `User.locale` covers the investors who sign in, and most do not: `user_id` above is
+    #: nullable, and a capital call notice goes to everybody. Nothing derives this from
+    #: `country_code` - Belgium is French and Dutch, Switzerland French, German and Italian,
+    #: Canada French and English. A guess from a country is wrong for a whole nation of
+    #: investors at once, and it is wrong silently: the letter looks perfectly normal.
+    locale: Mapped[str | None] = mapped_column(String(5), nullable=True)
+
     documents: Mapped[list["InvestorDocument"]] = relationship(
         "InvestorDocument", back_populates="investor", cascade="all, delete-orphan"
     )

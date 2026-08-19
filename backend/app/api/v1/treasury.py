@@ -17,7 +17,8 @@ from app.models.fund import Fund
 from app.models.subscription import Subscription
 from app.models.treasury import IN, BankMovement, CapitalCall
 from app.models.user import User
-from app.services import call_chasing_service, treasury_service
+from app.core import mailer
+from app.services import call_chasing_service, notice_service, treasury_service
 from app.core.i18n import pick
 
 router = APIRouter(prefix="/treasury", tags=["treasury"])
@@ -510,3 +511,100 @@ async def list_calls(
         ).where(Subscription.investor_id == scope)
     calls = (await db.execute(query)).scalars().all()
     return [_call_out(c, await _iban_for(db, c)) for c in calls]
+
+
+class NoticeOut(BaseModel):
+    """The letter, and everything the fund needs to decide whether to send it."""
+
+    kind: str
+    #: 🔴 SHOWN TO THE MANAGER ON PURPOSE. They are about to send a letter they may not be
+    #: able to read, and « this will go out in English » is the one thing that lets them
+    #: notice the investor's language is wrong before the investor does.
+    language: str
+    to: str | None = None
+    subject: str
+    body: str
+    qr_payload: str | None = None
+    qr_unavailable_reason: str | None = None
+    #: False when this installation has no SMTP configured. Carried so the screen says so
+    #: before the click rather than after it.
+    sending_is_configured: bool = False
+    #: Set once the letter has actually gone out.
+    sent_on: date | None = None
+
+
+def _notice_out(prepared, *, sent_on: date | None = None) -> NoticeOut:
+    return NoticeOut(
+        kind=prepared.kind,
+        language=prepared.language,
+        to=prepared.to,
+        subject=prepared.notice.subject,
+        body=prepared.notice.body,
+        qr_payload=prepared.notice.qr_payload,
+        qr_unavailable_reason=prepared.notice.qr_unavailable_reason,
+        sending_is_configured=prepared.sending_is_configured,
+        sent_on=sent_on,
+    )
+
+
+@router.get("/calls/{call_id}/notice", response_model=NoticeOut)
+async def preview_notice(
+    call_id: uuid.UUID,
+    as_of: date,
+    kind: str | None = None,
+    _: User = Depends(current_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """Read the letter before it goes out. Writes nothing.
+
+    🔴 PREVIEWING IS NOT SENDING, and they are two endpoints for that reason. A screen that
+    marked the call as notified when it rendered the text would silence the chasing list for
+    anybody who merely looked at it, and the investor would still have received nothing.
+
+    ⚠️ THE LETTER IS IN THE INVESTOR'S LANGUAGE, NOT THE MANAGER'S, so a French manager
+    previewing a notice to a British investor sees English. That is the point, and
+    `language` says which one it is so the difference reads as deliberate.
+    """
+    call = await db.get(CapitalCall, call_id)
+    if call is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Appel introuvable.", "Call not found."),
+        )
+    try:
+        prepared = await notice_service.prepare(db, call=call, as_of=as_of, kind=kind)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    return _notice_out(prepared)
+
+
+@router.post("/calls/{call_id}/notice", response_model=NoticeOut)
+async def send_notice(
+    call_id: uuid.UUID,
+    as_of: date,
+    kind: str | None = None,
+    _: User = Depends(current_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """Send the letter, and only then record that it went out.
+
+    🔴 A REFUSED SEND LEAVES `notified_on` UNTOUCHED. `mailer.send` raises rather than
+    returning False precisely so this route cannot mark a letter nobody received: a call
+    recorded as notified when it was not turns the fund's own omission into an accusation
+    against the investor, and `LateCall.never_notified` exists to keep those apart.
+    """
+    call = await db.get(CapitalCall, call_id)
+    if call is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Appel introuvable.", "Call not found."),
+        )
+    try:
+        prepared = await notice_service.send(db, call=call, as_of=as_of, kind=kind)
+    except mailer.MailNotSent as exc:
+        # 503 and not 500: nothing is broken in the fund's data, the relay would not take
+        # the message. The manager can fix the address or the configuration and retry.
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    return _notice_out(prepared, sent_on=as_of)
