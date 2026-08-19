@@ -128,6 +128,52 @@ def test_what_alice_does_say_wins_over_the_environment():
     assert merged["SMTP_FROM_EMAIL"] == "fund@example.test"
 
 
+def test_only_one_module_knows_which_key_opens_the_console():
+    """🔴 TWO KEYS EXIST AND THEY RUN IN OPPOSITE DIRECTIONS.
+
+    `ALICE_INTERNAL_KEY` is what Alice presents when calling THIS product;
+    `ALICE_API_KEY` is what this product presents when calling Alice. Any module that builds
+    its own request to the console has to choose between them, and the first version of
+    `comm_config` chose wrong: Alice answered 401, the module fell back on the environment,
+    and a manager who had just filled the console in correctly kept being told sending was
+    not configured.
+
+    ⚠️ THE FAILURE LOOKED EXACTLY LIKE « ALICE IS UNREACHABLE », which is a state whose right
+    answer IS to fall back on the environment. That is why the fix is « one house owns the
+    key » rather than « use the other constant here ».
+    """
+    source = (BACKEND / "app" / "services" / "comm_config.py").read_text(
+        encoding="utf-8"
+    )
+    tree = ast.parse(source)
+
+    imported = {
+        alias.name.split(".")[0]
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Import)
+        for alias in node.names
+    } | {
+        (node.module or "").split(".")[0]
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom)
+    }
+    assert "httpx" not in imported, (
+        "`comm_config` builds its own HTTP request to the console. It must go through "
+        "`alice_client`, the single module that knows the console's address and which of "
+        "the two keys opens it."
+    )
+
+    read = {
+        node.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Attribute) and node.attr.startswith("ALICE_")
+    }
+    assert not read, (
+        f"`comm_config` reads {sorted(read)} itself. Choosing between the inbound and the "
+        "outbound key is exactly the decision that must be made in one place only."
+    )
+
+
 async def test_a_refusal_is_never_served_from_the_cache(monkeypatch):
     """🔴 A REFUSAL THAT OUTLIVES ITS OWN CAUSE.
 

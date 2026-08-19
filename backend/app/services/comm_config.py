@@ -27,7 +27,6 @@ import logging
 import time
 from dataclasses import dataclass
 
-import httpx
 
 from app.config import get_settings
 
@@ -84,28 +83,24 @@ def _from_env() -> dict:
 async def _fetch_alice() -> dict | None:
     """What Alice says about THIS product, or None when she does not answer.
 
-    ⚠️ `ALICE_INTERNAL_KEY`, NOT `ALICE_API_KEY`. Both keys exist and they run in opposite
-    directions: one is what Alice presents when calling this product, the other what this
-    product presents when calling Alice. Swapping them gives a 401 that nothing explains.
+    🔴 THE CALL GOES THROUGH `alice_client`, WHICH OWNS THE KEY. Two keys exist and they
+    run in opposite directions: `ALICE_INTERNAL_KEY` is what Alice presents when calling this
+    product, `ALICE_API_KEY` what this product presents when calling Alice. Building the
+    request here meant choosing between them, and the first version chose wrong - Alice
+    answered 401, this module fell back on the environment, and a manager who had just filled
+    the console in correctly kept being told sending was not configured.
+
+    ⚠️ AND THE FAILURE WAS SILENT, which is what made it worth moving rather than fixing in
+    place. A 401 here looks exactly like << Alice is unreachable >>, and falling back on the
+    environment is the right answer to that one.
     """
-    settings = get_settings()
-    base = getattr(settings, "ALICE_URL", "") or ""
-    key = getattr(settings, "ALICE_INTERNAL_KEY", "") or ""
-    if not base or not key:
-        return None
+    from app.services import alice_client
+
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(
-                f"{base}/api/v1/internal/comm-config",
-                params={"app": _APP},
-                headers={"X-Internal-Key": key},
-            )
-        if response.status_code == 200:
-            return response.json()
-        logger.warning("Alice comm-config answered %s", response.status_code)
-    except Exception as exc:  # noqa: BLE001 - Alice unreachable: keep the environment
+        return await alice_client.comm_config()
+    except Exception as exc:  # noqa: BLE001 - unreachable console: keep the environment
         logger.debug("Alice comm-config unavailable: %s", exc)
-    return None
+        return None
 
 
 _FROM_ALICE = {

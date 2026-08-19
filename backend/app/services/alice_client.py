@@ -125,6 +125,20 @@ async def payment_config() -> dict:
     return data or {"stripe_enabled": False, "rib_enabled": False}
 
 
+async def comm_config() -> dict | None:
+    """The effective e-mail configuration for THIS product, or None when Alice is silent.
+
+    🔴 IT GOES THROUGH `_call`, AND THAT IS THE WHOLE POINT OF PUTTING IT HERE. The first
+    version of the caller built its own request and presented `ALICE_INTERNAL_KEY` - the
+    INBOUND key, the one Alice shows when calling this product. Alice answered 401, the
+    caller fell back on the environment, and a manager who had just filled the console in
+    correctly kept reading << sending is not configured >>. Nothing failed loudly.
+
+    One house knows the console's address and which of the two keys opens it.
+    """
+    return await _call("GET", "/api/v1/internal/comm-config", params={"app": "invest"})
+
+
 async def billing(
     method: str,
     action: str,
