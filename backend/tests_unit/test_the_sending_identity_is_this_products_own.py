@@ -128,6 +128,57 @@ def test_what_alice_does_say_wins_over_the_environment():
     assert merged["SMTP_FROM_EMAIL"] == "fund@example.test"
 
 
+async def test_a_refusal_is_never_served_from_the_cache(monkeypatch):
+    """🔴 A REFUSAL THAT OUTLIVES ITS OWN CAUSE.
+
+    What a manager does after << sending is not configured >> is go and configure it in the
+    console, then come straight back. A flat five-minute cache would hand them the same
+    refusal on a product that is now correctly set up.
+    """
+    from app.services import comm_config
+
+    answers = [
+        {"smtp_host": "relay.brevo", "smtp_from_email": ""},  # nothing entered yet
+        {
+            "smtp_host": "relay.brevo",
+            "smtp_from_email": "fund@x.test",
+        },  # entered in the meantime
+    ]
+
+    async def _alice() -> dict:
+        return answers.pop(0) if len(answers) > 1 else answers[0]
+
+    monkeypatch.setattr(comm_config, "_fetch_alice", _alice)
+    comm_config.forget()
+
+    first = await comm_config.get_effective_comm()
+
+    assert first.can_send, (
+        "The first answer could not send and nothing was read again: the refusal would "
+        "have outlived its own correction by five minutes."
+    )
+
+
+async def test_a_working_configuration_is_read_once_and_kept(monkeypatch):
+    """And the other half: the cache exists so a batch of notices does not make one request
+    per letter. An installation that works must never read again."""
+    from app.services import comm_config
+
+    calls = []
+
+    async def _alice() -> dict:
+        calls.append(1)
+        return {"smtp_host": "relay.brevo", "smtp_from_email": "fund@x.test"}
+
+    monkeypatch.setattr(comm_config, "_fetch_alice", _alice)
+    comm_config.forget()
+
+    for _ in range(5):
+        await comm_config.get_effective_comm()
+
+    assert len(calls) == 1, f"{len(calls)} calls to Alice for five letters"
+
+
 def test_the_backend_reads_the_shared_smtp_store_before_its_own_env():
     """🔴 THE SHARED STORE, AND THE ORDER THAT DECIDES WHO WINS.
 

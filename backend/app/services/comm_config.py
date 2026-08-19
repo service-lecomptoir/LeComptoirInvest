@@ -132,7 +132,7 @@ def _merge(env: dict, alice: dict | None) -> dict:
     return merged
 
 
-async def get_effective_comm() -> EffectiveComm:
+async def _read() -> EffectiveComm:
     now = time.monotonic()
     if _cache["data"] is None or (now - _cache["ts"]) > _TTL_SECONDS:
         _cache["data"] = _merge(_from_env(), await _fetch_alice())
@@ -140,9 +140,27 @@ async def get_effective_comm() -> EffectiveComm:
     return EffectiveComm(**_cache["data"])
 
 
+async def get_effective_comm() -> EffectiveComm:
+    """The configuration in force, five minutes old at most - unless it says « no ».
+
+    🔴 A REFUSAL IS NEVER SERVED FROM THE CACHE. What a manager does after « sending is not
+    configured » is go and configure it, then come straight back and try again. With a flat
+    five-minute cache they would meet the same refusal, on a product that is now correctly
+    set up - a refusal that outlives its own cause, which is the most maddening kind.
+
+    ⚠️ THE COST IS BOUNDED BECAUSE IT ONLY HAPPENS ON THE NEGATIVE PATH. A configured
+    installation never re-reads: the cache exists so a batch of notices does not make one
+    request per letter, and a batch only runs when sending works.
+    """
+    effective = await _read()
+    if effective.can_send:
+        return effective
+    forget()
+    return await _read()
+
+
 def forget() -> None:
-    """Empty the cache. For the tests, and for the day a screen wants to say « I have just
-    changed the configuration, read it again »."""
+    """Drop the cached answer so the next read goes back to Alice."""
     _cache["data"] = None
     _cache["ts"] = 0.0
 
