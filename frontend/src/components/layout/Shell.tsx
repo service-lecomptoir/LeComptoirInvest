@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
+import { LogoMark } from '@/components/common/Logo'
 import { ProfileMenu } from '@/components/layout/ProfileMenu'
 
 interface Item {
@@ -28,15 +29,18 @@ interface Item {
  */
 const FUND_NAV: { section: string; items: Item[] }[] = [
   {
+    // ⚠️ L'ORDRE RACONTE LE CYCLE DU FONDS, il n'est pas alphabétique ni historique :
+    // la vue d'ensemble, ce dans quoi on investit, ce qui revient, puis l'argent à gérer
+    // au quotidien. Un menu rangé par ordre d'ajout fait chercher deux fois.
     section: 'nav.fund',
     items: [
       { to: '/', key: 'nav.dashboard', icon: LayoutDashboard },
-      { to: '/funds', key: 'nav.funds', icon: Layers },
-      { to: '/treasury', key: 'nav.treasury', icon: Wallet },
-      { to: '/late-calls', key: 'nav.lateCalls', icon: AlarmClock },
       { to: '/projects', key: 'nav.projects', icon: Building2 },
+      { to: '/funds', key: 'nav.funds', icon: Layers },
       { to: '/distributions', key: 'nav.distributions', icon: Banknote },
       { to: '/performance', key: 'nav.performance', icon: TrendingUp },
+      { to: '/treasury', key: 'nav.treasury', icon: Wallet },
+      { to: '/late-calls', key: 'nav.lateCalls', icon: AlarmClock },
     ],
   },
   {
@@ -61,16 +65,35 @@ const INVESTOR_NAV: { section: string; items: Item[] }[] = [
   },
 ]
 
+/**
+ * En haut du bandeau : la marque, puis la société de gestion.
+ *
+ * 🔴 DEUX LIGNES, ET L'ORDRE COMPTE. Le produit d'abord, parce que c'est lui qui
+ * répond à « où suis-je » quand on ouvre trois consoles de la maison côte à côte ; le nom
+ * de la société ensuite, parce qu'il répond à « pour qui ». L'inverse ferait chercher la
+ * marque en second, et c'est elle qu'on cherche en premier dans une barre des tâches.
+ *
+ * ⚠️ LA SECONDE LIGNE DISPARAÎT SI ELLE EST VIDE, plutôt que de laisser un blanc. Un
+ * compte sans nom de société existe ; une ligne vide se lit comme un défaut d'affichage.
+ */
 function Brand() {
   const { t } = useTranslation()
+  const accountName = useAuthStore((state) => state.accountName)
   return (
-    <div className="flex items-center gap-2.5 px-4 h-14 shrink-0">
-      <span className="grid place-items-center w-7 h-7 rounded-md bg-brand-teal text-white text-[13px] font-bold">
-        C
-      </span>
-      <span className="text-[15px] font-semibold text-white tracking-tight">
-        {t('brand.first')} <span className="text-brand-teal">{t('brand.second')}</span>
-      </span>
+    <div className="flex items-center gap-2.5 px-4 h-16 shrink-0">
+      <LogoMark size={28} className="shrink-0 text-brand-teal" />
+      <div className="min-w-0">
+        <div className="text-[15px] font-semibold text-white tracking-tight leading-tight truncate">
+          {t('brand.full')}
+        </div>
+        {accountName && (
+          // ⚠️ `truncate` : une raison sociale est saisie par quelqu'un, et
+          // « Meridian Capital Partners Gestion SAS » déborderait d'un bandeau de 240 px.
+          <div className="text-[11.5px] text-white/55 leading-tight truncate" title={accountName}>
+            {accountName}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -116,11 +139,11 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
 
 /** The pages a reader can be on that have no menu entry of their own.
  *
- *  ⚠️ Written out because they exist, not because a list is nice: `/change-password` is
- *  reached from the footer and is where a forced change lands, so it is the ONE page a new
- *  account sees first. A tab reading just « Le Comptoir Invest » there says nothing. */
+ *  ⚠️ Written out because they exist, not because a list is nice: `/profile` is reached from
+ *  the account menu and is where a forced password change lands, so it is the ONE page a
+ *  new account sees first. A tab reading just « Le Comptoir Invest » there says nothing. */
 const OFF_MENU_TITLES: Record<string, string> = {
-  '/change-password': 'password.title',
+  '/profile': 'profile.title',
   // 🔴 SORTI DU MENU, DONC SORTI DE LA CARTE DES TITRES qui en est dérivée. La garde l'a
   // signalé à la seconde où la ligne a quitté `FUND_NAV` : c'est exactement ce qu'elle
   // existe pour attraper, un écran qui reste servi et dont l'onglet retombe sur la marque.
@@ -213,8 +236,12 @@ export function Shell() {
           >
             <Menu size={20} />
           </button>
-          <span className="lg:hidden text-[15px] font-semibold text-white">
-            {t('brand.first')} <span className="text-brand-teal">{t('brand.second')}</span>
+          {/* ⚠️ LA MÊME MARQUE QU'À GAUCHE, pas une variante. Deux écritures du même nom
+              selon la taille de l'écran, c'est celle qu'on regarde le moins qui prend du
+              retard le jour où le nom change. */}
+          <span className="lg:hidden flex items-center gap-2 text-[15px] font-semibold text-white">
+            <LogoMark size={22} className="shrink-0 text-brand-teal" />
+            {t('brand.full')}
           </span>
 
           {/* Pousse le reste a droite : c'est la seule chose que cette barre a a dire. */}

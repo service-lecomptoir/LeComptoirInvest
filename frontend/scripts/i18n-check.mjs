@@ -32,8 +32,36 @@ const extra = Object.keys(en).filter((k) => !(k in fr))
 // would have taught whoever hit it to widen the exception list until the check meant
 // nothing. Two languages agreeing on a WHOLE SENTENCE is what evidences a copy, and three
 // words is where a sentence starts.
+// 🔴 LA REGLE VIT DANS `src/i18n/copyRule.ts`, LUE PAR LES DEUX GARDES.
+//
+// Elle etait ecrite deux fois : ici et dans `src/i18n/catalogue.test.ts`. Elles n'avaient
+// jamais diverge, et c'est pourquoi il fallait les reunir avant : corriger l'une laisse
+// l'autre rouge, et la premiere chose qu'on fait devant une garde rouge qu'on croit avoir
+// corrigee, c'est douter de la garde. Ajouter `brand.full` a fait tomber les deux.
+//
+// ⚠️ CE FICHIER EST DU `.mjs` ET NE PEUT PAS IMPORTER DU TypeScript sans outillage. Il
+// lit donc les deux constantes DANS LA SOURCE, ce qui est moins elegant qu'un import et
+// bien plus sur qu'une troisieme copie : si la source change, ce fichier suit ou echoue.
+const rule = readFileSync(join(here, '..', 'src/i18n/copyRule.ts'), 'utf8')
+const readConst = (name) => {
+  const found = rule.match(new RegExp(`const ${name} = (.+)`))
+  if (!found) {
+    console.error(`copyRule.ts n'expose plus ${name} : la garde ne peut plus la lire.`)
+    process.exit(1)
+  }
+  return found[1].replace(/\s*(\/\/.*)?$/, '').replace(/['"]/g, '')
+}
+const MIN_WORDS = Number(readConst('MIN_WORDS'))
+const NEVER_TRANSLATED = readConst('NEVER_TRANSLATED')
+
 const words = (value) => String(value).trim().split(/\s+/).length
-const copied = Object.keys(fr).filter((k) => k in en && fr[k] === en[k] && words(fr[k]) > 2)
+const copied = Object.keys(fr).filter(
+  (k) =>
+    k in en &&
+    fr[k] === en[k] &&
+    words(fr[k]) >= MIN_WORDS &&
+    !k.startsWith(NEVER_TRANSLATED),
+)
 
 let failed = false
 const report = (title, keys, render = (k) => `  ${k}`) => {

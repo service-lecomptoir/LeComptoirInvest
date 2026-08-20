@@ -18,6 +18,12 @@ import { TOKEN_KEY } from '@/api/client'
 interface AuthState {
   role: string | null
   email: string | null
+  /** Le nom de la SOCIETE DE GESTION, celui que porte le compte.
+   *
+   *  ⚠️ Ce n'est pas le nom du produit. La barre laterale montrait la marque et rien
+   *  d'autre : un gestionnaire qui ouvre trois consoles de la maison ne savait pas, d'un
+   *  coup d'oeil, laquelle etait la sienne. `/auth/me` le renvoyait deja. */
+  accountName: string | null
   isAuthenticated: boolean
   isInitializing: boolean
   seesWholeFund: boolean
@@ -33,6 +39,7 @@ interface AuthState {
 const CLEARED = {
   role: null,
   email: null,
+  accountName: null,
   isAuthenticated: false,
   seesWholeFund: false,
   mustChangePassword: false,
@@ -47,6 +54,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({
       role: data.role,
       email: data.email,
+      accountName: data.account_name,
       isAuthenticated: true,
       seesWholeFund: data.sees_whole_fund,
       mustChangePassword: data.must_change_password,

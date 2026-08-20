@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router
 import { Shell } from '@/components/layout/Shell'
 import { useAuthStore } from '@/store/authStore'
 import Login from '@/pages/Login'
-import ChangePassword from '@/pages/ChangePassword'
+import MyProfile from '@/pages/profile/MyProfile'
 import Dashboard from '@/pages/Dashboard'
 import Treasury from '@/pages/Treasury'
 import Projects from '@/pages/Projects'
@@ -19,7 +19,12 @@ import Performance from '@/pages/Performance'
 import LateCalls from '@/pages/LateCalls'
 import Funds from '@/pages/Funds'
 
-const PASSWORD_ROUTE = '/change-password'
+// 🔴 LE PROFIL EST AUSSI LA PORTE DU CHANGEMENT IMPOSE, et c'est pourquoi il n'y a
+// qu'une constante. Le mot de passe y est une SECTION : deux ecrans, l'un pour se
+// presenter et l'autre pour changer son mot de passe, auraient laisse le changement force
+// atterrir sur une page sans contexte, celle-la meme qu'un compte tout neuf voit en
+// premier. Voir pages/profile/MyProfile.tsx.
+const PROFILE_ROUTE = '/profile'
 
 function RequireAuth() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -31,8 +36,8 @@ function RequireAuth() {
   // 🔴 LE CHANGEMENT IMPOSÉ BLOQUE TOUT LE RESTE, et c'est le seul endroit où l'appliquer.
   // Le poser sur chaque écran laisserait celui qu'on oublie servir de porte dérobée, et
   // c'est toujours le douzième écran ajouté sous pression qui l'est.
-  if (mustChangePassword && location.pathname !== PASSWORD_ROUTE) {
-    return <Navigate to={PASSWORD_ROUTE} replace />
+  if (mustChangePassword && location.pathname !== PROFILE_ROUTE) {
+    return <Navigate to={PROFILE_ROUTE} replace />
   }
   return <Outlet />
 }
@@ -79,7 +84,7 @@ export const router = createBrowserRouter([
         element: <Shell />,
         children: [
           { path: '/', element: <Home /> },
-          { path: PASSWORD_ROUTE, element: <ChangePassword /> },
+          { path: PROFILE_ROUTE, element: <MyProfile /> },
           { path: '/projects', element: <Projects /> },
           { path: '/treasury', element: <FundOnly><Treasury /></FundOnly> },
           { path: '/distributions', element: <FundOnly><Distributions /></FundOnly> },

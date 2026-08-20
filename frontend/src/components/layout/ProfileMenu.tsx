@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ChevronDown, CreditCard, KeyRound, LogOut } from 'lucide-react'
+import { ChevronDown, CreditCard, LogOut, UserRound } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { confirmDialog } from '@/store/confirm'
 
@@ -97,12 +97,12 @@ export function ProfileMenu() {
               role="menuitem"
               onClick={() => {
                 setOpen(false)
-                navigate('/change-password')
+                navigate('/profile')
               }}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              <KeyRound size={15} className="text-gray-400" />
-              {t('password.title')}
+              <UserRound size={15} className="text-gray-400" />
+              {t('profile.title')}
             </button>
             {/* 🔴 RÉSERVÉ À QUI PAIE. `/billing` est un écran de la gestion du fonds :
                 l'afficher à un investisseur lui proposerait une page qui le renvoie chez

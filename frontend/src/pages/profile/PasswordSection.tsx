@@ -5,25 +5,30 @@ import { KeyRound } from 'lucide-react'
 import { authApi } from '@/api'
 import { errorMessage } from '@/api/client'
 import { Button, Input } from '@/components/ui'
-import { Card, Notice, PageHeader } from '@/components/common/Primitives'
+import { Card, Notice } from '@/components/common/Primitives'
 import { useAuthStore } from '@/store/authStore'
 import { toast } from '@/store/toast'
 
 /**
- * L'écran qui manquait, et son absence ne ressemblait pas à une panne.
+ * Changer son mot de passe. Une SECTION du profil, plus un écran à part.
  *
- * 🔴 `must_change_password` était posé à trois endroits — l'amorçage, la création d'un
- * compte par Alice, chaque réinitialisation — et fidèlement renvoyé à la connexion. Rien ne
- * permettait d'y répondre. On exigeait d'un utilisateur qu'il remplace un identifiant qu'un
- * autre avait vu, sans lui en donner le moyen. Un contrôle qu'on ne peut pas satisfaire
- * n'est pas un contrôle, c'est un panneau.
+ * 🔴 POURQUOI CE N'EST PLUS UNE PAGE. « Changer de mot de passe » répondait à une
+ * question qu'on ne se pose presque jamais, et occupait la seule entrée de menu qui
+ * répondait à « qui suis-je ». Un lecteur qui vient du Comptoir Immo cherche son profil,
+ * et y trouve son mot de passe parmi le reste : c'est l'organisation de la maison.
+ *
+ * 🔴 L'ÉCRAN QUI MANQUAIT, ET SON ABSENCE NE RESSEMBLAIT PAS À UNE PANNE.
+ * `must_change_password` était posé à trois endroits — l'amorçage, la création d'un compte
+ * par Alice, chaque réinitialisation — et fidèlement renvoyé à la connexion. Rien ne
+ * permettait d'y répondre. Un contrôle qu'on ne peut pas satisfaire n'est pas un contrôle,
+ * c'est un panneau.
  *
  * ⚠️ LE MOT DE PASSE ACTUEL EST DEMANDÉ MÊME QUAND LE CHANGEMENT EST IMPOSÉ. C'est
  * précisément là qu'on serait tenté de l'assouplir — « de toute façon il doit changer » —
- * et c'est là que ça coûte : un jeton dérobé suffirait à s'approprier le compte
- * définitivement, la victime perdant l'accès que l'attaquant conserve.
+ * et là que ça coûte : un jeton dérobé suffirait à s'approprier le compte définitivement,
+ * la victime perdant l'accès que l'attaquant conserve.
  */
-export default function ChangePassword() {
+export function PasswordSection() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const mustChange = useAuthStore((s) => s.mustChangePassword)
@@ -62,10 +67,9 @@ export default function ChangePassword() {
   }
 
   return (
-    <>
-      <PageHeader title={t('password.title')} />
-
-      <div className="max-w-xl">
+    <section className="max-w-xl">
+      <h2 className="mb-3 text-sm font-semibold text-gray-900">{t('password.title')}</h2>
+      <div>
         <div className="mb-5">
           {/* Le titre de l'encadré n'est PAS celui de la page : répété, il ne dit
               rien et pousse le message utile plus bas. */}
@@ -121,6 +125,6 @@ export default function ChangePassword() {
           </form>
         </Card>
       </div>
-    </>
+    </section>
   )
 }

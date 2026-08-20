@@ -23,6 +23,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import fr from './locales/fr.json'
 import en from './locales/en.json'
+import { copiedKeys } from './copyRule'
 
 const SRC = join(__dirname, '..')
 const ACCENTED = /[àâäçéèêëîïôöùûüÿœÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸŒ]/
@@ -84,12 +85,11 @@ describe('the interface is translated, not written twice', () => {
   it('no English entry is a copy of its French counterpart', () => {
     const frMap = Object.fromEntries(flatten(fr as Record<string, unknown>))
     const enMap = Object.fromEntries(flatten(en as Record<string, unknown>))
-    // Three words is where a sentence starts; a single shared word (« Distributions »,
-    // « Total ») is a coincidence, not a copy.
-    const copied = Object.keys(frMap).filter(
-      (k) =>
-        frMap[k] === enMap[k] && String(frMap[k]).trim().split(/\s+/).length > 2,
-    )
+    // 🔴 LA REGLE VIT DANS `copyRule.ts`, ET PAS ICI. Elle etait ecrite deux fois : ici
+    // et dans `scripts/i18n-check.mjs`. Ajouter `brand.full` a fait tomber les deux, l'une
+    // apres l'autre -- et la premiere chose qu'on fait devant une garde rouge qu'on croit
+    // avoir corrigee, c'est douter de la garde.
+    const copied = copiedKeys(frMap, enMap)
     expect(copied, `Recopiés du français : ${copied.join(', ')}`).toEqual([])
   })
 })
