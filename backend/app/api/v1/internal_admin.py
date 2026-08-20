@@ -92,6 +92,13 @@ class ManagerOut(BaseModel):
     #: ⚠️ IT IS THE SAME NUMBER ON EVERY MANAGER ACCOUNT of one installation, because this
     #: product has ONE register that every manager sees. Two manager accounts on the same
     #: fund therefore report the same count, and Alice bills a licence per account.
+    #: 🔴 THE GENERIC NAME, the one this platform is moving to. It pairs with Alice's
+    #: registry, which already carries each product's WORD (`managed_one` /
+    #: `managed_many`): this is the count of it.
+    managed_count: int = 0
+    #: ⚠️ THE OLD NAME, EMITTED WHILE A READER MAY STILL EXPECT IT. The five repositories
+    #: deploy separately, and a key nobody reads does not raise: it comes back empty. A
+    #: ceiling compared against an empty count bills no overage at all, in silence.
     property_count: int = 0
 
     model_config = {"from_attributes": True, "populate_by_name": True}
@@ -223,7 +230,9 @@ async def list_managers(
     )
     counted = await _investors_under_management(db)
     return [
-        ManagerOut.model_validate(r).model_copy(update={"property_count": counted})
+        ManagerOut.model_validate(r).model_copy(
+            update={"managed_count": counted, "property_count": counted}
+        )
         for r in rows
     ]
 

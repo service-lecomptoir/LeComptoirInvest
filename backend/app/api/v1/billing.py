@@ -63,10 +63,16 @@ def _as_info(license_: dict | None) -> SubscriptionInfo:
         is_blocked=bool(license_.get("is_blocked")),
         features=license_.get("features"),
         access_until=license_.get("access_until"),
-        # Alice names this limit `property_limit` for every product: it is the
-        # cross-product contract, read as it stands and renamed for OUR screens only.
-        # Renaming it at the source would break the three sister products.
-        fund_limit=license_.get("property_limit"),
+        # 🔴 THE TWO NAMES, AND THE ORDER MATTERS. `managed_limit` is the generic name
+        # this platform is moving to: the ceiling counts properties at Immo, homes at
+        # Sejour, investors here. `property_limit` is what Alice sent before the switch,
+        # and it is still read because the five repositories deploy separately.
+        #
+        # ⚠️ `.get(new, .get(old))` IS CORRECT ON BOTH PATHS, and it is worth checking
+        # rather than assuming: a key PRESENT and null means « unlimited », and the
+        # expression returns None for it — the right answer — while an ABSENT key falls
+        # through to the old name.
+        fund_limit=license_.get("managed_limit", license_.get("property_limit")),
     )
 
 
