@@ -77,6 +77,23 @@ class ManagerOut(BaseModel):
     country: str | None = None
     created_at: datetime | None = None
 
+    #: 🔴 THE BILLING QUANTITY, UNDER THE NAME THE PLATFORM ALREADY SPEAKS. Alice reads
+    #: `property_count` from every product and multiplies whatever exceeds the plan's
+    #: limit by the overage price. The word says « property » because the first product
+    #: managed properties; renaming the wire format would break four products at once for
+    #: one reader's comfort. What it CARRIES is « the units this subscription is billed on ».
+    #:
+    #: 🔴 AND FOR A FUND, THOSE UNITS ARE INVESTORS, NOT VEHICLES. Everything this product
+    #: does scales with them: a KYC file, a capital call, a notice, a reminder, an annual
+    #: statement, a share of every distribution. A club deal of six people on fifty million
+    #: is less work than a crowdfunding raise of four hundred on two — and billing by
+    #: vehicle would charge the two the same.
+    #:
+    #: ⚠️ IT IS THE SAME NUMBER ON EVERY MANAGER ACCOUNT of one installation, because this
+    #: product has ONE register that every manager sees. Two manager accounts on the same
+    #: fund therefore report the same count, and Alice bills a licence per account.
+    property_count: int = 0
+
     model_config = {"from_attributes": True, "populate_by_name": True}
 
 
@@ -204,7 +221,39 @@ async def list_managers(
         .scalars()
         .all()
     )
-    return [ManagerOut.model_validate(r) for r in rows]
+    counted = await _investors_under_management(db)
+    return [
+        ManagerOut.model_validate(r).model_copy(update={"property_count": counted})
+        for r in rows
+    ]
+
+
+async def _investors_under_management(db: AsyncSession) -> int:
+    """How many investors this installation actually carries. The billing quantity.
+
+    🔴 A REFUSED FILE IS NOT AN INVESTOR UNDER MANAGEMENT. They were assessed and turned
+    away: they hold nothing, they receive nothing, and no capital call will ever go to
+    them. Counting them would bill a fund for the people it declined — and the more
+    carefully it screens, the more it would pay.
+
+    ⚠️ EVERYTHING ELSE COUNTS, including a file still pending or under review. The work
+    is done the moment the file exists, which is exactly what is being billed; waiting
+    for an acceptance would make the quantity lag the effort by weeks.
+    """
+    from sqlalchemy import func
+
+    from app.core import kyc
+    from app.models.investor import Investor
+
+    return int(
+        (
+            await db.execute(
+                select(func.count(Investor.id)).where(
+                    Investor.kyc_status != kyc.REFUSED
+                )
+            )
+        ).scalar_one()
+    )
 
 
 @router.get("/managers/{manager_id}", response_model=ManagerOut)
