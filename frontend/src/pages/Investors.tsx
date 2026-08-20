@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Eye, Plus, ShieldAlert, ShieldCheck, ShieldQuestion, ShieldX, Users } from 'lucide-react'
 import { investorsApi } from '@/api'
+import { withOverageConsent } from '@/lib/overage'
 import { Button, Input, Select } from '@/components/ui'
 import {
   Card, EmptyState, Loading, Notice, PageHeader, Pill, TableWrap, Td, Th,
 } from '@/components/common/Primitives'
 import { day } from '@/lib/format'
 import { toast } from '@/store/toast'
-import type { InvestorCategory } from '@/types'
+import type { InvestorCategory, InvestorQuota } from '@/types'
 
 /** The four verdicts, exactly as `app/core/kyc.py` names them. The tone follows what each
  *  one DOES to money, not how pleasant it sounds: « pending » blocks just as hard as
@@ -42,9 +43,15 @@ export default function Investors() {
   const [deciding, setDeciding] = useState<Row | null>(null)
   const [assessing, setAssessing] = useState<Row | null>(null)
   const [bank, setBank] = useState<Record<string, { iban: string | null }>>({})
+  const [quota, setQuota] = useState<InvestorQuota | null>(null)
 
-  const load = () =>
-    investorsApi.list().then((r) => setRows(r.data as unknown as Row[])).catch(() => setRows([]))
+  const load = () => {
+    // ⚠️ RELOADED WITH THE REGISTER, NEVER ONCE AT MOUNT. Adding an investor is exactly
+    // what moves this number, and a banner still reading « 48 of 50 » after the 50th was
+    // registered would be the one screen in the product that lies about the plan.
+    investorsApi.quota().then((r) => setQuota(r.data)).catch(() => setQuota(null))
+    return investorsApi.list().then((r) => setRows(r.data as unknown as Row[])).catch(() => setRows([]))
+  }
   useEffect(() => {
     load()
   }, [])
@@ -75,6 +82,8 @@ export default function Investors() {
           <NewInvestor onCancel={() => setCreating(false)} onDone={() => { setCreating(false); load() }} />
         </div>
       )}
+
+      <Allowance quota={quota} />
 
       {blocked > 0 && (
         <div className="mb-6">
@@ -205,6 +214,54 @@ export default function Investors() {
   )
 }
 
+
+/**
+ * Where the register stands against the plan, above the register itself.
+ *
+ * 🔴 IT SAYS NOTHING WHEN THERE IS NOTHING TO SAY. A fund with no console, or on an
+ * unlimited plan, has no ceiling: a permanent « 12 / unlimited » strip would be furniture
+ * the reader learns to skip, and the day it turns into a warning nobody would notice.
+ *
+ * ⚠️ « unknown » GETS ITS OWN SENTENCE, and it is the reason this component exists rather
+ * than a number in the header. The console did not answer: the allowance cannot be read
+ * and the next registration WILL be refused. Showing room to spare there, or showing
+ * nothing at all, would leave a manager meeting a refusal with no idea why.
+ */
+function Allowance({ quota }: { quota: InvestorQuota | null }) {
+  const { t } = useTranslation()
+  if (!quota) return null
+
+  if (quota.verdict === 'unknown') {
+    return (
+      <div className="mb-6">
+        <Notice tone="warn" title={t('investors.quotaUnknownTitle')}>
+          {t('investors.quotaUnknownBody')}
+        </Notice>
+      </div>
+    )
+  }
+  if (quota.limit === null) return null
+
+  const left = quota.limit - quota.current
+  //   Quiet until it matters: the last two places, or past the ceiling.
+  if (quota.verdict === 'ok' && left > 2) return null
+
+  return (
+    <div className="mb-6">
+      <Notice
+        tone={quota.verdict === 'blocked' ? 'bad' : 'warn'}
+        title={t('investors.quotaTitle', { current: quota.current, limit: quota.limit })}
+      >
+        {quota.verdict === 'blocked'
+          ? t('investors.quotaBlockedBody')
+          : quota.verdict === 'overage'
+            ? t('investors.quotaOverageBody', { price: quota.price })
+            : t('investors.quotaNearBody', { count: left })}
+      </Notice>
+    </div>
+  )
+}
+
 /**
  * Rendre un verdict — l'écran sans lequel le registre ne servait à rien.
  *
@@ -235,11 +292,17 @@ function KycVerdict({
     }
     setBusy(true)
     try {
-      await investorsApi.setKyc(investor.id, {
-        status,
-        risk_level: risk,
-        reason: reason.trim() || undefined,
-      })
+      // 🔴 THE SECOND DOOR THE ALLOWANCE IS COUNTED THROUGH. A refused file is not billed;
+      // lifting that refusal makes it billable again, so this verdict can cost money even
+      // though nothing on this form mentions a plan. The server asks, and this answers.
+      const recorded = await withOverageConsent((acceptOverage) =>
+        investorsApi.setKyc(investor.id, {
+          status,
+          risk_level: risk,
+          reason: reason.trim() || undefined,
+        }, acceptOverage),
+      )
+      if (!recorded) return
       toast.success(t('kyc.recorded'))
       onDone()
     } catch {
@@ -313,14 +376,20 @@ function NewInvestor({ onCancel, onDone }: { onCancel: () => void; onDone: () =>
     e.preventDefault()
     setBusy(true)
     try {
-      await investorsApi.create({
-        kind,
-        first_name: kind === 'personne' ? firstName.trim() || null : null,
-        last_name: kind === 'personne' ? lastName.trim() || null : null,
-        company_name: kind === 'societe' ? company.trim() || null : null,
-        email: email.trim() || null,
-        iban: iban.trim() || null,
-      })
+      // ⚠️ `null` MEANS THE USER DECLINED THE SUPPLEMENT, which is neither a success nor a
+      // failure. Announcing « added » here would name something that did not happen, and
+      // the form must stay open so they can change their mind or their plan.
+      const created = await withOverageConsent((acceptOverage) =>
+        investorsApi.create({
+          kind,
+          first_name: kind === 'personne' ? firstName.trim() || null : null,
+          last_name: kind === 'personne' ? lastName.trim() || null : null,
+          company_name: kind === 'societe' ? company.trim() || null : null,
+          email: email.trim() || null,
+          iban: iban.trim() || null,
+        }, acceptOverage),
+      )
+      if (!created) return
       toast.success(t('investors.added'))
       onDone()
     } catch {

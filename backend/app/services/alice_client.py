@@ -107,9 +107,25 @@ async def _call(
     return resp.json()
 
 
-async def get_license(user_id: UUID) -> dict | None:
-    """The manager's licence: plan, price, blocking, included features."""
-    return await _call("GET", f"/api/v1/internal/license/{user_id}")
+def console_configured() -> bool:
+    """Whether a console drives this installation AT ALL - a question about CONFIGURATION.
+
+    🔴 IT ANSWERS SOMETHING NO FAILED CALL EVER ANSWERS. « Nobody sells this fund a plan »
+    and « the console did not reply » look identical to a caller that only sees `None`, and a
+    quota that conflated the two would have gone unlimited for the whole of any outage. The
+    guard asks this FIRST, and only then places a call it is allowed to fail on.
+    """
+    return _target() is not None
+
+
+async def get_license(user_id: UUID, *, strict: bool = False) -> dict | None:
+    """The manager's licence: plan, price, blocking, included features, ceiling.
+
+    ⚠️ `strict` IS FOR CALLERS THAT ENFORCE, not for callers that display. The subscription
+    screen wants a soft `None` and shows « unknown »; the quota guard wants the failure,
+    because the alternative is granting an allowance nobody checked.
+    """
+    return await _call("GET", f"/api/v1/internal/license/{user_id}", strict=strict)
 
 
 async def payment_config() -> dict:

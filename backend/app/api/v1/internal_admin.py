@@ -31,6 +31,7 @@ from app.database import get_db
 from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.user import FUND_WIDE_ROLES, MANAGER, User
+from app.services import license_service
 from app.core.i18n import pick
 
 router = APIRouter(prefix="/internal", tags=["internal"])
@@ -224,39 +225,11 @@ async def list_managers(
         .scalars()
         .all()
     )
-    counted = await _investors_under_management(db)
+    counted = await license_service.count_investors(db)
     return [
         ManagerOut.model_validate(r).model_copy(update={"managed_count": counted})
         for r in rows
     ]
-
-
-async def _investors_under_management(db: AsyncSession) -> int:
-    """How many investors this installation actually carries. The billing quantity.
-
-    🔴 A REFUSED FILE IS NOT AN INVESTOR UNDER MANAGEMENT. They were assessed and turned
-    away: they hold nothing, they receive nothing, and no capital call will ever go to
-    them. Counting them would bill a fund for the people it declined — and the more
-    carefully it screens, the more it would pay.
-
-    ⚠️ EVERYTHING ELSE COUNTS, including a file still pending or under review. The work
-    is done the moment the file exists, which is exactly what is being billed; waiting
-    for an acceptance would make the quantity lag the effort by weeks.
-    """
-    from sqlalchemy import func
-
-    from app.core import kyc
-    from app.models.investor import Investor
-
-    return int(
-        (
-            await db.execute(
-                select(func.count(Investor.id)).where(
-                    Investor.kyc_status != kyc.REFUSED
-                )
-            )
-        ).scalar_one()
-    )
 
 
 @router.get("/managers/{manager_id}", response_model=ManagerOut)
@@ -265,7 +238,16 @@ async def get_manager(
     _: None = Depends(require_internal_key),
     db: AsyncSession = Depends(get_db),
 ):
-    return ManagerOut.model_validate(await _managed(db, manager_id))
+    # 🔴 THE SAME NUMBER AS THE LISTING, and it used to be zero here.
+    # `ManagerOut.managed_count` defaults to 0, so this route answered « manages nothing »
+    # for every account, in the exact shape of a real answer. Only the listing is read for
+    # billing today, which is why nobody was billed wrongly — a second reader would have
+    # been. Two paths to one piece of work, one of them complete: the defect this
+    # repository keeps paying for.
+    manager = await _managed(db, manager_id)
+    return ManagerOut.model_validate(manager).model_copy(
+        update={"managed_count": await license_service.count_investors(db)}
+    )
 
 
 @router.get("/billing-identity/{user_id}")

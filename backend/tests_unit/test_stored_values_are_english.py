@@ -74,6 +74,16 @@ APPROVED: dict[str, str] = {
     # at once. The inventory is for names that cannot be taken back, not only for columns.
     "FIRST_NOTICE": "first_notice",
     "REMINDER": "reminder",
+    # ⚠️ THE PLAN'S VERDICT ON THE REGISTER, PUBLISHED AND THEREFORE FROZEN. These four
+    # reach no column either, and they belong here for the same reason as the two above:
+    # `GET /investors/quota` sends the word on the wire and the screen branches on it. A
+    # published value is exactly as hard to rename as a stored one - every caller moves at
+    # once - and « unknown » in particular must keep meaning « the ceiling could not be
+    # read » rather than drifting into « no ceiling ».
+    "OK": "ok",
+    "OVERAGE": "overage",
+    "BLOCKED": "blocked",
+    "UNKNOWN": "unknown",
     # The vehicle's life. `CLOSED` above is shared with a project's: both mean « nothing
     # left to do here », and one word for one meaning is the point of an inventory.
     "RAISING": "raising",

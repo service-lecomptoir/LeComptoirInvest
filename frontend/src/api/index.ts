@@ -4,7 +4,7 @@ import type {
   Statement, SubscriptionRequest, Waterfall,
   BillingSubscription, PaymentMethods, BillingPlan, BillingInvoice, BillingStatus,
   PerformanceBlock, CapitalAccountLine, ProjectValuation, LateCall, InvestorCategory,
-  CamtImport, Fund, FundNetAssetValue, CallNotice,
+  CamtImport, Fund, FundNetAssetValue, CallNotice, InvestorQuota,
 } from '@/types'
 
 export const authApi = {
@@ -24,9 +24,20 @@ export const authApi = {
 export const investorsApi = {
   list: () => apiClient.get<Investor[]>('/investors'),
   me: () => apiClient.get<Investor>('/investors/me'),
-  create: (body: Record<string, unknown>) => apiClient.post<Investor>('/investors', body),
-  setKyc: (id: string, body: Record<string, unknown>) =>
-    apiClient.post<Investor>(`/investors/${id}/kyc`, body),
+  // 🔴 BOTH DOORS THE ALLOWANCE IS COUNTED THROUGH CARRY `accept_overage`, and the
+  // second one does not look like a door. Registering an investor obviously adds one;
+  // REVERSING A REFUSAL does too, because a refused file is not billed and an un-refused
+  // one is. A fund at its ceiling could otherwise refuse a hundred people and un-refuse
+  // them one at a time, for free. Both go through `withOverageConsent`.
+  create: (body: Record<string, unknown>, acceptOverage = false) =>
+    apiClient.post<Investor>('/investors', body, { params: { accept_overage: acceptOverage } }),
+  setKyc: (id: string, body: Record<string, unknown>, acceptOverage = false) =>
+    apiClient.post<Investor>(`/investors/${id}/kyc`, body, {
+      params: { accept_overage: acceptOverage },
+    }),
+  // Where the register stands against the plan. Read-only: it announces, it never refuses,
+  // and it shares its arithmetic with the guard that does.
+  quota: () => apiClient.get<InvestorQuota>('/investors/quota'),
   // Which protections apply, and on what declared basis. Its own endpoint on purpose:
   // folding it into the KYC verdict would let an « accepted » click quietly lift a cap.
   setEligibility: (id: string, body: { category: InvestorCategory; loss_bearing_capacity?: string | null }) =>

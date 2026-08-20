@@ -368,3 +368,27 @@ export interface FundNetAssetValue {
   total: string | null
   unavailable_reason: string | null
 }
+
+/**
+ * Where the register stands against the plan's investor allowance.
+ *
+ * 🔴 `verdict === 'unknown'` IS NEITHER « fine » NOR AN ERROR. It means the console did
+ * not answer, so the ceiling cannot be read: the screen says so, and registration will
+ * refuse until it can. Rendering it as room to spare is the failure this whole contract
+ * exists to prevent — every capped plan would look uncapped for the length of an outage.
+ *
+ * ⚠️ `limit === null` MEANS UNLIMITED, not zero. Absence and « none allowed » travel
+ * differently on this wire, and a reader that confused them would block the largest plan.
+ */
+export interface InvestorQuota {
+  verdict: 'ok' | 'overage' | 'blocked' | 'unknown'
+  current: number
+  limit: number | null
+  adding: number
+  after: number
+  excess: number
+  /** Monthly price of ONE investor beyond the plan, as the console sets it. */
+  price: number
+  /** What the whole excess costs per month, at that price. */
+  monthly_cost: number
+}

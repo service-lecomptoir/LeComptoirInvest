@@ -200,7 +200,17 @@
       "retail": "Particulier",
       "sophisticated": "Averti",
       "professional": "Professionnel"
-    }
+    },
+    "overageTitle": "Cet ajout dépasse votre forfait",
+    "overageConfirm": "Confirmer et payer le supplément",
+    "quotaTitle": "{{current}} investisseur sur {{limit}} inclus dans votre offre",
+    "quotaTitle_other": "{{current}} investisseurs sur {{limit}} inclus dans votre offre",
+    "quotaNearBody": "Il reste une place. Au delà, votre offre ne permet pas d'en enregistrer d'autres.",
+    "quotaNearBody_other": "Il reste {{count}} places. Au delà, votre offre ne permet pas d'en enregistrer d'autres.",
+    "quotaOverageBody": "Chaque investisseur au delà du forfait est facturé {{price}} €/mois, ajouté à votre abonnement. La question vous sera posée avant chaque ajout.",
+    "quotaBlockedBody": "Votre offre ne permet pas de dépasser ce plafond. Passez à une offre supérieure pour enregistrer d'autres investisseurs.",
+    "quotaUnknownTitle": "Votre forfait n'a pas pu être lu",
+    "quotaUnknownBody": "La console d'abonnement n'a pas répondu. Tant qu'elle est muette, aucun investisseur ne peut être enregistré : accorder un plafond que personne n'a vérifié reviendrait à rendre toutes les offres illimitées."
   },
   "subscriptions": {
     "title": "Souscriptions",

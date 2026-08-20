@@ -64,9 +64,17 @@ apiClient.interceptors.response.use(
       }
       return Promise.reject(error)
     }
+    // 🔴 402 IS A QUESTION, NOT A FAILURE, AND IT IS ANSWERED BY THE SCREEN.
+    //
+    // The server sends it when an action exceeds the plan's allowance and the plan ALLOWS
+    // the overage: the sentence carries the count and the monthly price, and the screen
+    // must show it in a dialog with a « confirm » button, not flash it in a red toast that
+    // disappears. Toasting it here would tell the user something went wrong when in fact
+    // nothing has: they are being asked whether to spend more.
+    const isQuestion = error?.response?.status === 402
     // A read's failure is the screen's problem; a write's failure is news the user is
     // owed, because they asked for something and it did not happen.
-    if (!isRead && !config.skipErrorToast) toast.error(errorMessage(error))
+    if (!isRead && !isQuestion && !config.skipErrorToast) toast.error(errorMessage(error))
     return Promise.reject(error)
   },
 )

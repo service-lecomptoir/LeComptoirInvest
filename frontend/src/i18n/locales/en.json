@@ -200,7 +200,17 @@
       "retail": "Retail",
       "sophisticated": "Sophisticated",
       "professional": "Professional"
-    }
+    },
+    "overageTitle": "This exceeds your plan",
+    "overageConfirm": "Confirm and pay the supplement",
+    "quotaTitle": "{{current}} investor out of the {{limit}} your plan includes",
+    "quotaTitle_other": "{{current}} investors out of the {{limit}} your plan includes",
+    "quotaNearBody": "One place left. Beyond that, your plan does not allow further registrations.",
+    "quotaNearBody_other": "{{count}} places left. Beyond that, your plan does not allow further registrations.",
+    "quotaOverageBody": "Each investor beyond the plan is billed {{price}} €/month, added to your subscription. You will be asked before every registration.",
+    "quotaBlockedBody": "Your plan does not allow going past this ceiling. Move to a larger plan to register more investors.",
+    "quotaUnknownTitle": "Your allowance could not be read",
+    "quotaUnknownBody": "The subscription console did not answer. While it stays silent no investor can be registered: granting an allowance nobody checked would make every plan unlimited."
   },
   "subscriptions": {
     "title": "Subscriptions",

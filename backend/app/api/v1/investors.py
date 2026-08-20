@@ -15,6 +15,7 @@ from app.core import fund_time
 from app.database import get_db
 from app.models.investor import Investor
 from app.models.user import User
+from app.services import license_service
 from app.core.i18n import pick
 
 router = APIRouter(prefix="/investors", tags=["investors"])
@@ -131,12 +132,39 @@ async def list_investors(
     return [_out(i) for i in rows]
 
 
+@router.get("/quota")
+async def quota(
+    user: User = Depends(current_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """Where the register stands against the plan, deciding nothing.
+
+    🔴 IT IS THE GUARD'S OWN ARITHMETIC, not a second copy of it. The screen showing
+    « 48 / 50 » and the endpoint refusing the 51st read `license_service.outlook`, so a
+    panel can never promise room the guard will deny, nor a price the invoice will not
+    charge.
+
+    ⚠️ `verdict == "unknown"` IS NOT AN ERROR AND NOT « fine ». It means the console did
+    not answer: the screen says the allowance cannot be read, and registration will refuse
+    until it can. Rendering it as unlimited is the failure mode this whole module exists
+    to prevent.
+    """
+    return await license_service.quota_outlook(db, user, adding=1)
+
+
 @router.post("", response_model=InvestorOut, status_code=status.HTTP_201_CREATED)
 async def create_investor(
     data: InvestorIn,
-    _: User = Depends(current_manager),
+    accept_overage: bool = False,
+    user: User = Depends(current_manager),
     db: AsyncSession = Depends(get_db),
 ):
+    """Register an investor. THE FIRST OF THE TWO DOORS THE ALLOWANCE IS COUNTED THROUGH.
+
+    ⚠️ THE SHAPE IS CHECKED FIRST, THE ALLOWANCE SECOND. A malformed payload is not an
+    attempt to exceed anything, and answering « this will cost you more » to a request that
+    was never going to be written would announce a charge for something nobody asked for.
+    """
     if data.kind not in landlord_kind_values.KINDS:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -146,6 +174,12 @@ async def create_investor(
                 f"Unknown legal form: {data.kind!r}. Expected « personne » or « societe ».",
             ),
         )
+    # 🔴 CHECKED BEFORE THE ROW EXISTS, never after. A guard placed after the flush
+    # would refuse an investor already written, and the refusal message would be a lie: the
+    # register would carry them and the next call would count them.
+    await license_service.check_investor_quota(
+        db, user, adding=1, accept_overage=accept_overage
+    )
     payload = data.model_dump(exclude={"iban"})
     investor = Investor(**payload)
     # Through the property, so the fingerprint is written in the same breath as the cipher.
@@ -165,6 +199,7 @@ class VerdictIn(BaseModel):
 async def record_verdict(
     investor_id: uuid.UUID,
     data: VerdictIn,
+    accept_overage: bool = False,
     user: User = Depends(current_manager),
     db: AsyncSession = Depends(get_db),
 ):
@@ -173,6 +208,16 @@ async def record_verdict(
     The decision is validated by `kyc.Verdict` BEFORE anything is written: a refusal with no
     reason is refused there, because it could neither be reconsidered nor explained to the
     investor.
+
+    🔴 THE SECOND DOOR THE ALLOWANCE IS COUNTED THROUGH, and the one that does not look
+    like one. A refused file is not billed; reversing that refusal makes it billable again,
+    so a fund at its ceiling could refuse a hundred people and un-refuse them one by one,
+    for free, without a single call to `POST /investors`. Guarding registration alone is
+    this repository's oldest defect written once more: a fix placed at one site out of N.
+
+    ⚠️ AND ONLY THAT DIRECTION. Refusing somebody, or re-deciding a file that already
+    counted, adds nothing to the quantity and reaches no console — a compliance decision
+    must not fail because a subscription service is down.
     """
     investor = await db.get(Investor, investor_id)
     if investor is None:
@@ -195,6 +240,14 @@ async def record_verdict(
         )
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+
+    # `adding` is 0 for every verdict but one, and 0 short-circuits without a network call.
+    became_countable = (
+        investor.kyc_status == kyc.REFUSED and verdict.status != kyc.REFUSED
+    )
+    await license_service.check_investor_quota(
+        db, user, adding=1 if became_countable else 0, accept_overage=accept_overage
+    )
 
     investor.kyc_status = verdict.status
     investor.kyc_risk_level = data.risk_level
