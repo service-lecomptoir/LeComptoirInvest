@@ -78,7 +78,7 @@ class ManagerOut(BaseModel):
     created_at: datetime | None = None
 
     #: 🔴 THE BILLING QUANTITY, UNDER THE NAME THE PLATFORM ALREADY SPEAKS. Alice reads
-    #: `property_count` from every product and multiplies whatever exceeds the plan's
+    #: `managed_count` from every product and multiplies whatever exceeds the plan's
     #: limit by the overage price. The word says « property » because the first product
     #: managed properties; renaming the wire format would break four products at once for
     #: one reader's comfort. What it CARRIES is « the units this subscription is billed on ».
@@ -96,10 +96,6 @@ class ManagerOut(BaseModel):
     #: registry, which already carries each product's WORD (`managed_one` /
     #: `managed_many`): this is the count of it.
     managed_count: int = 0
-    #: ⚠️ THE OLD NAME, EMITTED WHILE A READER MAY STILL EXPECT IT. The five repositories
-    #: deploy separately, and a key nobody reads does not raise: it comes back empty. A
-    #: ceiling compared against an empty count bills no overage at all, in silence.
-    property_count: int = 0
 
     model_config = {"from_attributes": True, "populate_by_name": True}
 
@@ -230,9 +226,7 @@ async def list_managers(
     )
     counted = await _investors_under_management(db)
     return [
-        ManagerOut.model_validate(r).model_copy(
-            update={"managed_count": counted, "property_count": counted}
-        )
+        ManagerOut.model_validate(r).model_copy(update={"managed_count": counted})
         for r in rows
     ]
 

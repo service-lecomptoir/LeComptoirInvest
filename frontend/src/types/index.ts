@@ -229,7 +229,11 @@ export interface BillingPlan {
   id: string
   name: string
   monthly_price: number
-  property_limit: number | null
+  /** 🔴 THE PLATFORM'S GENERIC NAME, relayed straight from Alice. It counts properties at
+   *  Immo, homes at Sejour, shops at Market, investors here — one key for five products,
+   *  and each product's WORD lives in Alice's registry. Reading it under any other name
+   *  leaves it undefined, and an undefined ceiling reads as « unlimited ». */
+  managed_limit: number | null
 }
 
 export interface BillingInvoice {

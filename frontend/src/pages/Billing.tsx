@@ -372,8 +372,8 @@ export default function Billing() {
                         <span className="text-sm font-normal text-gray-500"> {t('billing.monthSuffix')}</span>
                       </p>
                       <p className="mt-1 text-sm text-gray-600 flex-1">
-                        {plan.property_limit != null
-                          ? t('billing.fundLimit', { count: plan.property_limit })
+                        {plan.managed_limit != null
+                          ? t('billing.fundLimit', { count: plan.managed_limit })
                           : t('billing.unlimitedFunds')}
                       </p>
                       {!isCurrent && (

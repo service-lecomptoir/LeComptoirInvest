@@ -137,14 +137,27 @@ async def test_a_read_degrades_but_a_payment_refuses(client, db, monkeypatch):
 
 
 async def test_the_fund_limit_reads_alices_shared_field_name(monkeypatch):
-    """⚠️ Alice names this limit `property_limit` FOR EVERY PRODUCT.
+    """🔴 Alice names this ceiling `managed_limit` FOR EVERY PRODUCT.
 
-    It is the cross-product contract. Renaming it on the console side would break the other
-    three; reading it under another name here would always leave it empty, and a limited
-    plan would pass for an unlimited one.
+    It is the cross-product contract: the same key counts properties at Immo, homes at
+    Sejour, shops at Market and investors here. Reading it under another name would leave
+    it empty for ever, and an EMPTY ceiling reads as « unlimited » — a capped plan would
+    quietly become an uncapped one, and nothing would fail.
+
+    ⚠️ IT WAS CALLED `property_limit` UNTIL 20 AUGUST 2026, because the first product on
+    the platform managed properties. This test froze that name, which is why it had to be
+    changed by hand when the five repositories switched: a renamed wire key has three
+    consumers — the emitter, the reader, and the test that pinned it.
     """
     info = billing_api._as_info(
-        {"plan_name": "Fonds Pro", "monthly_price": 149.0, "property_limit": 3}
+        {"plan_name": "Fonds Pro", "monthly_price": 149.0, "managed_limit": 3}
     )
     assert info.fund_limit == 3
     assert info.managed is True
+
+    # 🔴 AND THE OLD NAME MUST NOW GIVE NOTHING. Without this half the test would
+    # still pass if the code read both -- that is, if it kept a dead fallback.
+    stale = billing_api._as_info(
+        {"plan_name": "Fonds Pro", "monthly_price": 149.0, "property_limit": 3}
+    )
+    assert stale.fund_limit is None

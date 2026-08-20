@@ -63,16 +63,14 @@ def _as_info(license_: dict | None) -> SubscriptionInfo:
         is_blocked=bool(license_.get("is_blocked")),
         features=license_.get("features"),
         access_until=license_.get("access_until"),
-        # 🔴 THE TWO NAMES, AND THE ORDER MATTERS. `managed_limit` is the generic name
-        # this platform is moving to: the ceiling counts properties at Immo, homes at
-        # Sejour, investors here. `property_limit` is what Alice sent before the switch,
-        # and it is still read because the five repositories deploy separately.
+        # 🔴 THE CEILING, UNDER THE PLATFORM'S GENERIC NAME. It counts properties at
+        # Immo, homes at Sejour, investors here — and `managed_limit` is what all five
+        # repositories now speak. The old `property_limit` was dropped once every reader
+        # had been deployed on the new one; keeping a fallback nobody exercises is dead
+        # code that reads like a safety net.
         #
-        # ⚠️ `.get(new, .get(old))` IS CORRECT ON BOTH PATHS, and it is worth checking
-        # rather than assuming: a key PRESENT and null means « unlimited », and the
-        # expression returns None for it — the right answer — while an ABSENT key falls
-        # through to the old name.
-        fund_limit=license_.get("managed_limit", license_.get("property_limit")),
+        # ⚠️ None IS A VALUE, NOT AN ABSENCE: « unlimited » is null on the wire.
+        fund_limit=license_.get("managed_limit"),
     )
 
 
