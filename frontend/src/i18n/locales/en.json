@@ -330,7 +330,8 @@
     "atWorkAtYearEnd": "Capital at work on 31 December",
     "decidedNotPaidTitle": "Decided but unpaid",
     "decidedNotPaidBody": "These amounts were decided during the year without leaving the fund's account. They are not part of your income: you did not receive them.",
-    "capitalIsNotIncome": "Capital repaid is not income: it is your own money coming back."
+    "capitalIsNotIncome": "Capital repaid is not income: it is your own money coming back.",
+    "download": "Download"
   },
   "password": {
     "title": "Change your password",

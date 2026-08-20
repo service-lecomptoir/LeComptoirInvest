@@ -330,7 +330,8 @@
     "atWorkAtYearEnd": "Capital au travail au 31 décembre",
     "decidedNotPaidTitle": "Décidé mais non payé",
     "decidedNotPaidBody": "Ces montants ont été décidés dans l'année sans quitter le compte du fonds. Ils ne sont pas dans votre revenu : vous ne les avez pas reçus.",
-    "capitalIsNotIncome": "Le capital remboursé n'est pas un revenu : c'est votre propre argent qui revient."
+    "capitalIsNotIncome": "Le capital remboursé n'est pas un revenu : c'est votre propre argent qui revient.",
+    "download": "Télécharger"
   },
   "password": {
     "title": "Changer votre mot de passe",

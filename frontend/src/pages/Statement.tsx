@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FileText } from 'lucide-react'
+import { Download, FileText } from 'lucide-react'
 import { statementsApi } from '@/api'
-import { Select } from '@/components/ui'
+import { Button, Select } from '@/components/ui'
 import {
   Card, EmptyState, Loading, Notice, PageHeader, TableWrap, Td, Th,
 } from '@/components/common/Primitives'
 import { money } from '@/lib/format'
+import { errorMessage } from '@/api/client'
+import { toast } from '@/store/toast'
 import type { Statement } from '@/types'
 
 /**
@@ -23,6 +25,31 @@ export default function StatementPage() {
   const [year, setYear] = useState(String(thisYear))
   const [data, setData] = useState<Statement | null>(null)
   const [loading, setLoading] = useState(true)
+  const [downloading, setDownloading] = useState(false)
+
+  /**
+   * Ouvrir le document, sans jamais le fabriquer ici.
+   *
+   * 🔴 LE PDF EST CONSTRUIT PAR LE SERVEUR, ET C'EST TOUT LE SUJET. Cet ecran connait la
+   * langue de l'utilisateur connecte ; le document, lui, appartient a l'INVESTISSEUR, qui
+   * n'est pas forcement la meme personne. Le rendre ici le ferait parler la langue du
+   * gestionnaire qui clique, et rien n'aurait l'air faux : les chiffres seraient exacts.
+   */
+  const download = async () => {
+    setDownloading(true)
+    try {
+      const { data: file } = await statementsApi.pdf(Number(year))
+      const url = URL.createObjectURL(file)
+      window.open(url, '_blank', 'noopener')
+      // ⚠️ L'URL est liberee plus tard : la revoquer tout de suite fermerait l'onglet
+      // qui vient de s'ouvrir sur un document vide.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch (error) {
+      toast.error(errorMessage(error))
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   useEffect(() => {
     setLoading(true)
@@ -43,7 +70,17 @@ export default function StatementPage() {
         title={t('statement.title')}
         subtitle={t('statement.subtitle')}
         actions={
-          <div className="min-w-[8rem]">
+          <div className="flex items-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={download}
+              isLoading={downloading}
+              disabled={!data || data.lines.length === 0}
+            >
+              <Download size={15} /> {t('statement.download')}
+            </Button>
+            <div className="min-w-[8rem]">
             <Select
               value={year}
               onChange={setYear}
@@ -51,6 +88,7 @@ export default function StatementPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
               aria-label={t('common.year')}
             />
+            </div>
           </div>
         }
       />

@@ -92,6 +92,52 @@ class Statement:
         return out
 
 
+def labels(year: int) -> dict[str, str]:
+    """The headings of a statement, in whatever language is in force RIGHT NOW.
+
+    🔴 THE CALLER OPENS `i18n.use_lang(...)` AROUND THIS, and it is not a detail: these
+    headings belong to the INVESTOR who reads the document, never to the manager who asked
+    for it. A manager may pull any investor's statement and send it on, or attach it to a
+    tax file; rendering the headings from the caller's `Accept-Language` would put French
+    column titles on a British investor's return, and nothing in the product would look
+    wrong, because the figures are identical either way.
+
+    🔴 ONE DICTIONARY FOR THE SCREEN AND FOR THE PDF. They used to be one, because the
+    PDF did not exist; the moment it did, a second copy would have drifted at the first
+    correction — and the drift would live in a document that LEAVES, read by somebody who
+    cannot compare it to anything.
+    """
+    return {
+        "title": pick(f"Relevé annuel {year}", f"Annual statement {year}"),
+        "instrument": pick("Instrument", "Instrument"),
+        "currency": pick("Devise", "Currency"),
+        "income_gross": pick("Produit brut", "Gross income"),
+        "withholding": pick("Retenue à la source", "Withholding at source"),
+        "income_net": pick("Produit net", "Net income"),
+        "capital_repaid": pick("Capital remboursé", "Capital repaid"),
+        "received": pick("Total reçu", "Total received"),
+        "capital_at_work": pick("Capital au travail", "Capital at work"),
+        "decided_not_paid": pick(
+            "Décidé et non encore versé", "Decided and not yet paid"
+        ),
+        "decided_not_paid_note": pick(
+            "Montré à part et jamais additionné : un investisseur à qui l'on annonce "
+            "une somme encore sur le compte du fonds déclarerait un revenu qu'il n'a "
+            "pas reçu.",
+            "Shown apart and never added in: an investor told about money still sitting "
+            "in the fund's account would declare income they never received.",
+        ),
+        # ⚠️ ONLY THE PDF NEEDS THESE FOUR, and they live here anyway. A second dictionary
+        # << just for the document >> is exactly the copy this comment refuses.
+        "totals": pick("Totaux", "Totals"),
+        "nothing": pick(
+            "Aucun versement sur cette année.", "No payment in this year."
+        ),
+        "issued_by": pick("Émis par", "Issued by"),
+        "for_investor": pick("Investisseur", "Investor"),
+    }
+
+
 async def statement_for(
     db: AsyncSession, *, investor_id: uuid.UUID, year: int
 ) -> Statement:

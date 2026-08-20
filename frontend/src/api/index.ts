@@ -116,6 +116,23 @@ export const statementsApi = {
     apiClient.get<Statement>(`/statements/${year}`, {
       params: investorId ? { investor_id: investorId } : {},
     }),
+  /**
+   * Le meme releve, en document.
+   *
+   * ⚠️ `responseType: 'blob'`, ET C'EST OBLIGATOIRE. Sans lui axios decode les octets du
+   * PDF comme du texte UTF-8 : la reponse arrive, rien n'echoue, et le fichier enregistre
+   * est un PDF corrompu que le lecteur decouvre en l'ouvrant, plus tard, ailleurs.
+   *
+   * 🔴 LA LANGUE DU DOCUMENT EST CELLE DE L'INVESTISSEUR, pas celle de cet ecran. Le
+   * serveur la decide seul ; l'en-tete `Accept-Language` que pose l'intercepteur ne la
+   * touche pas. Un gestionnaire francais qui telecharge le releve d'un investisseur
+   * britannique obtient un document anglais, et c'est le but.
+   */
+  pdf: (year: number, investorId?: string) =>
+    apiClient.get<Blob>(`/statements/${year}/pdf`, {
+      params: investorId ? { investor_id: investorId } : {},
+      responseType: 'blob',
+    }),
 }
 
 /**

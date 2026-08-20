@@ -13,3 +13,11 @@ bcrypt==4.0.1
 python-multipart==0.0.12
 httpx==0.27.2
 aiosmtplib==3.0.2
+
+# Le releve annuel en PDF : Jinja2 pour le gabarit (echappement automatique, un nom
+# d'investisseur portant & ou < casserait sinon un document qui sort du fonds), xhtml2pdf
+# pour le rendu. xhtml2pdf est pur Python : contrairement a WeasyPrint il n'exige ni Pango
+# ni Cairo dans l'image, et il tourne sur la machine d'un developpeur comme dans le
+# conteneur. Le produit frere a fait le meme choix, pour la meme raison.
+jinja2==3.1.4
+xhtml2pdf==0.2.17
