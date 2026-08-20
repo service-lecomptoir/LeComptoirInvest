@@ -88,6 +88,15 @@ class User(Base, TimestampMixin):
     zip_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
     city: Mapped[str | None] = mapped_column(String(120), nullable=True)
     country: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    #: 🔴 LE NUMERO DE LA SOCIETE DE GESTION, pas celui d'un bailleur. Alice pousse aussi
+    #: une identite de bailleur (`owner_national_id`) que ce produit recoit et NE GARDE PAS,
+    #: parce qu'un fonds n'en a pas. Celui-ci est l'identite de l'entite qui souscrit au
+    #: logiciel et figure sur ses factures.
+    #:
+    #: ⚠️ NULL EST LEGITIME : les comptes anterieurs n'en ont pas, et une societe hors de
+    #: France porte un numero d'une autre forme. Un NOT NULL aurait empeche la console de
+    #: creer un compte qu'elle sait creer aujourd'hui.
+    national_id: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
     @property
     def sees_whole_fund(self) -> bool:

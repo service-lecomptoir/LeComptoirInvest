@@ -110,6 +110,46 @@ class TestNothingIsSwallowedInSilence:
         assert user.must_change_password is True
         assert verify_password("provisoire-1234", user.hashed_password)
 
+    async def test_the_management_companys_number_survives_the_round_trip(
+        self, client, db
+    ):
+        """🔴 WRITTEN, STORED, AND READ BACK. A field the console sends and never sees again
+        looks LOST: the form would come back empty every time somebody opens the record, and
+        an operator would eventually retype it. Pydantic drops an undeclared key without a
+        word, and this repository has already shipped a schema that swallowed one and
+        produced NaN in production.
+
+        ⚠️ AND IT IS NOT THE LANDLORD'S NUMBER. `owner_national_id` travels in the same
+        payload and is deliberately thrown away, because a fund has no landlord. Putting one
+        in the other's column would file a private individual's number as a management
+        company's registration.
+        """
+        r = await client.post(
+            "/internal/managers",
+            headers=auth(),
+            json={
+                "email": "immat@fonds.fr",
+                "full_name": "Meridian Capital Partners",
+                "password": "provisoire-1234",
+                "national_id": "90112345600017",
+                "owner_national_id": "77712345600011",
+            },
+        )
+        assert r.status_code == 201, r.text
+        assert r.json()["national_id"] == "90112345600017"
+
+        user = (
+            await db.execute(select(User).where(User.email == "immat@fonds.fr"))
+        ).scalar_one()
+        assert user.national_id == "90112345600017"
+        assert not hasattr(user, "owner_national_id")
+
+        listed = await client.get("/internal/managers", headers=auth())
+        found = [m for m in listed.json() if m["email"] == "immat@fonds.fr"]
+        assert found and found[0]["national_id"] == "90112345600017", (
+            "le numero n'est pas relu dans la liste : la console le croira perdu"
+        )
+
     async def test_the_landlord_identity_is_accepted_and_deliberately_not_stored(
         self, client, db
     ):

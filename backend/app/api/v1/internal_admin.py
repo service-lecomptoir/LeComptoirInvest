@@ -76,6 +76,10 @@ class ManagerOut(BaseModel):
     zip_code: str | None = None
     city: str | None = None
     country: str | None = None
+    #: ⚠️ RENDU AUSSI, ET PAS SEULEMENT ACCEPTE. Un champ qu'on ecrit sans jamais le relire
+    #: se lit comme perdu : la console le renverrait vide a chaque ouverture de la fiche, et
+    #: quelqu'un finirait par le ressaisir.
+    national_id: str | None = None
     created_at: datetime | None = None
 
     #: 🔴 THE BILLING QUANTITY, UNDER THE NAME THE PLATFORM ALREADY SPEAKS. Alice reads
@@ -121,6 +125,12 @@ class ManagerIn(BaseModel):
     zip_code: str | None = Field(default=None, max_length=20)
     city: str | None = Field(default=None, max_length=120)
     country: str | None = Field(default=None, max_length=80)
+    #: 🔴 LE NUMERO DE LA SOCIETE DE GESTION (SIREN/SIRET en France), et il EST conserve.
+    #: A ne pas confondre avec `owner_national_id` juste en dessous, qui est l'identite d'un
+    #: BAILLEUR et que ce produit jette : un fonds n'en a pas. Deux champs, deux entites,
+    #: et les ranger l'un dans l'autre mettrait le numero d'un particulier sur la fiche
+    #: d'une societe de gestion.
+    national_id: str | None = Field(default=None, max_length=40)
 
     # ⚠️ Reçus et NON conservés : identité de bailleur, sans objet pour un fonds.
     owner_kind: str | None = None
@@ -140,7 +150,7 @@ IGNORED_BY_DESIGN: tuple[str, ...] = (
     "owner_national_id",
 )
 
-_STORED = ("phone", "address", "zip_code", "city", "country")
+_STORED = ("phone", "address", "zip_code", "city", "country", "national_id")
 
 
 class Stats(BaseModel):
