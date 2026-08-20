@@ -88,14 +88,14 @@ class User(Base, TimestampMixin):
     zip_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
     city: Mapped[str | None] = mapped_column(String(120), nullable=True)
     country: Mapped[str | None] = mapped_column(String(80), nullable=True)
-    #: 🔴 LE NUMERO DE LA SOCIETE DE GESTION, pas celui d'un bailleur. Alice pousse aussi
-    #: une identite de bailleur (`owner_national_id`) que ce produit recoit et NE GARDE PAS,
-    #: parce qu'un fonds n'en a pas. Celui-ci est l'identite de l'entite qui souscrit au
-    #: logiciel et figure sur ses factures.
+    #: 🔴 THE MANAGEMENT COMPANY'S NUMBER, not a landlord's. Alice also pushes down a
+    #: landlord identity (`owner_national_id`) that this product receives and DOES NOT
+    #: KEEP, because a fund has none. This one identifies the entity that subscribes to
+    #: the software and appears on its invoices.
     #:
-    #: ⚠️ NULL EST LEGITIME : les comptes anterieurs n'en ont pas, et une societe hors de
-    #: France porte un numero d'une autre forme. Un NOT NULL aurait empeche la console de
-    #: creer un compte qu'elle sait creer aujourd'hui.
+    #: ⚠️ NULL IS LEGITIMATE: accounts created before this column have none, and a company
+    #: outside France carries a number of another shape. A NOT NULL would have stopped the
+    #: console provisioning an account it can provision today.
     national_id: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
     @property

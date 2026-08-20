@@ -76,9 +76,9 @@ class ManagerOut(BaseModel):
     zip_code: str | None = None
     city: str | None = None
     country: str | None = None
-    #: ⚠️ RENDU AUSSI, ET PAS SEULEMENT ACCEPTE. Un champ qu'on ecrit sans jamais le relire
-    #: se lit comme perdu : la console le renverrait vide a chaque ouverture de la fiche, et
-    #: quelqu'un finirait par le ressaisir.
+    #: ⚠️ RETURNED TOO, NOT ONLY ACCEPTED. A field written and never read back looks
+    #: LOST: the console would show the record's form empty every time somebody opens it,
+    #: and an operator would eventually retype what is already stored.
     national_id: str | None = None
     created_at: datetime | None = None
 
@@ -125,11 +125,11 @@ class ManagerIn(BaseModel):
     zip_code: str | None = Field(default=None, max_length=20)
     city: str | None = Field(default=None, max_length=120)
     country: str | None = Field(default=None, max_length=80)
-    #: 🔴 LE NUMERO DE LA SOCIETE DE GESTION (SIREN/SIRET en France), et il EST conserve.
-    #: A ne pas confondre avec `owner_national_id` juste en dessous, qui est l'identite d'un
-    #: BAILLEUR et que ce produit jette : un fonds n'en a pas. Deux champs, deux entites,
-    #: et les ranger l'un dans l'autre mettrait le numero d'un particulier sur la fiche
-    #: d'une societe de gestion.
+    #: 🔴 THE MANAGEMENT COMPANY'S REGISTRATION NUMBER (SIREN/SIRET in France), and this
+    #: one IS kept. Not to be confused with `owner_national_id` just below, which is a
+    #: LANDLORD's identity and which this product throws away: a fund has none. Two
+    #: fields, two entities, and filing one as the other would put a private
+    #: individual's number on a management company's record.
     national_id: str | None = Field(default=None, max_length=40)
 
     # ⚠️ Reçus et NON conservés : identité de bailleur, sans objet pour un fonds.
