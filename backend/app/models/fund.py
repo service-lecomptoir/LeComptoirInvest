@@ -25,6 +25,7 @@ from datetime import date
 
 from sqlalchemy import Date, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, uuid_pk
@@ -52,6 +53,19 @@ class Fund(Base, TimestampMixin):
     __tablename__ = "funds"
 
     id: Mapped[uuid.UUID] = uuid_pk()
+    #: 🔴 THE MANAGEMENT COMPANY THAT OWNS THIS ROW.
+    #:
+    #: This product had no owner column at all: every manager of an installation saw the
+    #: WHOLE register. That was not a defect of the code, it WAS the model, and it only
+    #: became visible the day a second account recognised somebody else's projects on
+    #: their screen.
+    #:
+    #: ⚠️ IT IS STAMPED AUTOMATICALLY by `core.firm_scope`, at flush: setting it at each
+    #: call site would mean forgetting it once, and a row without a firm belongs to
+    #: nobody. See migration 0010.
+    firm_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), nullable=True, index=True
+    )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, default=RAISING, server_default=RAISING, index=True

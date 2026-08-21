@@ -32,6 +32,19 @@ class Investor(Base, TimestampMixin):
     __tablename__ = "investors"
 
     id: Mapped[uuid.UUID] = uuid_pk()
+    #: 🔴 THE MANAGEMENT COMPANY THAT OWNS THIS ROW.
+    #:
+    #: This product had no owner column at all: every manager of an installation saw the
+    #: WHOLE register. That was not a defect of the code, it WAS the model, and it only
+    #: became visible the day a second account recognised somebody else's projects on
+    #: their screen.
+    #:
+    #: ⚠️ IT IS STAMPED AUTOMATICALLY by `core.firm_scope`, at flush: setting it at each
+    #: call site would mean forgetting it once, and a row without a firm belongs to
+    #: nobody. See migration 0010.
+    firm_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), nullable=True, index=True
+    )
 
     # ── What this investor IS ──────────────────────────────────────────────────
     #: 'personne' or 'societe'. THE SAME TWO WORDS AS THE REST OF THE HOUSE, deliberately:

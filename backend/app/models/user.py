@@ -27,6 +27,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, String, Text
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, uuid_pk
@@ -50,6 +51,17 @@ class User(Base, TimestampMixin):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = uuid_pk()
+    #: 🔴 THE MANAGEMENT COMPANY THIS ACCOUNT BELONGS TO.
+    #:
+    #: NULL means « this account IS the firm »: the scope is therefore
+    #: `COALESCE(firm_id, id)`, and a lone account points at itself. It is exactly how
+    #: the sibling product isolates its agencies.
+    #:
+    #: ⚠️ This product had NO isolation at all: every manager of an installation saw the
+    #: whole register, KYC files and IBANs included. See migration 0010.
+    firm_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), nullable=True, index=True
+    )
     email: Mapped[str] = mapped_column(
         String(255), nullable=False, unique=True, index=True
     )

@@ -40,6 +40,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import uuid
 
 import psycopg2
 import pytest
@@ -231,4 +232,34 @@ def the_language_never_survives_one_test():
     from app.core import i18n
 
     with i18n.use_lang(i18n.DEFAULT):
+        yield
+
+
+#: The management company every test runs on behalf of, unless it says otherwise.
+#:
+#: 🔴 FIXED, AND SHARED BY THE WHOLE SUITE. Rows created by a test are stamped with the
+#: firm in force, and queries are filtered by it: a suite where each test invented its own
+#: firm would still pass, and would stop proving that the isolation is what makes the
+#: neighbour invisible rather than the fixture.
+TEST_FIRM = uuid.UUID("11111111-1111-1111-1111-111111111111")
+
+
+@pytest.fixture(autouse=True)
+def a_firm_is_always_established():
+    """🔴 WITHOUT THIS, EVERY TEST SEES NOTHING, and that is the isolation working.
+
+    `core.firm_scope` filters every query on a fund, a project, an investor or a bank
+    movement, and its default when no firm is established is a scope matching NO row -- a
+    protection whose failure mode leans towards « none » rather than « everything ». A
+    suite that created rows outside any firm therefore read back an empty database, which
+    is exactly what happened when the isolation landed: 82 tests turned red at once, and
+    every one of them was right.
+
+    ⚠️ IT RESTORES ON THE WAY OUT. This product has already paid for a leaked ContextVar
+    once, on the reader's language, and the fix was a fixture exactly like this one: a rule
+    every author has to remember is a rule one of them will not.
+    """
+    from app.core import firm_scope
+
+    with firm_scope.use_firm(TEST_FIRM):
         yield

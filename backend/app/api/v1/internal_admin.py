@@ -48,7 +48,17 @@ router = APIRouter(prefix="/internal", tags=["internal"])
 _MANAGED_ROLES: tuple[str, ...] = FUND_WIDE_ROLES
 
 
-def require_internal_key(x_internal_key: str | None = Header(default=None)) -> None:
+async def require_internal_key(
+    x_internal_key: str | None = Header(default=None),
+) -> None:
+    """🔴 `async`, ET CE N'EST PAS COSMETIQUE.
+
+    A synchronous dependency is run by FastAPI in a THREADPOOL, whose context is not the
+    endpoint's. The ContextVar this function sets to open the cross-firm exception would
+    therefore be set in a thread nobody reads, and the console would count ZERO investors
+    while every screen kept working. Measured on 21 August: the guard read `{0}` where the
+    installation held two.
+    """
     cfg = get_settings()
     if (
         not x_internal_key
@@ -59,6 +69,26 @@ def require_internal_key(x_internal_key: str | None = Header(default=None)) -> N
             status_code=401,
             detail=pick("Clé interne invalide.", "Invalid internal key."),
         )
+
+    # 🔴 THE ONE PLACE THAT READS ACROSS MANAGEMENT COMPANIES, AND IT IS NAMED.
+    #
+    # Every other query in this product is filtered to one firm by `core.firm_scope`,
+    # whether the code that writes it thinks about it or not. The console legitimately
+    # needs the whole picture: it lists the accounts it provisions and counts the
+    # investors it bills, across every firm of the installation.
+    #
+    # ⚠️ IT IS OPENED HERE, ON THE KEY, AND NOWHERE ELSE. Attaching it to the internal key
+    # means the exception cannot be reached without the console's secret; opening it in a
+    # route, or by simply forgetting to establish a firm, is how an exception becomes the
+    # rule. `_all_firms` is a ContextVar of THIS request's task: it does not survive it.
+    _open_to_every_firm()
+
+
+def _open_to_every_firm() -> None:
+    """Lift the per-firm filter for the rest of this internal request."""
+    from app.core import firm_scope
+
+    firm_scope.set_unrestricted()
 
 
 # ── Contract schemas ─────────────────────────────────────────────────────────────

@@ -12,6 +12,7 @@ from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.firm_scope import firm_of, set_current_firm
 from app.core.security import read_access_token
 from app.database import get_db
 from app.models.investor import Investor
@@ -39,6 +40,19 @@ async def current_user(
             status.HTTP_401_UNAUTHORIZED,
             pick("Compte inactif.", "This account is inactive."),
         )
+
+    # 🔴 THE MANAGEMENT COMPANY IS ESTABLISHED HERE, AND NOWHERE ELSE.
+    #
+    # From this line on, EVERY query touching a fund, a project, an investor or a bank
+    # movement is filtered by `core.firm_scope`, whether the place that writes it thinks
+    # about it or not. That is what makes a leak structurally impossible rather than
+    # dependent on sixty-eight correct `where` clauses.
+    #
+    # ⚠️ A ContextVar SET INSIDE THE REQUEST'S TASK DOES NOT LEAK into the others: each
+    # FastAPI request runs in its own task with its own copy of the context. In TESTS there
+    # is no task per request, and an autouse fixture puts the value back -- this product has
+    # already paid for a leaked ContextVar once, on the reader's language.
+    set_current_firm(firm_of(user))
     return user
 
 

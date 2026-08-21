@@ -30,6 +30,7 @@ from app.database import get_db
 from app.main import app
 from app.models.investor import Investor
 from app.models.user import MANAGER, User
+from tests.conftest import TEST_FIRM
 from app.services import alice_client, license_service
 
 #: The console's shared key, set for the duration of the fixture: one test here reads the
@@ -62,6 +63,12 @@ async def _manager(db) -> User:
         email=f"gerant-{uuid.uuid4().hex[:8]}@fonds.fr",
         hashed_password=hash_password("Motdepasse-1234"),
         account_name="Meridian Capital",
+        # ⚠️ THE ACCOUNT BELONGS TO THE SUITE'S FIRM, and it has to be said out loud.
+        # `firm_of()` reads `COALESCE(firm_id, id)`, so an account left without a firm
+        # points at ITSELF -- a firm of one, which owns none of the rows this file creates
+        # under `TEST_FIRM`. The screens would then answer 404 for data sitting right
+        # there, and the failure would look like the route rather than the fixture.
+        firm_id=TEST_FIRM,
         role=MANAGER,
     )
     db.add(user)
@@ -281,7 +288,9 @@ async def test_un_refusing_a_file_goes_through_the_allowance_too(
     asked = await client.post(
         f"/api/v1/investors/{refused.id}/kyc", json=verdict, headers=_auth(manager)
     )
-    assert asked.status_code == 402, "un-refusing at the ceiling must ask, like creating"
+    assert asked.status_code == 402, (
+        "un-refusing at the ceiling must ask, like creating"
+    )
     assert "12" in asked.json()["detail"]
 
     said_yes = await client.post(
@@ -367,7 +376,9 @@ async def test_the_ceiling_is_read_under_alices_shared_name(db):
     """🔴 `managed_limit`, THE KEY FIVE PRODUCTS SPEAK. Read under any other name it comes
     back empty — and an empty ceiling reads as « unlimited », so every check would answer
     « fine » and nothing whatsoever would fail."""
-    under_the_contract = license_service.outlook({"managed_limit": 2}, current=2, adding=1)
+    under_the_contract = license_service.outlook(
+        {"managed_limit": 2}, current=2, adding=1
+    )
     assert under_the_contract["verdict"] == license_service.BLOCKED
 
     # The name this platform left behind. It must NOT be understood any more.

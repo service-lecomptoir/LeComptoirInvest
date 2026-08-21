@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import investor_scope
 from app.database import get_db
-from app.core import i18n
+from app.core import firm_scope, i18n
 from app.models.investor import Investor
 from app.services import notice_service, statement_pdf, statement_service
 from app.core.i18n import pick
@@ -77,6 +77,21 @@ async def _prepared(
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
 
     investor = await db.get(Investor, target)
+    # 🔴 A SCOPE A PARAMETER CAN WIDEN IS NOT A SCOPE.
+    #
+    # `investor_id` is accepted from the request for managers, and the per-firm filter does
+    # NOT cover this lookup: `Session.get()` answers from the identity map when the object
+    # is already loaded, and then no query is issued for the filter to reach. Naming
+    # another firm's investor therefore returned their statement, with their name on it.
+    #
+    # ⚠️ 404 AND NOT 403: answering « forbidden » would confirm that this investor exists
+    # somewhere on the installation, which is itself a thing a competitor should not learn
+    # by changing a digit in the address.
+    if investor is not None and not firm_scope.owns(investor):
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick("Investisseur introuvable.", "Investor not found."),
+        )
     language = (
         await notice_service.language_of(db, investor)
         if investor is not None

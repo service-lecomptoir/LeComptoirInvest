@@ -130,9 +130,7 @@ def labels(year: int) -> dict[str, str]:
         # ⚠️ ONLY THE PDF NEEDS THESE FOUR, and they live here anyway. A second dictionary
         # << just for the document >> is exactly the copy this comment refuses.
         "totals": pick("Totaux", "Totals"),
-        "nothing": pick(
-            "Aucun versement sur cette année.", "No payment in this year."
-        ),
+        "nothing": pick("Aucun versement sur cette année.", "No payment in this year."),
         "issued_by": pick("Émis par", "Issued by"),
         "for_investor": pick("Investisseur", "Investor"),
     }

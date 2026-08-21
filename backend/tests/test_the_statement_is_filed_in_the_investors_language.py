@@ -35,6 +35,7 @@ from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.treasury import Distribution
 from app.models.user import MANAGER, User
+from tests.conftest import TEST_FIRM
 from app.services import statement_pdf, statement_service
 
 CURRENCY = "EUR"
@@ -60,6 +61,12 @@ async def _manager(db) -> User:
         email=f"gerant-{uuid.uuid4().hex[:8]}@fonds.fr",
         hashed_password=hash_password("Motdepasse-1234"),
         account_name="Meridian Capital",
+        # ⚠️ THE ACCOUNT BELONGS TO THE SUITE'S FIRM, and it has to be said out loud.
+        # `firm_of()` reads `COALESCE(firm_id, id)`, so an account left without a firm
+        # points at ITSELF -- a firm of one, which owns none of the rows this file creates
+        # under `TEST_FIRM`. The screens would then answer 404 for data sitting right
+        # there, and the failure would look like the route rather than the fixture.
+        firm_id=TEST_FIRM,
         role=MANAGER,
     )
     db.add(user)
@@ -270,6 +277,7 @@ async def test_an_investor_never_reads_somebody_elses_statement(client, db):
         hashed_password=hash_password("Motdepasse-1234"),
         account_name="Mine",
         role="investor",
+        firm_id=TEST_FIRM,
     )
     db.add(account)
     await db.flush()

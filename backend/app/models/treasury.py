@@ -92,6 +92,11 @@ class BankMovement(Base, TimestampMixin):
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
+    #: 🔴 THE MANAGEMENT COMPANY THAT OWNS THIS ROW. Stamped automatically by
+    #: `core.firm_scope` at flush. See migration 0010.
+    firm_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), nullable=True, index=True
+    )
     #: The fund's own account this line belongs to. A fund holding several currencies holds
     #: several accounts, and the treasury invariant is per currency.
     account_iban: Mapped[str] = mapped_column(String(34), nullable=False, index=True)

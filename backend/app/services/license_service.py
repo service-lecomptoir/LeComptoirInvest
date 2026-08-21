@@ -77,7 +77,9 @@ async def count_investors(db: AsyncSession) -> int:
     return int(
         (
             await db.execute(
-                select(func.count(Investor.id)).where(Investor.kyc_status != kyc.REFUSED)
+                select(func.count(Investor.id)).where(
+                    Investor.kyc_status != kyc.REFUSED
+                )
             )
         ).scalar_one()
     )

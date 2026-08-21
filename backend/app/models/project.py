@@ -51,6 +51,19 @@ class Project(Base, TimestampMixin):
     __tablename__ = "projects"
 
     id: Mapped[uuid.UUID] = uuid_pk()
+    #: 🔴 THE MANAGEMENT COMPANY THAT OWNS THIS ROW.
+    #:
+    #: This product had no owner column at all: every manager of an installation saw the
+    #: WHOLE register. That was not a defect of the code, it WAS the model, and it only
+    #: became visible the day a second account recognised somebody else's projects on
+    #: their screen.
+    #:
+    #: ⚠️ IT IS STAMPED AUTOMATICALLY by `core.firm_scope`, at flush: setting it at each
+    #: call site would mean forgetting it once, and a row without a firm belongs to
+    #: nobody. See migration 0010.
+    firm_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), nullable=True, index=True
+    )
     #: The vehicle this project belongs to. NULL means it stands alone, which is the
     #: crowdfunding case and a real scope rather than a missing value.
     fund_id: Mapped[uuid.UUID | None] = mapped_column(
