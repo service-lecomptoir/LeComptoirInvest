@@ -26,6 +26,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
+from app.core import firm_scope
 from app.core.security import create_access_token, hash_password
 from app.database import get_db
 from app.models.investor import Investor
@@ -86,8 +87,6 @@ async def require_internal_key(
 
 def _open_to_every_firm() -> None:
     """Lift the per-firm filter for the rest of this internal request."""
-    from app.core import firm_scope
-
     firm_scope.set_unrestricted()
 
 
@@ -124,9 +123,14 @@ class ManagerOut(BaseModel):
     #: is less work than a crowdfunding raise of four hundred on two — and billing by
     #: vehicle would charge the two the same.
     #:
-    #: ⚠️ IT IS THE SAME NUMBER ON EVERY MANAGER ACCOUNT of one installation, because this
-    #: product has ONE register that every manager sees. Two manager accounts on the same
-    #: fund therefore report the same count, and Alice bills a licence per account.
+    #: 🔴 IT BELONGS TO ONE MANAGEMENT COMPANY SINCE 21 AUGUST, AND THAT WAS MONEY.
+    #: This product had no isolation at all: one single quantity was reported to EVERY
+    #: manager account of an installation. That was exact while there was a single
+    #: register; the day two firms shared an installation, each was billed for the other's
+    #: investors, and nothing anywhere looked broken.
+    #:
+    #: ⚠️ TWO ACCOUNTS OF THE SAME FIRM do report the same number, and rightly so: they
+    #: manage the same register, and Alice bills one licence per account.
     #: 🔴 THE GENERIC NAME, the one this platform is moving to. It pairs with Alice's
     #: registry, which already carries each product's WORD (`managed_one` /
     #: `managed_many`): this is the count of it.
@@ -265,9 +269,12 @@ async def list_managers(
         .scalars()
         .all()
     )
-    counted = await license_service.count_investors(db)
+    # 🔴 ONE COUNT PER FIRM, NO LONGER ONE FIGURE FOR EVERYBODY. See the field's note.
+    counted = await license_service.count_investors_by_firm(db)
     return [
-        ManagerOut.model_validate(r).model_copy(update={"managed_count": counted})
+        ManagerOut.model_validate(r).model_copy(
+            update={"managed_count": counted.get(firm_scope.firm_of(r), 0)}
+        )
         for r in rows
     ]
 

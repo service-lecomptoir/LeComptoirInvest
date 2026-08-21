@@ -220,11 +220,21 @@ async def test_the_treasury_of_another_firm_is_invisible(client, two_firms):
 # ── What the console keeps the right to see ─────────────────────────────────────
 
 
-async def test_the_console_still_counts_every_firm(client, db, two_firms):
-    """🔴 THE NAMED EXCEPTION. Alice bills what the installation manages, so it must see
-    both registers. If the isolation cut the console off too, the managers' accounts and
-    allowances would vanish from its screen, and the breakage would look like the
-    neighbour's."""
+async def test_the_console_sees_both_firms_and_bills_each_for_its_own(
+    client, db, two_firms
+):
+    """🔴 THE NAMED EXCEPTION, AND THE LIMIT OF IT.
+
+    Alice bills what the installation manages, so the console must SEE both registers: if
+    the isolation cut it off too, the managers' accounts and allowances would vanish from
+    its screen and the breakage would look like the neighbour's.
+
+    🔴 BUT IT MUST COUNT THEM APART, AND THIS ONE IS MONEY. Before the isolation this
+    product had a single register, so the console reported the SAME quantity to every
+    manager account -- correct then, and silently wrong the day two firms shared an
+    installation: each would have been invoiced for the other's investors, with nothing
+    anywhere looking broken.
+    """
     from app.config import get_settings
 
     get_settings.cache_clear()
@@ -236,11 +246,16 @@ async def test_the_console_still_counts_every_firm(client, db, two_firms):
             "/internal/managers", headers={"X-Internal-Key": "cle-interne-de-test"}
         )
         assert response.status_code == 200, response.text
-        counted = {row["managed_count"] for row in response.json()}
-        # Both investors, seen by the console despite the isolation.
-        assert counted == {2}, counted
+        billed = {row["email"]: row["managed_count"] for row in response.json()}
     finally:
         settings.ALICE_INTERNAL_KEY = previous
+
+    a, b = two_firms
+    # Both accounts are listed: the console is not cut off by the isolation.
+    assert set(billed) == {a.manager.email, b.manager.email}, billed
+    # And each is billed for ONE investor: its own.
+    assert billed[a.manager.email] == 1, billed
+    assert billed[b.manager.email] == 1, billed
 
 
 # ── What the scope does when nobody established one ────────────────────────────

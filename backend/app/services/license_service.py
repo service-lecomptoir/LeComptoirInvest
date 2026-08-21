@@ -47,6 +47,11 @@ from app.services import alice_client
 #: on a plan nobody ever sold them.
 _LICENSED_ROLES: tuple[str, ...] = (MANAGER,)
 
+#: 🔴 WHO COUNTS AS « UNDER MANAGEMENT », WRITTEN ONCE. The guard that refuses and the
+#: figure that bills read this same predicate; two copies of it would drift, and the fund
+#: would be refused at forty-nine while being invoiced for fifty-one.
+COUNTABLE = Investor.kyc_status != kyc.REFUSED
+
 #: Every verdict this module can return, so a caller branches on the word rather than
 #: re-deriving it from a status code.
 OK = "ok"
@@ -76,13 +81,39 @@ async def count_investors(db: AsyncSession) -> int:
     """
     return int(
         (
-            await db.execute(
-                select(func.count(Investor.id)).where(
-                    Investor.kyc_status != kyc.REFUSED
-                )
-            )
+            await db.execute(select(func.count(Investor.id)).where(COUNTABLE))
         ).scalar_one()
     )
+
+
+async def count_investors_by_firm(db: AsyncSession) -> dict:
+    """The same quantity, per management company, in ONE query.
+
+    🔴 FOR THE CONSOLE, AND ONLY FOR IT. Every other caller runs inside a firm, so the
+    injected scope already answers the question; the console reads across firms on purpose
+    and must therefore say which count belongs to whom.
+
+    🔴 THIS EXISTS BECAUSE THE PER-FIRM ISOLATION MADE THE OLD ANSWER WRONG, AND IT WAS
+    MONEY. Until 21 August this product had one register for the whole installation, so the
+    console reported the SAME count to every manager account -- documented, and true at the
+    time. The day two firms shared an installation, that number billed each of them for the
+    other's investors, and nothing anywhere would have looked broken.
+
+    ⚠️ ONE QUERY, NOT ONE PER MANAGER. The console lists every account of the platform; a
+    count per row is a screen that slows down exactly as the business grows.
+
+    ⚠️ AND IT COUNTS THE SAME THING AS `count_investors`, by construction: both read
+    `COUNTABLE`. Two predicates would eventually disagree, and the fund would be refused at
+    forty-nine while being billed for fifty-one.
+    """
+    rows = (
+        await db.execute(
+            select(Investor.firm_id, func.count(Investor.id))
+            .where(COUNTABLE)
+            .group_by(Investor.firm_id)
+        )
+    ).all()
+    return {firm: int(total) for firm, total in rows}
 
 
 def outlook(licence: dict | None, current: int, adding: int) -> dict:
