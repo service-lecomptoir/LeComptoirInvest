@@ -75,36 +75,59 @@ def upgrade() -> None:
         # busiest predicate of the product.
         op.create_index(f"ix_{table}_firm_id", table, ["firm_id"])
 
-    # ── Le rattachement des lignes existantes ────────────────────────────────
+    # ── Attaching what already exists ────────────────────────────────────────
     #
-    # ⚠️ AU COMPTE GESTIONNAIRE LE PLUS ANCIEN, et pas au premier venu. Sur une
-    # installation réelle, c'est le compte de la société qui a créé ces données. Si aucun
-    # compte gestionnaire n'existe, il n'y a rien à rattacher et la migration ne touche
-    # rien : une valeur inventée serait pire qu'une valeur absente.
+    # ⚠️ TO THE OLDEST MANAGER ACCOUNT, and not to whoever comes first. On a real
+    # installation that is the account of the firm which created this data. If no manager
+    # account exists there is nothing to attach and this migration touches nothing: an
+    # invented value would be worse than an absent one.
     firm = sa.text(
         "SELECT id FROM users WHERE role = 'manager' ORDER BY created_at, id LIMIT 1"
     )
     connection = op.get_bind()
     owner = connection.execute(firm).scalar()
-    if owner is not None:
+    if owner is None:
+        return
+
+    connection.execute(
+        sa.text("UPDATE users SET firm_id = NULL WHERE id = :owner"), {"owner": owner}
+    )
+    for table in ROOTS:
         connection.execute(
-            sa.text("UPDATE users SET firm_id = NULL WHERE id = :owner"), {"owner": owner}
-        )
-        for table in ROOTS:
-            connection.execute(
-                sa.text(f"UPDATE {table} SET firm_id = :owner WHERE firm_id IS NULL"),
-                {"owner": owner},
-            )
-        # Les autres comptes gestionnaires rejoignent cette société : ils voyaient déjà
-        # tout, les rattacher ailleurs leur RETIRERAIT un accès qu'ils avaient. Un
-        # découpage réel se fait à la main, en connaissance de cause.
-        connection.execute(
-            sa.text(
-                "UPDATE users SET firm_id = :owner "
-                "WHERE role = 'manager' AND id <> :owner AND firm_id IS NULL"
-            ),
+            sa.text(f"UPDATE {table} SET firm_id = :owner WHERE firm_id IS NULL"),
             {"owner": owner},
         )
+
+    # 🔴 EVERY OTHER MANAGER ACCOUNT BECOMES ITS OWN FIRM, and that is the whole point of
+    # this migration. They saw the first firm's register because there was nothing to stop
+    # them; attaching them to it here would keep exactly that, and this file would change
+    # nothing for the only installation that has two of them.
+    #
+    # ⚠️ SO IT DOES TAKE AN ACCESS AWAY, deliberately: an access nobody granted. On this
+    # installation the second manager account is the operator's own. A real firm with two
+    # colleagues is set up by naming the second account's `firm_id` by hand, which is one
+    # UPDATE and a decision somebody makes knowingly -- the opposite of a default that
+    # silently pools two customers.
+
+    # ⚠️ THE ACCOUNTS THAT ARE NOT MANAGERS FOLLOW THEIR REGISTER ENTRY, never themselves.
+    # An investor's login left without a firm would resolve its scope to its own id, own no
+    # row anywhere, and open on an empty portfolio -- the isolation working perfectly
+    # against the person it exists to serve.
+    connection.execute(
+        sa.text(
+            "UPDATE users u SET firm_id = i.firm_id FROM investors i "
+            "WHERE i.user_id = u.id AND u.role <> 'manager' AND u.firm_id IS NULL"
+        )
+    )
+    # And those with no register entry at all join the firm that owns the data, for the
+    # same reason: an account of nobody reads nothing.
+    connection.execute(
+        sa.text(
+            "UPDATE users SET firm_id = :owner "
+            "WHERE role <> 'manager' AND firm_id IS NULL"
+        ),
+        {"owner": owner},
+    )
 
 
 def downgrade() -> None:
