@@ -34,7 +34,7 @@ services:
       - shared
 
   invest-backend:
-    image: ghcr.io/service-lecomptoir/invest-backend:${IMAGE_TAG:-latest}
+    image: ghcr.io/service-lecomptoir/invest-backend:${IMAGE_TAG:?IMAGE_TAG manquant. Le VPS ne tire que par SHA de commit, il n a donc aucune image latest en local : sans cette variable la recreation vise une AUTRE image que celle qui tourne. Utiliser le tag du conteneur en service, par exemple IMAGE_TAG=$(docker inspect <conteneur> --format '{{.Config.Image}}' | sed 's/.*://')}
     pull_policy: always
     container_name: invest_backend
     restart: always
@@ -64,7 +64,7 @@ services:
       - shared
 
   invest-frontend:
-    image: ghcr.io/service-lecomptoir/invest-frontend:${IMAGE_TAG:-latest}
+    image: ghcr.io/service-lecomptoir/invest-frontend:${IMAGE_TAG:?IMAGE_TAG manquant. Le VPS ne tire que par SHA de commit, il n a donc aucune image latest en local : sans cette variable la recreation vise une AUTRE image que celle qui tourne. Utiliser le tag du conteneur en service, par exemple IMAGE_TAG=$(docker inspect <conteneur> --format '{{.Config.Image}}' | sed 's/.*://')}
     pull_policy: always
     container_name: invest_frontend
     restart: always
