@@ -108,7 +108,11 @@ class User(Base, TimestampMixin):
     #: ⚠️ NULL IS LEGITIMATE: accounts created before this column have none, and a company
     #: outside France carries a number of another shape. A NOT NULL would have stopped the
     #: console provisioning an account it can provision today.
-    national_id: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    #: ⚠️ `company_number`: the name the platform settled on. The number carries the
+    #: name ITS OWN register gives it -- SIRET, RCCM, ICE -- and `national_id` used to
+    #: mean the company number on one table and the social security number on another,
+    #: at the product this one descends from. Two things nobody confuses twice.
+    company_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
     @property
     def sees_whole_fund(self) -> bool:

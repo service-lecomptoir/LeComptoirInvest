@@ -131,23 +131,49 @@ class TestNothingIsSwallowedInSilence:
                 "email": "immat@fonds.fr",
                 "full_name": "Meridian Capital Partners",
                 "password": "provisoire-1234",
-                "national_id": "90112345600017",
-                "owner_national_id": "77712345600011",
+                "company_number": "90112345600017",
+                "owner_company_number": "77712345600011",
             },
         )
         assert r.status_code == 201, r.text
-        assert r.json()["national_id"] == "90112345600017"
+        assert r.json()["company_number"] == "90112345600017"
 
         user = (
             await db.execute(select(User).where(User.email == "immat@fonds.fr"))
         ).scalar_one()
-        assert user.national_id == "90112345600017"
-        assert not hasattr(user, "owner_national_id")
+        assert user.company_number == "90112345600017"
+        assert not hasattr(user, "owner_company_number")
 
         listed = await client.get("/internal/managers", headers=auth())
         found = [m for m in listed.json() if m["email"] == "immat@fonds.fr"]
-        assert found and found[0]["national_id"] == "90112345600017", (
-            "le numero n'est pas relu dans la liste : la console le croira perdu"
+        assert found and found[0]["company_number"] == "90112345600017", (
+            "the number is not read back in the list: the console will believe it lost"
+        )
+
+    async def test_the_old_name_is_still_accepted_while_the_console_catches_up(
+        self, client, db
+    ):
+        """⚠️ THE READER MOVES FIRST, ALWAYS.
+
+        The console still sends `national_id` until its own deploy lands. A receiver that
+        stopped recognising it would not raise: Pydantic drops what it does not declare,
+        the field would arrive empty, and BOTH suites would stay green while the number
+        silently vanished from every record created in between.
+        """
+        r = await client.post(
+            "/internal/managers",
+            headers=auth(),
+            json={
+                "email": "ancien-nom@fonds.fr",
+                "full_name": "Legacy Capital",
+                "password": "provisoire-1234",
+                "national_id": "90112345600017",
+            },
+        )
+        assert r.status_code == 201, r.text
+        assert r.json()["company_number"] == "90112345600017", (
+            "the old name is no longer heard: the number sent by the console is dropped "
+            "in silence, and nothing anywhere turns red."
         )
 
     async def test_the_landlord_identity_is_accepted_and_deliberately_not_stored(

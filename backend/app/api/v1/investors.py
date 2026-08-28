@@ -26,7 +26,12 @@ class InvestorIn(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     company_name: str | None = None
-    national_id: str | None = None
+    #: Legal person: their company number. Natural person: their identity document and
+    #: the type of that document. See the model: one column for two notions made it
+    #: impossible to check either, because nobody knew which one they were reading.
+    company_number: str | None = None
+    identity_document_number: str | None = None
+    identity_document_type: str | None = None
     born_on: date | None = None
     email: EmailStr | None = None
     phone: str | None = None

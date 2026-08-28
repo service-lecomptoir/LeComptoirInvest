@@ -58,9 +58,29 @@ class Investor(Base, TimestampMixin):
     last_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
     #: Legal person: the registered name. Natural person: empty.
     company_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    #: SIREN, company number, national identity number — whatever their country issues.
-    #: Free-form on purpose: this fund does not decide the shape of a foreign register.
-    national_id: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    #: 🔴 ONE COLUMN HELD TWO NOTIONS, and its own comment admitted it: « SIREN, company
+    #: number, national identity number — whatever their country issues ». Yet `kind`
+    #: already says which of the two is in hand, and mixing them makes both uncheckable:
+    #: nobody knows which one they are reading.
+    #:
+    #: LEGAL person: the company number, under the name its own register gives it. Free
+    #: form on purpose: this fund does not decide the shape of a foreign register.
+    company_number: Mapped[str | None] = mapped_column(String(60), nullable=True)
+
+    #: NATURAL person: the number carried by their identity document, required by the
+    #: know-your-customer obligations. Neither a company number nor a social security
+    #: number -- the latter being the NIR, which serves entirely different purposes.
+    identity_document_number: Mapped[str | None] = mapped_column(
+        String(60), nullable=True
+    )
+
+    #: ⚠️ THE TYPE COMES WITH THE NUMBER. « 12AB34567 » cannot be checked without
+    #: knowing whether to read it as a passport, a national identity card or a residence
+    #: permit. Kept apart from the number because they are two facts, and a single field
+    #: reading « document: passport 12AB34567 » compares to nothing.
+    identity_document_type: Mapped[str | None] = mapped_column(
+        String(30), nullable=True
+    )
     #: Date of birth (natural person) or of incorporation (legal person). Required by every
     #: identification regime, and by nothing else here.
     born_on: Mapped[date | None] = mapped_column(Date, nullable=True)

@@ -108,7 +108,7 @@ class ManagerOut(BaseModel):
     #: ⚠️ RETURNED TOO, NOT ONLY ACCEPTED. A field written and never read back looks
     #: LOST: the console would show the record's form empty every time somebody opens it,
     #: and an operator would eventually retype what is already stored.
-    national_id: str | None = None
+    company_number: str | None = None
     created_at: datetime | None = None
 
     #: 🔴 THE BILLING QUANTITY, UNDER THE NAME THE PLATFORM ALREADY SPEAKS. Alice reads
@@ -164,16 +164,25 @@ class ManagerIn(BaseModel):
     #: LANDLORD's identity and which this product throws away: a fund has none. Two
     #: fields, two entities, and filing one as the other would put a private
     #: individual's number on a management company's record.
-    national_id: str | None = Field(default=None, max_length=40)
+    #: ⚠️ BOTH NAMES, FOR THE LENGTH OF THE CHANGEOVER. The platform settled on
+    #: `company_number` and the console still sends `national_id`. THE READER MOVES
+    #: FIRST, always: a receiver that ignores the new name does not raise, it receives
+    #: nothing -- Pydantic drops what it does not declare, and both suites stay green
+    #: while the payload has changed.
+    company_number: str | None = Field(
+        default=None,
+        max_length=40,
+        validation_alias=AliasChoices("company_number", "national_id"),
+    )
 
-    # ⚠️ Reçus et NON conservés : identité de bailleur, sans objet pour un fonds.
+    # ⚠️ Received and NOT kept: a landlord identity, meaningless for a fund.
     owner_kind: str | None = None
     owner_account_name: str | None = None
     owner_company: str | None = None
-    # 🔴 LES DEUX NOMS, LE TEMPS DE LA BASCULE. Immo a renomme la notion en
-    # `company_number`. Ce produit JETTE ce champ -- un fonds n a pas de bailleur --
-    # mais il doit le reconnaitre : un nom non declare est supprime en silence, et la
-    # garde qui verifie que la decision est prise deliberement ne verrait plus rien.
+    # 🔴 BOTH NAMES, FOR THE LENGTH OF THE CHANGEOVER. Immo renamed the notion to
+    # `company_number`. This product THROWS the field away -- a fund has no landlord --
+    # but it must still recognise it: an undeclared name is dropped in silence, and the
+    # guard that checks the decision was taken deliberately would then see nothing.
     owner_national_id: str | None = Field(
         None, validation_alias=AliasChoices("owner_company_number", "owner_national_id")
     )
@@ -188,7 +197,7 @@ IGNORED_BY_DESIGN: tuple[str, ...] = (
     "owner_national_id",
 )
 
-_STORED = ("phone", "address", "zip_code", "city", "country", "national_id")
+_STORED = ("phone", "address", "zip_code", "city", "country", "company_number")
 
 
 class Stats(BaseModel):
