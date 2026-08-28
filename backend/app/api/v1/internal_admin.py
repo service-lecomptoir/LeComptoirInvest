@@ -21,7 +21,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Header, HTTPException
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import AliasChoices, BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -171,7 +171,13 @@ class ManagerIn(BaseModel):
     owner_account_name: str | None = None
     owner_full_name: str | None = None
     owner_company: str | None = None
-    owner_national_id: str | None = None
+    # 🔴 LES DEUX NOMS, LE TEMPS DE LA BASCULE. Immo a renomme la notion en
+    # `company_number`. Ce produit JETTE ce champ -- un fonds n a pas de bailleur --
+    # mais il doit le reconnaitre : un nom non declare est supprime en silence, et la
+    # garde qui verifie que la decision est prise deliberement ne verrait plus rien.
+    owner_national_id: str | None = Field(
+        None, validation_alias=AliasChoices("owner_company_number", "owner_national_id")
+    )
 
 
 #: The fields Alice sends that this product does NOT keep. Named here so a guard can hold
