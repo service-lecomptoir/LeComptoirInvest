@@ -169,7 +169,6 @@ class ManagerIn(BaseModel):
     # ⚠️ Reçus et NON conservés : identité de bailleur, sans objet pour un fonds.
     owner_kind: str | None = None
     owner_account_name: str | None = None
-    owner_full_name: str | None = None
     owner_company: str | None = None
     # 🔴 LES DEUX NOMS, LE TEMPS DE LA BASCULE. Immo a renomme la notion en
     # `company_number`. Ce produit JETTE ce champ -- un fonds n a pas de bailleur --
@@ -185,7 +184,6 @@ class ManagerIn(BaseModel):
 IGNORED_BY_DESIGN: tuple[str, ...] = (
     "owner_kind",
     "owner_account_name",
-    "owner_full_name",
     "owner_company",
     "owner_national_id",
 )
