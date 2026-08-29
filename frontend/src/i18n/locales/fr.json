@@ -58,8 +58,8 @@
     "email": "Adresse e-mail",
     "password": "Mot de passe",
     "submit": "Se connecter",
-    "pitchTitle": "Quatre mouvements, et ils se recoupent toujours.",
-    "pitchBody": "Ce que l'investisseur a promis, ce qu'on lui a demandé, ce qui est arrivé sur le compte, et ce qu'on lui a reversé. Chacun se rapproche du relevé bancaire."
+    "pitchTitle": "Un comptoir, c'est l'établissement qu'on ouvre au loin pour y faire affaire.",
+    "pitchBody": "Le vôtre tient vos véhicules d'investissement pays par pays : chacun garde sa monnaie, son numéro d'entreprise et son droit local. Quatre mouvements, et ils se recoupent toujours : ce que l'investisseur a promis, ce qu'on lui a demandé, ce qui est arrivé sur le compte, et ce qu'on lui a reversé. Pensé pour l'investisseur globetrotteur."
   },
   "errors": {
     "expired": "Session expirée. Reconnectez-vous.",

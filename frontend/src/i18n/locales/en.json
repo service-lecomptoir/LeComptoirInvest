@@ -58,8 +58,8 @@
     "email": "E-mail address",
     "password": "Password",
     "submit": "Sign in",
-    "pitchTitle": "Four movements, and they always reconcile.",
-    "pitchBody": "What the investor promised, what they were asked for, what reached the account, and what was paid back to them. Each one ties to a bank statement."
+    "pitchTitle": "A « comptoir » is the trading post one opens far from home to do business there.",
+    "pitchBody": "Yours holds your investment vehicles country by country: each keeps its own currency, company number and local law. Four movements, and they always reconcile: what the investor pledged, what was called, what reached the account, and what was paid back. Built for the globetrotting investor."
   },
   "errors": {
     "expired": "Your session has expired. Please sign in again.",
