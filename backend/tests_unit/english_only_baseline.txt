@@ -1,0 +1,130 @@
+# Fingerprints of the FRENCH prose that predates this guard. Only new prose
+# fails; translating a block and dropping its line here is always welcome.
+# Regenerate with:  python test_english_only.py
+7903e266236f  # backend/app/main.py:117  `https://invest.lecomptoir.services/internal/managers` atteint donc un
+7021923bae87  # backend/tests/test_paying_for_the_product_itself.py:112  l'identifiant du payeur ne vient pas de la session
+6e68c67fe440  # backend/tests/test_the_internal_contract_alice_speaks.py:196  est stocké : la décision a changé
+c036a79013e8  # backend/tests/test_the_internal_contract_alice_speaks.py:260  Un compte bloqué ne peut pas administrer : il ne remplace pas le derni
+aedb8734028f  # backend/tests/test_the_portfolio_is_derived_not_stored.py:206  Le prêt converti doit rester lisible dans l'historique.
+77d259e9595c  # backend/tests_unit/test_no_day_belongs_to_nobody.py:88  Une date y répond au fuseau du conteneur, qui n'est le jour de personn
+964d75246339  # backend/tests_unit/test_server_labels_are_bilingual.py:135  Un libelle qui vient du serveur se traduit au serveur : ni le PDF, ni 
+74bcac0bf58d  # backend/tests_unit/test_server_labels_are_bilingual.py:167  Soit elles passent par pick(fr, en), soit elles rejoignent SETTLED ave
+286e8b3cbb7d  # backend/tests_unit/test_stored_values_are_english.py:125  Ajoutez-les à APPROVED, en anglais. Une valeur stockée ne se renomme p
+46d3cbd61f61  # backend/tests_unit/test_stored_values_are_english.py:141  Ces valeurs ont changé sans que l'inventaire suive : : inventaire , co
+509fa28025fd  # backend/tests_unit/test_the_prose_of_this_repository_is_english.py:94  ligne(s) de prose en français dans le code. Les commentaires et les do
+aab42a230dcd  # frontend/src/api/index.ts:119  Le meme releve, en document. ⚠️ `responseType: 'blob'`, ET C'EST OBLIG
+7ad3385223ae  # frontend/src/api/index.ts:138  L'abonnement du gestionnaire AU PRODUIT. ⚠️ `billingApi` et `subscript
+f7b1f4e7c97e  # frontend/src/api/index.ts:14  Un rechargement ne garde que le jeton : l'application redemande QUI el
+d217f2dc2d42  # frontend/src/api/index.ts:15  que de faire confiance à un rôle recopié dans le stockage local, qu'un
+e5d4689130b8  # frontend/src/api/index.ts:150  Le refus est MONTRÉ EN PLACE, à côté du bouton : une console injoignab
+a63040332b13  # frontend/src/api/index.ts:151  information utile, pas une bannière rouge fugace en haut de l'écran.
+e602a4ae81e0  # frontend/src/components/common/ConfirmHost.tsx:43  Le voile n'a PAS de gestionnaire de clic : voir le commentaire ci-dess
+df3e482d960d  # frontend/src/components/common/ConfirmHost.tsx:6  La fenêtre de confirmation du produit. Montée une fois, au-dessus de t
+f8521b3ea83b  # frontend/src/components/common/Logo.tsx:24  Le carré navy du favicon : c'est lui qui fait reconnaître la famille.
+346f99652ac1  # frontend/src/components/layout/ProfileMenu.tsx:107  🔴 RÉSERVÉ À QUI PAIE. `/billing` est un écran de la gestion du fonds :
+1775732f934c  # frontend/src/components/layout/ProfileMenu.tsx:28  Un menu se ferme quand on clique ailleurs. Sans cela il reste ouvert d
+24c38ebfba2e  # frontend/src/components/layout/ProfileMenu.tsx:29  premier clic suivant, et ce clic-là est perdu pour l'écran qu'il visai
+b2063d0a0066  # frontend/src/components/layout/ProfileMenu.tsx:46  ⚠️ Une fenêtre du PRODUIT, jamais `window.confirm`. Se déconnecter d'u
+c57a0927164f  # frontend/src/components/layout/ProfileMenu.tsx:61  L'initiale de l'adresse, faute de mieux : ce produit ne stocke pas de 
+6b65dad2a4b5  # frontend/src/components/layout/ProfileMenu.tsx:8  Le compte, en haut à droite, comme dans Le Comptoir Immo. ⚠️ CE QUI ÉT
+d20263650e60  # frontend/src/components/layout/ProfileMenu.tsx:88  Qui est connecté, en toutes lettres. C'est la question à laquelle ce m
+6e82c7184cee  # frontend/src/components/layout/Shell.tsx:147  🔴 SORTI DU MENU, DONC SORTI DE LA CARTE DES TITRES qui en est dérivée.
+4a67f12054b5  # frontend/src/components/layout/Shell.tsx:149  existe pour attraper, un écran qui reste servi et dont l'onglet retomb
+05cd61bc5680  # frontend/src/components/layout/Shell.tsx:224  ⚠️ UNE SEULE BARRE, PAS UNE PAR TAILLE D'ECRAN. Elle portait le menu b
+70c8aae7d2ee  # frontend/src/components/layout/Shell.tsx:239  ⚠️ LA MÊME MARQUE QU'À GAUCHE, pas une variante. Deux écritures du mêm
+770fba42f302  # frontend/src/components/layout/Shell.tsx:247  Pousse le reste a droite : c'est la seule chose que cette barre a a di
+0043ce03fe60  # frontend/src/components/layout/Shell.tsx:32  ⚠️ L'ORDRE RACONTE LE CYCLE DU FONDS, il n'est pas alphabétique ni his
+cc739fc24f18  # frontend/src/components/layout/Shell.tsx:68  En haut du bandeau : la marque, puis la société de gestion. 🔴 DEUX LIG
+abc5b86cf5f6  # frontend/src/components/layout/Shell.tsx:90  ⚠️ `truncate` : une raison sociale est saisie par quelqu'un, et
+72b492da4ea2  # frontend/src/components/ui/Input.tsx:21  Ajoute l'oeil qui devoile le contenu. Reserve aux champs de mot de pas
+2327fd75037f  # frontend/src/components/ui/Input.tsx:70  ⚠️ `tabIndex={-1}` : la tabulation doit mener du mot de passe au bouto
+1ad69dd119b7  # frontend/src/components/ui/Input.tsx:71  valide, pas a un bouton d'affichage. On l'atteint a la souris, ou en r
+73a8f1953da6  # frontend/src/i18n/catalogue.test.ts:31  Files whose accented text is data, or a message meant for a developer.
+30eb3254e1ec  # frontend/src/i18n/catalogue.test.ts:88  🔴 LA REGLE VIT DANS `copyRule.ts`, ET PAS ICI. Elle etait ecrite deux 
+440e6a2877ac  # frontend/src/i18n/catalogue.test.ts:89  et dans `scripts/i18n-check.mjs`. Ajouter `brand.full` a fait tomber l
+8e562b2b8233  # frontend/src/i18n/catalogue.test.ts:91  avoir corrigee, c'est douter de la garde.
+bf88bd0a29eb  # frontend/src/i18n/copyRule.ts:1  Ce qui distingue une traduction d'une recopie. UNE seule fois. 🔴 CETTE
+3c0d94c68382  # frontend/src/i18n/copyRule.ts:14  Trois mots, c'est là qu'une phrase commence. ⚠️ LE CRITÈRE EST LE NOMB
+bfc4c83e5fdf  # frontend/src/i18n/copyRule.ts:24  🔴 UN NOM DE MARQUE NE SE TRADUIT PAS, et c'est tout ce que `brand.` co
+bae51940f305  # frontend/src/i18n/copyRule.ts:35  Les clés dont la version anglaise est, selon toute vraisemblance, le f
+56b939639fcc  # frontend/src/i18n/tab-title.test.ts:1  Chaque écran nomme son onglet, et le nomme dans la langue du lecteur. 
+1963fda0a223  # frontend/src/i18n/tab-title.test.ts:22  Les routes que l'application sert réellement, lues dans le routeur.
+8685b7d084e9  # frontend/src/i18n/tab-title.test.ts:47  PASSWORD_ROUTE est déclaré comme constante dans le routeur : son chemi
+a35f158879c1  # frontend/src/i18n/tab-title.test.ts:48  n'apparaît pas dans un `path:`. Il est couvert par OFF_MENU_TITLES.
+05e77f3eb970  # frontend/src/i18n/tab-title.test.ts:63  ⚠️ Le piège : `document.title` est posé dans un effet. Sans la langue 
+ea4236a85801  # frontend/src/i18n/tab-title.test.ts:65  le seul endroit que personne ne pense à vérifier.
+8c6b499829d5  # frontend/src/i18n/ui-rules.test.ts:1  Trois règles d'interface que rien ne rappelle au moment où on les enfr
+7455a205f651  # frontend/src/i18n/ui-rules.test.ts:116  🔴 `window.confirm`, `window.alert` et `window.prompt` sont interdits. 
+cc826f53c20f  # frontend/src/i18n/ui-rules.test.ts:26  Retire les commentaires : la règle vise le texte VU, pas les notes du 
+a2565d21c755  # frontend/src/i18n/ui-rules.test.ts:32  ⚠️ LE SIGNE MOINS U+2212 RESTE AUTORISÉ, et ce n'est pas une exception
+14d844c1c1b1  # frontend/src/i18n/ui-rules.test.ts:74  🔴 LE DÉFAUT, EXACTEMENT. Dans une rangée `items-end`, les cellules s'a
+e2a750cdc9f2  # frontend/src/lib/format.ts:15  🔴 LA LANGUE ACTIVE, PAS `fr-FR` EN DUR. La première version documentai
+9a699c7a1a06  # frontend/src/lib/format.ts:25  ⚠️ LE TIRET CADRATIN EST INTERDIT DANS TOUT TEXTE VISIBLE, la marque d
+204d2f984854  # frontend/src/lib/overage.test.ts:1  Ce qu'un 402 doit devenir à l'écran, et ce qu'il ne doit jamais deveni
+dd729ddad999  # frontend/src/lib/overage.test.ts:37  Un refus du serveur, dans la forme exacte qu'axios donne à l'appelant.
+684155ec450c  # frontend/src/lib/overage.test.ts:61  🔴 LE PRIX VIENT DE LA CONSOLE, PAS DU FRONT. Reconstruire la phrase ic
+4856baeeca92  # frontend/src/lib/overage.test.ts:62  seconde vérité sur un tarif que cet écran ne connaît pas : le jour où 
+175ba533a7a3  # frontend/src/lib/overage.test.ts:93  400 = l'offre interdit le dépassement. Aucune confirmation ne peut lev
+7534be2d6e42  # frontend/src/lib/overage.test.ts:94  transformer en dialogue proposerait un « oui » qui n'existe pas.
+5f950906e7be  # frontend/src/pages/Billing.tsx:136  L'estimation au prorata est demandée AVANT la question : confirmer un 
+186b61ae295a  # frontend/src/pages/Billing.tsx:137  d'offre sans savoir ce qu'il coûte aujourd'hui, ce n'est pas confirmer
+26007c178649  # frontend/src/pages/Billing.tsx:171  Le PDF passe par le client authentifié : une adresse nue rendrait un 4
+abb915d1f6cb  # frontend/src/pages/Billing.tsx:18  Ce que le gestionnaire paie pour utiliser ce produit, et par quels moy
+d1ebd28318ff  # frontend/src/pages/Billing.tsx:341  L'aide vit SOUS la rangée, jamais dans une cellule alignée en bas.
+413a0d6e39a8  # frontend/src/pages/Billing.tsx:45  🔴 C'EST ICI QUE STRIPE RENVOIE LE PAYEUR, et l'écran doit le reconnaît
+005e7b6dc120  # frontend/src/pages/Billing.tsx:46  un gestionnaire qui vient de payer revient sur une page identique à ce
+bd4c75d47377  # frontend/src/pages/Billing.tsx:47  quittée : rien ne lui dit que son paiement est passé, et le premier ré
+be15a99af754  # frontend/src/pages/Billing.tsx:48  repayer. Le paramètre est retiré de l'adresse aussitôt lu, pour qu'un 
+b39fa0cd7ab8  # frontend/src/pages/Billing.tsx:49  ne rejoue pas le message.
+e820f2faca16  # frontend/src/pages/Billing.tsx:62  Appels indépendants : une facture illisible ne doit pas emporter l'off
+84b29696c081  # frontend/src/pages/Billing.tsx:86  Ouvre la page de paiement dans le même onglet : on quitte le produit l
+6c6b30a11e99  # frontend/src/pages/Distributions.tsx:161  🔴 LES DEUX MONTANTS DU GESTIONNAIRE SONT MONTRÉS, ET SÉPARÉMENT. Les f
+4b16ee704479  # frontend/src/pages/Distributions.tsx:210  ⚠️ CETTE JUSTIFICATION NE VAUT QUE POUR UNE DETTE. Affichée quand le b
+f9dcb1b04bad  # frontend/src/pages/Distributions.tsx:312  Attacher le virement sortant — sans quoi tout restait « décidée, non p
+999a6c4966e9  # frontend/src/pages/Distributions.tsx:343  le message du serveur est déjà affiché par l'intercepteur
+5794ad37d58f  # frontend/src/pages/Investors.tsx:137  🔴 « NON ÉVALUÉ » N'EST PAS UN BLANC : c'est l'état qui REFUSE tout eng
+d77e9fb9c46e  # frontend/src/pages/Investors.tsx:265  Rendre un verdict — l'écran sans lequel le registre ne servait à rien.
+950d58298464  # frontend/src/pages/Investors.tsx:446  Which protections apply to this investor, and on what declared basis. 
+a32a7544fd7d  # frontend/src/pages/Login.tsx:12  ⚠️ LA CONNEXION EST HORS DU SHELL, donc hors de l'effet qui nomme les 
+90209b142543  # frontend/src/pages/Login.tsx:14  celui qu'il laisse dans un onglet en cherchant son mot de passe ailleu
+66d4e506ab26  # frontend/src/pages/Portfolio.tsx:106  Un bloc par devise, jamais un chiffre unique : détenir des euros et de
+2b320e686142  # frontend/src/pages/Portfolio.tsx:15  L'espace de l'investisseur. Chaque chiffre est RECALCULÉ à partir de c
+1d5ab630b3a0  # frontend/src/pages/Portfolio.tsx:180  « Investir en ligne » — l'écran que le produit promettait et n'avait p
+fef96e853873  # frontend/src/pages/Portfolio.tsx:33  Son propre dossier : un investisseur bloqué doit savoir POURQUOI il l'
+a10d6c11729e  # frontend/src/pages/Projects.tsx:225  Les trois gestes qui font vivre un projet, et qui n'avaient aucun écra
+1f74d727673b  # frontend/src/pages/Projects.tsx:255  🔴 LA DATE D'ARRÊTÉ, PAS CELLE DE SAISIE. Une valorisation de mars enre
+8b2f1e838426  # frontend/src/pages/Projects.tsx:256  reste un chiffre de mars ; la dater du jour où on la tape décalerait c
+6c673193c7b0  # frontend/src/pages/Projects.tsx:257  trimestriel du délai de celui qui l'écrit.
+eedf26341b44  # frontend/src/pages/Projects.tsx:323  ⚠️ UNE VALORISATION NE S'IMPUTE SUR AUCUN MOUVEMENT BANCAIRE. C'est un
+6e0deb8b0daa  # frontend/src/pages/Projects.tsx:77  ⚠️ PAS `common.status` : la colonne d'état existe déjà trois colonnes 
+c4a1a51fdb01  # frontend/src/pages/Statement.tsx:30  Ouvrir le document, sans jamais le fabriquer ici. 🔴 LE PDF EST CONSTRU
+11a13e614ab4  # frontend/src/pages/Subscriptions.tsx:112  🔴 Un prêt ACCEPTÉ peut devenir une souscription — la décision du 17 ao
+0ceed656c6b7  # frontend/src/pages/Subscriptions.tsx:189  Convertir un prêt en souscription — la décision prise le 17 août, sans
+7317ea362a8a  # frontend/src/pages/Subscriptions.tsx:218  dont la cause n'a rien d'évident : deux objets distincts, deux identif
+c60cc4681dcf  # frontend/src/pages/Treasury.tsx:111  🔴 CHAQUE LIGNE REFUSÉE EST MONTRÉE, UNE PAR UNE. Un compte « 3 lignes 
+7070195ac876  # frontend/src/pages/profile/MyProfile.tsx:53  ⚠️ Une valeur absente se dit, elle ne se remplace pas par du vide : un
+7fe8662ecbca  # frontend/src/pages/profile/MyProfile.tsx:9  Mon profil : qui je suis ici, et le seul réglage qui m'appartienne. 🔴 
+e98f6ae91cf0  # frontend/src/pages/profile/PasswordSection.tsx:12  Changer son mot de passe. Une SECTION du profil, plus un écran à part.
+648e6cd3fdf2  # frontend/src/pages/profile/PasswordSection.tsx:61  En place, pas en toast : l'utilisateur regarde ce formulaire, et un me
+abf79dca0dbd  # frontend/src/pages/profile/PasswordSection.tsx:62  s'efface pendant qu'il ressaisit est un message qu'il ne lira pas.
+0af4e5652cec  # frontend/src/pages/profile/PasswordSection.tsx:74  Le titre de l'encadré n'est PAS celui de la page : répété, il ne dit r
+072f343aef01  # frontend/src/router.tsx:22  🔴 LE PROFIL EST AUSSI LA PORTE DU CHANGEMENT IMPOSE, et c'est pourquoi
+ef20365a27ea  # frontend/src/router.tsx:24  presenter et l'autre pour changer son mot de passe, auraient laisse le
+91ca4d7669db  # frontend/src/router.tsx:25  atterrir sur une page sans contexte, celle-la meme qu'un compte tout n
+623f990ce74c  # frontend/src/router.tsx:36  🔴 LE CHANGEMENT IMPOSÉ BLOQUE TOUT LE RESTE, et c'est le seul endroit 
+49f7f124ac67  # frontend/src/router.tsx:37  Le poser sur chaque écran laisserait celui qu'on oublie servir de port
+8799237f29c5  # frontend/src/router.tsx:65  Et la réciproque, qui manquait. ⚠️ Un gestionnaire qui atteignait `/st
+9f0e6c826b6a  # frontend/src/router.tsx:93  L'abonnement AU PRODUIT : réservé à qui le paie, donc à la gestion du 
+d8e8e4bce3e0  # frontend/src/store/authStore.ts:21  Le nom de la SOCIETE DE GESTION, celui que porte le compte. ⚠️ Ce n'es
+e5266353f394  # frontend/src/store/authStore.ts:30  Le titulaire doit remplacer un identifiant que quelqu'un d'autre lui a
+fb83eed7975c  # frontend/src/store/authStore.ts:5  Qui est connecté, et ce que l'application a le droit de lui dessiner. 
+64f4020303b1  # frontend/src/store/authStore.ts:72  Jeton expiré ou compte désactivé : on repart d'un état propre plutôt q
+c850293f005b  # frontend/src/store/authStore.ts:84  On relit `/auth/me` plutôt que de se contenter de la réponse de connex
+532408d0cf3d  # frontend/src/store/confirm.ts:22  Rouge plutôt que navy : réservé à ce qui détruit ou coupe un accès.
+6f971cfeeadb  # frontend/src/store/confirm.ts:3  Demander confirmation, sans jamais passer par une boîte du navigateur.
+bbed5a68a74b  # frontend/src/store/confirm.ts:37  ⚠️ Une seconde demande pendant qu'une première attend répondrait « non
+26105c0754c1  # frontend/src/types/index.ts:200  ⚠️ À NE PAS CONFONDRE avec `SubscriptionRequest`, qui est l'engagement
+6218c998d8e3  # frontend/src/types/index.ts:201  dans un fonds. Le métier a pris le mot « souscription » ; ce que le ge
+fe69be384488  # frontend/src/types/index.ts:202  pour utiliser le produit s'appelle donc « billing » d'un bout à l'autr
+228984ef9f47  # frontend/src/types/index.ts:205  false = aucune console ne pilote cette instance. Ce n'est PAS « gratui
+f7f9014fc2a0  # frontend/src/types/index.ts:74  L'engagement né de cette demande. NULL tant qu'elle est en attente, et
