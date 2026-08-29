@@ -32,7 +32,9 @@ DAY_LIB = ("day.ts",)
 MIN_COLUMNS = 20
 
 _DECLARED = re.compile(r"^\s*(\w+):\s*Mapped\[[^\]]*\bdate\b(?!time)[^\]]*\]", re.M)
-_COLUMN = re.compile(r"^\s*(\w+):\s*Mapped\[[^\]]*\]\s*=\s*mapped_column\(\s*Date\b(?!Time)", re.M)
+_COLUMN = re.compile(
+    r"^\s*(\w+):\s*Mapped\[[^\]]*\]\s*=\s*mapped_column\(\s*Date\b(?!Time)", re.M
+)
 
 WRITTEN_IN_UTC = re.compile(
     r"toISOString\(\)\s*\.\s*(?:slice|substring)\(\s*0\s*,\s*10\s*\)"
@@ -149,7 +151,8 @@ def test_no_day_is_computed_through_utc() -> None:
         for hit in WRITTEN_IN_UTC.findall(src)
     ]
     assert not offenders, (
-        "`toISOString()` is UTC. Assemble the day from its local parts:\n" + "\n".join(offenders)
+        "`toISOString()` is UTC. Assemble the day from its local parts:\n"
+        + "\n".join(offenders)
     )
 
 
@@ -173,14 +176,20 @@ def test_no_helper_that_receives_a_day_builds_its_own_instant() -> None:
         if not reachable:
             continue
         calls = re.compile(
-            r"\b(" + "|".join(sorted(map(re.escape, reachable)))
-            + r")\(\s*[^()]{0,60}?\b(?:" + days + r")\b"
+            r"\b("
+            + "|".join(sorted(map(re.escape, reachable)))
+            + r")\(\s*[^()]{0,60}?\b(?:"
+            + days
+            + r")\b"
         )
         for match in calls.finditer(src):
-            offenders.append(f"{key}: {match.group(0)}  [declare dans {reachable[match.group(1)]}]")
+            offenders.append(
+                f"{key}: {match.group(0)}  [declare dans {reachable[match.group(1)]}]"
+            )
     assert not offenders, (
         "A column the schema calls a DAY reaches a helper that builds the Date itself, so "
-        "it is parsed as UTC and every caller inherits it:\n" + "\n".join(sorted(set(offenders)))
+        "it is parsed as UTC and every caller inherits it:\n"
+        + "\n".join(sorted(set(offenders)))
     )
 
 
@@ -196,9 +205,12 @@ def test_the_guard_reads_code_and_not_the_prose_explaining_it() -> None:
     what a repaired file contains, and refusing it would force every explanation out of
     the codebase."""
     sample = _code_only(
-        "// the old line was new Date(value), parsed as UTC" + chr(10)
-        + "/* and here too: toISOString().slice(0, 10) */" + chr(10)
-        + "const d = dayOf(value)" + chr(10)
+        "// the old line was new Date(value), parsed as UTC"
+        + chr(10)
+        + "/* and here too: toISOString().slice(0, 10) */"
+        + chr(10)
+        + "const d = dayOf(value)"
+        + chr(10)
     )
     assert "new Date(value)" not in sample
     assert "toISOString" not in sample
