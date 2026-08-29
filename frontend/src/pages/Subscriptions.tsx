@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { todayIso } from '@/lib/day'
 import { useTranslation } from 'react-i18next'
 import { Check, Receipt, X } from 'lucide-react'
 import { subscriptionsApi } from '@/api'
@@ -203,7 +204,7 @@ function ConvertLoan({
   request, onCancel, onDone,
 }: { request: SubscriptionRequest; onCancel: () => void; onDone: () => void }) {
   const { t } = useTranslation()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayIso()
   const [convertedOn, setConvertedOn] = useState(today)
   const [principal, setPrincipal] = useState(request.amount)
   const [interest, setInterest] = useState('')

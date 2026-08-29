@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { todayIso } from '@/lib/day'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, ArrowRight, Building2, Wallet } from 'lucide-react'
@@ -21,7 +22,7 @@ export default function Dashboard() {
   const [blocks, setBlocks] = useState<CurrencyBlock[] | null>(null)
   const [unattributed, setUnattributed] = useState<Movement[]>([])
   const [projects, setProjects] = useState<Project[]>([])
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayIso()
 
   useEffect(() => {
     let alive = true

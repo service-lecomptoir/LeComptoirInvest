@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { todayIso } from '@/lib/day'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Upload } from 'lucide-react'
 import { treasuryApi } from '@/api'
@@ -267,7 +268,7 @@ function NewCall({ onDone }: { onDone: () => void }) {
   const [amount, setAmount] = useState('')
   const [dueOn, setDueOn] = useState('')
   const [busy, setBusy] = useState(false)
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayIso()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { todayIso } from '@/lib/day'
 import { useTranslation } from 'react-i18next'
 import { Layers, Landmark } from 'lucide-react'
 import { fundsApi } from '@/api'
@@ -34,7 +35,7 @@ export default function Funds() {
     preferred_return: '', carried_interest: '', management_fee: '', mandate: '',
   })
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayIso()
   const [asOf, setAsOf] = useState(today)
   const [selected, setSelected] = useState<string>('')
   const [value, setValue] = useState<FundNetAssetValue | null>(null)

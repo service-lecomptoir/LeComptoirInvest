@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { todayIso } from '@/lib/day'
 import { useTranslation } from 'react-i18next'
 import { AlarmClock, Mail, MailWarning } from 'lucide-react'
 import { treasuryApi } from '@/api'
@@ -21,7 +22,7 @@ import type { LateCall } from '@/types'
  */
 export default function LateCalls() {
   const { t } = useTranslation()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayIso()
   const [asOf, setAsOf] = useState(today)
   const [calls, setCalls] = useState<LateCall[] | null>(null)
   /** 🔴 THE ROW THAT SAID « JAMAIS NOTIFIÉ » NAMED THE FUND'S OWN OMISSION AND OFFERED

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { todayIso } from '@/lib/day'
 import { useTranslation } from 'react-i18next'
 import { ArrowDown, Ban, Check, Landmark, Users } from 'lucide-react'
 import clsx from 'clsx'
@@ -30,7 +31,7 @@ const FIELD = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-whi
  */
 export default function Distributions() {
   const { t } = useTranslation()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayIso()
   const [currency, setCurrency] = useState('EUR')
   const [amount, setAmount] = useState('')
   const [asOf, setAsOf] = useState(today)

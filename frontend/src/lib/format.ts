@@ -1,4 +1,5 @@
 import i18n from '@/i18n'
+import { dayOf } from './day'
 
 /**
  * Showing money, when the fund holds several currencies.
@@ -70,7 +71,11 @@ export function number(value: number | string | null | undefined, digits = 2): s
 /** A date as the user reads it. Empty rather than « Invalid Date ». */
 export function day(value: string | null | undefined): string {
   if (!value) return '-'
-  const d = new Date(value)
+  // 🔴 `new Date(value)` PARSED A STORED DAY AS UTC MIDNIGHT, and no `timeZone` option
+  // below makes that zone-less -- omitting it uses the DEVICE's zone. Every date in the
+  // product therefore slid back a day for a reader west of Greenwich. `dayOf` reads a
+  // bare day as LOCAL midnight, after which no rendering can move it.
+  const d = dayOf(value)
   if (Number.isNaN(d.getTime())) return '-'
   return new Intl.DateTimeFormat(activeLocale(), { day: '2-digit', month: 'short', year: 'numeric' }).format(d)
 }
