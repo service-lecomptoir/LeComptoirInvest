@@ -50,14 +50,19 @@ BASELINE = pathlib.Path(__file__).with_name("english_only_baseline.txt")
 # Function words with no English meaning of their own. Deliberately NOT here: `on`,
 # `par`, `son`, `sans`, `plus`; `pour` is fine but `part`, `point`, `force` are not --
 # a false positive is exactly how a guard gets switched off.
-FRENCH_WORDS = set(
-    """
-    le la les des une dans pour avec donc qui que est sont pas leur cette ces nous vous
-    aux ses tout tous quand alors mais ainsi cela chaque entre vers depuis jamais
-    toujours celui celle ceux elles ils dont encore déjà aussi être était étaient
-    parce lorsque puisque afin cet ceci celà lequel laquelle plutôt sinon néanmoins
-    """.split()
-)
+# ⚠️ WRITTEN AS AN EXPLODED LITERAL, with a trailing comma. A triple-quoted string was
+# collapsed by `ruff format` into a single 498-character line, over the 100 columns these
+# projects lint at, and the guard failed CI on its own formatting. The trailing comma
+# keeps the literal exploded whatever the formatter does next.
+FRENCH_WORDS = {
+    "le", "la", "les", "des", "une", "dans", "pour", "avec", "donc", "qui", "que",
+    "est", "sont", "pas", "leur", "cette", "ces", "nous", "vous", "aux", "ses",
+    "tout", "tous", "quand", "alors", "mais", "ainsi", "cela", "chaque", "entre",
+    "vers", "depuis", "jamais", "toujours", "celui", "celle", "ceux", "elles", "ils",
+    "dont", "encore", "déjà", "aussi", "être", "était", "étaient", "parce",
+    "lorsque", "puisque", "afin", "cet", "ceci", "celà", "lequel", "laquelle",
+    "plutôt", "sinon", "néanmoins",
+}  # fmt: skip
 
 # Two distinct markers, never one: a lone « la » in an English sentence is noise, two of
 # them is French. This is what keeps the guard quiet enough to survive.

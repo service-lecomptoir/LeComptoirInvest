@@ -169,6 +169,13 @@ jobs:
             $COMPOSE up -d --force-recreate --no-deps --pull never invest-backend invest-frontend </dev/null
             running=$(docker inspect invest_backend --format '{{.Config.Image}}')
             case "$running" in *"${IMAGE_TAG}"*) echo "OK deploiement : $running" ;; *) echo "ECHEC : conteneur sur $running au lieu de ${IMAGE_TAG}"; exit 1 ;; esac
-            docker image prune -af --filter "until=72h"
+            # 🔴 LE NETTOYAGE NE DOIT PAS FAIRE ECHOUER UNE LIVRAISON DEJA FAITE.
+            # Il tourne APRES la verification du conteneur : a ce point le deploiement
+            # a reussi. Deux depots pousses coup sur coup se sont retrouves a elaguer
+            # en meme temps, Docker a repondu « a prune operation is already running »,
+            # et `-e` a transforme un menage rate en deploiement rouge -- en sautant au
+            # passage le `docker logout` qui suit. Un run vert qui ment sur un echec est
+            # grave ; un run rouge qui ment sur une reussite l est tout autant.
+            docker image prune -af --filter "until=72h" || echo "menage des images saute (elagage concurrent) : sans effet sur le deploiement"
             docker logout ghcr.io
             echo "Deploye : $IMAGE_TAG"
