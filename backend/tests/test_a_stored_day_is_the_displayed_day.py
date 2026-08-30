@@ -36,8 +36,12 @@ _COLUMN = re.compile(
     r"^\s*(\w+):\s*Mapped\[[^\]]*\]\s*=\s*mapped_column\(\s*Date\b(?!Time)", re.M
 )
 
+# ⚠️ 7 AS WELL AS 10. The first version knew only the day form, and I reintroduced the
+# defect myself, an hour after sweeping it out, with `toISOString().slice(0, 7)` to compare
+# MONTHS -- which in France just after midnight on the 1st still names the previous month.
+# A guard narrower than its rule reads exactly like a guard that holds it.
 WRITTEN_IN_UTC = re.compile(
-    r"toISOString\(\)\s*\.\s*(?:slice|substring)\(\s*0\s*,\s*10\s*\)"
+    r"toISOString\(\)\s*\.\s*(?:slice|substring)\(\s*0\s*,\s*(?:7|10)\s*\)"
     r"|toISOString\(\)\s*\.\s*split\(\s*['\"]T['\"]\s*\)\s*\[\s*0\s*\]"
 )
 
@@ -196,6 +200,7 @@ def test_no_helper_that_receives_a_day_builds_its_own_instant() -> None:
 def test_the_guard_still_recognises_both_halves() -> None:
     """⚠️ MUTATION-PROOF BY CONSTRUCTION: a loosened pattern passes over live defects."""
     assert WRITTEN_IN_UTC.findall("d.toISOString().slice(0, 10)")
+    assert WRITTEN_IN_UTC.findall("d.toISOString().slice(0, 7)")
     assert WRITTEN_IN_UTC.findall("d.toISOString().split('T')[0]")
     assert not WRITTEN_IN_UTC.findall("d.toISOString()")
 
