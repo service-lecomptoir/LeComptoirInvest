@@ -1,5 +1,5 @@
 /**
- * The product's mark: the Comptoir « C », in the family's colours.
+ * The product's mark: the Comptoir « C » become a compass, in the family's colours.
  *
  * 🔴 THE SAME GLYPH AS THE FAVICON, AND THAT IS THE WHOLE POINT. `public/favicon.svg`
  * already carried the real mark; the sidebar drew the LETTER « C » in a teal box instead.
@@ -30,6 +30,16 @@ export function LogoMark({ size = 28, className = '' }: { size?: number; classNa
         strokeWidth="6.2"
         strokeLinecap="round"
       />
+      {/* The compass needle: the family pin's orange points at the next country
+          to invest in (variant I-C, chosen by the user on 5 September). */}
+      <g transform="rotate(38 32 32)">
+        <path d="M32 17.2 L36 32 L32 46.8 L28 32 Z" fill="#ffffff" />
+        <path d="M32 17.2 L36 32 H28 Z" fill="#F97316" />
+      </g>
+      <circle cx="32" cy="32" r="3" fill="#ffffff" />
+      <circle cx="32" cy="32" r="1.3" fill="#0D2F5C" />
+      <circle cx="50.8" cy="40.8" r="1.9" fill="#FACC15" />
+      <circle cx="48.4" cy="48.4" r="1.9" fill="#38BDF8" />
     </svg>
   )
 }
