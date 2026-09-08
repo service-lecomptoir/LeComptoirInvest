@@ -21,7 +21,9 @@ SIGNATURES = [
 
 
 def test_both_copies_carry_every_signature():
-    logo = (FRONT / "src" / "components" / "common" / "Logo.tsx").read_text(encoding="utf-8")
+    logo = (FRONT / "src" / "components" / "common" / "Logo.tsx").read_text(
+        encoding="utf-8"
+    )
     favicon = (FRONT / "public" / "favicon.svg").read_text(encoding="utf-8")
     for sig in SIGNATURES:
         assert sig in logo, f"LogoMark lost the element {sig!r}"

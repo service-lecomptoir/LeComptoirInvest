@@ -27,17 +27,23 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column("investors", sa.Column("category", sa.String(length=20), nullable=True))
+    op.add_column(
+        "investors", sa.Column("category", sa.String(length=20), nullable=True)
+    )
     op.create_index("ix_investors_category", "investors", ["category"])
     op.add_column(
         "investors",
-        sa.Column("loss_bearing_capacity", sa.Numeric(precision=18, scale=2), nullable=True),
+        sa.Column(
+            "loss_bearing_capacity", sa.Numeric(precision=18, scale=2), nullable=True
+        ),
     )
     op.add_column(
-        "subscription_requests", sa.Column("reflection_ends_on", sa.Date(), nullable=True)
+        "subscription_requests",
+        sa.Column("reflection_ends_on", sa.Date(), nullable=True),
     )
     op.add_column(
-        "subscription_requests", sa.Column("risk_acknowledged_on", sa.Date(), nullable=True)
+        "subscription_requests",
+        sa.Column("risk_acknowledged_on", sa.Date(), nullable=True),
     )
 
 

@@ -40,10 +40,16 @@ def upgrade() -> None:
         sa.Column("closed_on", sa.Date(), nullable=True),
         sa.Column("mandate", sa.Text(), nullable=True),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -55,7 +61,12 @@ def upgrade() -> None:
         op.add_column(table, sa.Column("fund_id", sa.UUID(), nullable=True))
         op.create_index(f"ix_{table}_fund_id", table, ["fund_id"])
         op.create_foreign_key(
-            f"fk_{table}_fund_id", table, "funds", ["fund_id"], ["id"], ondelete="RESTRICT"
+            f"fk_{table}_fund_id",
+            table,
+            "funds",
+            ["fund_id"],
+            ["id"],
+            ondelete="RESTRICT",
         )
 
 

@@ -45,16 +45,28 @@ def upgrade() -> None:
         sa.Column("valued_by", sa.String(length=150), nullable=False),
         sa.Column("basis", sa.Text(), nullable=True),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_project_valuations_project_id", "project_valuations", ["project_id"])
-    op.create_index("ix_project_valuations_valued_on", "project_valuations", ["valued_on"])
-    op.create_index("ix_project_valuations_currency", "project_valuations", ["currency"])
+    op.create_index(
+        "ix_project_valuations_project_id", "project_valuations", ["project_id"]
+    )
+    op.create_index(
+        "ix_project_valuations_valued_on", "project_valuations", ["valued_on"]
+    )
+    op.create_index(
+        "ix_project_valuations_currency", "project_valuations", ["currency"]
+    )
 
 
 def downgrade() -> None:

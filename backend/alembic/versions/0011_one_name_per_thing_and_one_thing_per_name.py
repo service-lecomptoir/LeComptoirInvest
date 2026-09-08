@@ -61,12 +61,17 @@ def upgrade() -> None:
     bind = op.get_bind()
 
     # 1. La societe de gestion : un simple renommage.
-    if _has_column("users", "national_id") and not _has_column("users", "company_number"):
+    if _has_column("users", "national_id") and not _has_column(
+        "users", "company_number"
+    ):
         op.alter_column("users", "national_id", new_column_name="company_number")
 
     # 2. L investisseur : une colonne devient trois.
     if not _has_column("investors", "company_number"):
-        op.add_column("investors", sa.Column("company_number", sa.String(length=60), nullable=True))
+        op.add_column(
+            "investors",
+            sa.Column("company_number", sa.String(length=60), nullable=True),
+        )
     if not _has_column("investors", "identity_document_number"):
         op.add_column(
             "investors",
@@ -74,7 +79,8 @@ def upgrade() -> None:
         )
     if not _has_column("investors", "identity_document_type"):
         op.add_column(
-            "investors", sa.Column("identity_document_type", sa.String(length=30), nullable=True)
+            "investors",
+            sa.Column("identity_document_type", sa.String(length=30), nullable=True),
         )
 
     if _has_column("investors", "national_id"):
@@ -120,15 +126,23 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     if not _has_column("investors", "national_id"):
-        op.add_column("investors", sa.Column("national_id", sa.String(length=60), nullable=True))
+        op.add_column(
+            "investors", sa.Column("national_id", sa.String(length=60), nullable=True)
+        )
         op.get_bind().execute(
             sa.text(
                 "UPDATE investors SET national_id = "
                 "COALESCE(company_number, identity_document_number)"
             )
         )
-    for name in ("company_number", "identity_document_number", "identity_document_type"):
+    for name in (
+        "company_number",
+        "identity_document_number",
+        "identity_document_type",
+    ):
         if _has_column("investors", name):
             op.drop_column("investors", name)
-    if _has_column("users", "company_number") and not _has_column("users", "national_id"):
+    if _has_column("users", "company_number") and not _has_column(
+        "users", "national_id"
+    ):
         op.alter_column("users", "company_number", new_column_name="national_id")
