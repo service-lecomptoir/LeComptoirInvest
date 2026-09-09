@@ -57,6 +57,7 @@ jobs:
           INVEST_TEST_PASSWORD: ci-only-password
         run: |
           python -m ruff check app tests tests_unit
+          python -m ruff format --check app tests tests_unit
           python -m pytest -q
 
       - uses: actions/setup-node@v4
@@ -70,6 +71,7 @@ jobs:
           npm ci
           node scripts/i18n-check.mjs
           npx tsc --noEmit
+          npm run lint -- --max-warnings=0
           npx vitest run
 
   build-push:

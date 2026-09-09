@@ -19,6 +19,10 @@ import Performance from '@/pages/Performance'
 import LateCalls from '@/pages/LateCalls'
 import Funds from '@/pages/Funds'
 
+/* eslint-disable react-refresh/only-export-components -- this file IS the route
+   table: it exports `router` beside the four guard components that only make
+   sense next to it. Fast refresh reloads the whole tree on a change here anyway. */
+
 // 🔴 LE PROFIL EST AUSSI LA PORTE DU CHANGEMENT IMPOSE, et c'est pourquoi il n'y a
 // qu'une constante. Le mot de passe y est une SECTION : deux ecrans, l'un pour se
 // presenter et l'autre pour changer son mot de passe, auraient laisse le changement force
