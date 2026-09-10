@@ -7,7 +7,10 @@ psycopg2-binary==2.9.9
 pydantic==2.9.2
 pydantic-settings==2.5.2
 email-validator==2.2.0
-python-jose[cryptography]==3.4.0
+# python-jose 3.5 is the first to accept pyasn1 >= 0.5; pyasn1 (transitive, via rsa)
+# is pinned above PYSEC-2026-2263/3455/3456/3457.
+python-jose[cryptography]==3.5.0
+pyasn1==0.6.4
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
 python-multipart==0.0.31
