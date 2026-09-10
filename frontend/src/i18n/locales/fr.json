@@ -59,7 +59,7 @@
     "password": "Mot de passe",
     "submit": "Se connecter",
     "pitchTitle": "Un comptoir, c'est l'établissement qu'on ouvre au loin pour y faire affaire.",
-    "pitchBody": "Le vôtre tient vos véhicules d'investissement pays par pays : chacun garde sa monnaie, son numéro d'entreprise et son droit local. Quatre mouvements, et ils se recoupent toujours : ce que l'investisseur a promis, ce qu'on lui a demandé, ce qui est arrivé sur le compte, et ce qu'on lui a reversé. Pensé pour l'investisseur globetrotteur."
+    "pitchBody": "Le vôtre tient vos véhicules d'investissement pays par pays : chacun garde sa monnaie, son numéro d'entreprise et son droit local. Quatre mouvements, et ils se recoupent toujours : ce que l'investisseur a promis, ce qu'on lui a demandé, ce qui est arrivé sur le compte, et ce qu'on lui a reversé. Pensé pour l'investisseur globetrotteur."
   },
   "errors": {
     "expired": "Session expirée. Reconnectez-vous.",
@@ -71,7 +71,7 @@
     "subtitle": "La trésorerie du fonds, la dette qu'elle porte déjà, et ce qui attend une décision.",
     "positionIn": "Position en {{currency}}",
     "cash": "Trésorerie",
-    "cashHint": "Ce que la banque dirait : versements moins déploiements, plus retours, moins distributions.",
+    "cashHint": "Ce que la banque dirait : versements moins déploiements, plus retours, moins distributions.",
     "owed": "Dû aux prêteurs",
     "owedHint": "Intérêts courus, et le capital à partir de l'échéance.",
     "free": "Distribuable",
@@ -82,7 +82,7 @@
     "unmeasurableTitle": "Une dette n'est pas mesurable",
     "unmeasurableBody": "Tant qu'un prêt n'a pas d'échéancier enregistré, « les prêteurs sont-ils couverts » n'a pas de réponse, et aucune distribution ne peut être proposée.",
     "noMovements": "Aucun mouvement enregistré",
-    "noMovementsBody": "Importez un relevé depuis la trésorerie : tout le reste en découle.",
+    "noMovementsBody": "Importez un relevé depuis la trésorerie : tout le reste en découle.",
     "unidentified": "Argent non identifié",
     "goTreasury": "Trésorerie",
     "nothingPending": "Rien en attente",
@@ -99,7 +99,7 @@
     "importHelp": "Une liste JSON de lignes. Rejouer le même fichier ne duplique rien.",
     "import": "Importer",
     "notJson": "Le relevé collé n'est pas du JSON valide.",
-    "notAList": "Attendu : une liste de lignes de relevé.",
+    "notAList": "Attendu : une liste de lignes de relevé.",
     "imported": "{{count}} ligne nouvelle. Les lignes déjà connues ont été ignorées.",
     "imported_other": "{{count}} lignes nouvelles. Les lignes déjà connues ont été ignorées.",
     "unidentified": "Argent non identifié",
@@ -110,9 +110,9 @@
     "ruleProposesTitle": "La règle propose, elle ne décide jamais",
     "ruleProposesBody": "Imputer automatiquement un virement de 200 000 € sur un nom qui ressemblait n'est pas un gain de temps.",
     "imputeTitle": "Imputer {{amount}} du {{date}}",
-    "payerIs": "Donneur d'ordre : {{name}}.",
+    "payerIs": "Donneur d'ordre : {{name}}.",
     "payerUnknown": "non communiqué",
-    "thirdPartyWarning": "Le nom ne correspond pas au titulaire : c'est un paiement de tiers, à justifier.",
+    "thirdPartyWarning": "Le nom ne correspond pas au titulaire : c'est un paiement de tiers, à justifier.",
     "subscription": "Souscription",
     "subscriptionHint": "L'engagement que ce virement vient alimenter.",
     "imputedAmount": "Montant imputé",
@@ -124,19 +124,19 @@
     "issue": "Émettre",
     "callIssued": "Appel émis.",
     "noCalls": "Aucun appel émis",
-    "noCallsBody": "Un appel demande à un investisseur une part de ce qu'il a engagé. Ce n'est pas de l'argent : le virement arrive ensuite, sur un relevé.",
+    "noCallsBody": "Un appel demande à un investisseur une part de ce qu'il a engagé. Ce n'est pas de l'argent : le virement arrive ensuite, sur un relevé.",
     "issuedOn": "Émis le",
     "callSubscriptionHint": "Identifiant de l'engagement à appeler.",
     "basis": {
-      "virtual_iban": "Compte dédié : certain",
+      "virtual_iban": "Compte dédié : certain",
       "reference": "Référence citée",
-      "payer_iban": "Compte émetteur : identifie la personne, pas l'appel",
-      "amount": "Montant seul : ne prouve rien",
+      "payer_iban": "Compte émetteur : identifie la personne, pas l'appel",
+      "amount": "Montant seul : ne prouve rien",
       "unmatched": "Aucun indice"
     },
     "thirdParty": "Paiement de tiers",
     "camtTitle": "Relevé bancaire (CAMT.053)",
-    "camtHelp": "Déposez le fichier de votre banque. Les références y sont telles que l'investisseur les a saisies : c'est ce qui permet le rapprochement automatique. Réimporter le même relevé ne crée aucun doublon.",
+    "camtHelp": "Déposez le fichier de votre banque. Les références y sont telles que l'investisseur les a saisies : c'est ce qui permet le rapprochement automatique. Réimporter le même relevé ne crée aucun doublon.",
     "camtImported_one": "{{count}} mouvement importé ({{known}} déjà connu).",
     "camtImported_other": "{{count}} mouvements importés ({{known}} déjà connus).",
     "camtRefused_one": "{{count}} ligne non importée",
@@ -157,7 +157,7 @@
     "target": "Enveloppe visée",
     "targetHint": "Une intention. Ce qui est réellement entré est la somme des déploiements.",
     "overReturnedTitle": "Un projet a rendu plus de capital qu'il n'en a reçu",
-    "overReturnedBody": "Ce n'est pas arrondi à zéro volontairement : c'est soit une erreur de saisie, soit le remboursement de l'argent de quelqu'un d'autre. Les deux méritent d'être regardés.",
+    "overReturnedBody": "Ce n'est pas arrondi à zéro volontairement : c'est soit une erreur de saisie, soit le remboursement de l'argent de quelqu'un d'autre. Les deux méritent d'être regardés.",
     "status": {
       "study": "À l'étude",
       "active": "En cours",
@@ -169,7 +169,7 @@
     "title": "Registre des investisseurs",
     "subtitle": "Qui a le droit de placer de l'argent ici, et sur quelle vérification.",
     "none": "Aucun investisseur",
-    "noneBody": "Le registre est vide. Un investisseur peut exister sans accès en ligne : la fiche et le compte sont deux objets distincts.",
+    "noneBody": "Le registre est vide. Un investisseur peut exister sans accès en ligne : la fiche et le compte sont deux objets distincts.",
     "kind": "Nature",
     "verification": "Vérification",
     "reviewBy": "À revoir avant",
@@ -195,7 +195,7 @@
     "notAssessed": "Non évalué",
     "assessTitle": "Éligibilité de {{name}}",
     "capacity": "Capacité de perte déclarée",
-    "capacityHint": "Le seuil au-delà duquel un avertissement sur les risques doit être reconnu vaut le plus élevé de 1 000 € et de 5 % de cette capacité. Tant qu'elle n'est pas déclarée, le seuil reste inconnu et tout engagement est refusé : une capacité absente n'est pas une capacité illimitée.",
+    "capacityHint": "Le seuil au-delà duquel un avertissement sur les risques doit être reconnu vaut le plus élevé de 1 000 € et de 5 % de cette capacité. Tant qu'elle n'est pas déclarée, le seuil reste inconnu et tout engagement est refusé : une capacité absente n'est pas une capacité illimitée.",
     "eligibilityRecorded": "Éligibilité enregistrée.",
     "categories": {
       "retail": "Particulier",
@@ -211,7 +211,7 @@
     "quotaOverageBody": "Chaque investisseur au delà du forfait est facturé {{price}} €/mois, ajouté à votre abonnement. La question vous sera posée avant chaque ajout.",
     "quotaBlockedBody": "Votre offre ne permet pas de dépasser ce plafond. Passez à une offre supérieure pour enregistrer d'autres investisseurs.",
     "quotaUnknownTitle": "Votre forfait n'a pas pu être lu",
-    "quotaUnknownBody": "La console d'abonnement n'a pas répondu. Tant qu'elle est muette, aucun investisseur ne peut être enregistré : accorder un plafond que personne n'a vérifié reviendrait à rendre toutes les offres illimitées."
+    "quotaUnknownBody": "La console d'abonnement n'a pas répondu. Tant qu'elle est muette, aucun investisseur ne peut être enregistré : accorder un plafond que personne n'a vérifié reviendrait à rendre toutes les offres illimitées."
   },
   "subscriptions": {
     "title": "Souscriptions",
@@ -222,7 +222,7 @@
     "requestedOn": "Demandée le",
     "accept": "Accepter",
     "refuse": "Refuser",
-    "accepted": "Demande acceptée : l'engagement est créé.",
+    "accepted": "Demande acceptée : l'engagement est créé.",
     "refused": "Demande refusée.",
     "reasonRequired": "Un refus sans motif ne peut être ni reconsidéré ni expliqué à l'investisseur.",
     "reason": "Motif",
@@ -243,14 +243,14 @@
   },
   "distributions": {
     "title": "Distributions",
-    "subtitle": "Le prêteur est servi avant le souscripteur, et surtout : rien ne va au souscripteur tant que la dette n'est pas couverte.",
+    "subtitle": "Le prêteur est servi avant le souscripteur, et surtout : rien ne va au souscripteur tant que la dette n'est pas couverte.",
     "amountToDistribute": "Montant à distribuer",
     "asOf": "Arrêté au",
     "asOfHint": "Date à laquelle les intérêts sont calculés.",
     "nature": "Nature",
     "natureIncome": "Distribution de produits",
     "natureCapital": "Remboursement de capital",
-    "natureIncomeHelp": "Le capital reste au travail : tout ce qui est versé aux souscripteurs est un produit.",
+    "natureIncomeHelp": "Le capital reste au travail : tout ce qui est versé aux souscripteurs est un produit.",
     "natureCapitalHelp": "Le capital revient d'abord aux souscripteurs, puis ce qui dépasse est un produit.",
     "compute": "Calculer la répartition",
     "computing": "Calcul de la cascade",
@@ -267,9 +267,9 @@
     "debtCovered": "La dette est couverte.",
     "nothingAtRank": "Rien à ce rang.",
     "blockedTitle": "Les souscripteurs ne reçoivent rien",
-    "blockedWhy": "Ce n'est pas un ordre de passage : distribuer aux souscripteurs l'argent dû sur la prochaine échéance d'un prêt ne réordonne pas un défaut, cela le provoque.",
+    "blockedWhy": "Ce n'est pas un ordre de passage : distribuer aux souscripteurs l'argent dû sur la prochaine échéance d'un prêt ne réordonne pas un défaut, cela le provoque.",
     "decide": "Enregistrer la décision",
-    "decideHelp": "Enregistrer inscrit la distribution comme décidée. Le versement reste à faire : c'est en attachant le virement sortant que l'investisseur est payé.",
+    "decideHelp": "Enregistrer inscrit la distribution comme décidée. Le versement reste à faire : c'est en attachant le virement sortant que l'investisseur est payé.",
     "decided": "Distribution enregistrée. Elle est décidée, pas encore payée.",
     "history": "Distributions enregistrées",
     "none": "Aucune distribution",
@@ -304,9 +304,9 @@
     "subtitle": "Ce que le fonds vous demande, et la référence à citer dans votre virement.",
     "none": "Aucun appel",
     "noneBody": "Rien ne vous est demandé pour le moment.",
-    "referenceHelp": "Citez cette référence dans le libellé du virement : c'est ce qui permet au fonds de le rattacher sans deviner.",
+    "referenceHelp": "Citez cette référence dans le libellé du virement : c'est ce qui permet au fonds de le rattacher sans deviner.",
     "qrTitle": "Virement pré-rempli",
-    "qrHelp": "Scannez ce code avec votre application bancaire : le bénéficiaire, le compte, le montant et la référence sont déjà remplis.",
+    "qrHelp": "Scannez ce code avec votre application bancaire : le bénéficiaire, le compte, le montant et la référence sont déjà remplis.",
     "qrEuroOnly": "Le code de paiement n'existe qu'en euros. Pour cet appel, saisissez les coordonnées à la main."
   },
   "myDistributions": {
@@ -330,8 +330,8 @@
     "receivedTotal": "Total reçu",
     "atWorkAtYearEnd": "Capital au travail au 31 décembre",
     "decidedNotPaidTitle": "Décidé mais non payé",
-    "decidedNotPaidBody": "Ces montants ont été décidés dans l'année sans quitter le compte du fonds. Ils ne sont pas dans votre revenu : vous ne les avez pas reçus.",
-    "capitalIsNotIncome": "Le capital remboursé n'est pas un revenu : c'est votre propre argent qui revient.",
+    "decidedNotPaidBody": "Ces montants ont été décidés dans l'année sans quitter le compte du fonds. Ils ne sont pas dans votre revenu : vous ne les avez pas reçus.",
+    "capitalIsNotIncome": "Le capital remboursé n'est pas un revenu : c'est votre propre argent qui revient.",
     "download": "Télécharger"
   },
   "password": {
@@ -345,7 +345,7 @@
     "tooShort": "Dix caractères au minimum.",
     "submit": "Enregistrer",
     "done": "Mot de passe modifié.",
-    "whyCurrent": "Le mot de passe actuel est demandé même lorsque le changement est imposé : sans lui, un jeton dérobé suffirait à s'approprier le compte définitivement.",
+    "whyCurrent": "Le mot de passe actuel est demandé même lorsque le changement est imposé : sans lui, un jeton dérobé suffirait à s'approprier le compte définitivement.",
     "mustTitle": "Un mot de passe à remplacer",
     "optionalTitle": "Votre mot de passe",
     "reveal": "Afficher le mot de passe",
@@ -375,14 +375,14 @@
     "movementIn": "Le virement ENTRANT qui a rapporté l'argent.",
     "capitalBack": "Capital rendu",
     "incomeBack": "Produit",
-    "splitRequired": "Les deux montants sont demandés séparément : un retour saisi en un seul chiffre laisse présenter comme une performance un projet qui a seulement rendu l'argent.",
+    "splitRequired": "Les deux montants sont demandés séparément : un retour saisi en un seul chiffre laisse présenter comme une performance un projet qui a seulement rendu l'argent.",
     "changeStatus": "Changer l'état",
     "statusChanged": "État mis à jour.",
     "closedOn": "Clôturé le",
     "note": "Note",
     "value": "Valoriser",
     "valueTitle": "Valoriser {{name}}",
-    "valueHint": "Une valorisation est un jugement daté et signé, pas un flux : elle ne s'impute sur aucun mouvement bancaire. Elle est enregistrée à votre nom et n'est jamais modifiée ; corriger revient à en enregistrer une nouvelle.",
+    "valueHint": "Une valorisation est un jugement daté et signé, pas un flux : elle ne s'impute sur aucun mouvement bancaire. Elle est enregistrée à votre nom et n'est jamais modifiée ; corriger revient à en enregistrer une nouvelle.",
     "valuedOn": "Arrêtée au",
     "valuedAmount": "Valeur retenue",
     "basis": "Sur quoi elle repose",
@@ -391,12 +391,12 @@
   "convert": {
     "action": "Convertir en souscription",
     "title": "Convertir ce prêt",
-    "explain": "Un prêt devient une souscription. C'est un ÉVÉNEMENT : la ligne de prêt se ferme, une ligne de souscription s'ouvre, et les deux survivent. L'inverse n'existe pas.",
+    "explain": "Un prêt devient une souscription. C'est un ÉVÉNEMENT : la ligne de prêt se ferme, une ligne de souscription s'ouvre, et les deux survivent. L'inverse n'existe pas.",
     "date": "Date de conversion",
     "principal": "Capital converti",
     "interest": "Intérêts convertis",
     "interestCash": "Intérêts payés en espèces",
-    "interestWarning": "Les intérêts courus sont un montant réel : sur un prêt in fine, c'est chaque coupon depuis le versement. Les laisser implicites fait perdre au prêteur une année d'intérêts au moment de la conversion.",
+    "interestWarning": "Les intérêts courus sont un montant réel : sur un prêt in fine, c'est chaque coupon depuis le versement. Les laisser implicites fait perdre au prêteur une année d'intérêts au moment de la conversion.",
     "done": "Conversion enregistrée."
   },
   "pay": {
@@ -410,16 +410,16 @@
   "invest": {
     "action": "Demander à souscrire",
     "title": "Demander à souscrire",
-    "explain": "Vous exprimez une intention. Elle n'engage personne et rien n'est prélevé : le fonds l'examinera avec votre dossier, et c'est son acceptation qui crée l'engagement.",
+    "explain": "Vous exprimez une intention. Elle n'engage personne et rien n'est prélevé : le fonds l'examinera avec votre dossier, et c'est son acceptation qui crée l'engagement.",
     "instrument": "Instrument",
     "amount": "Montant",
     "currency": "Devise",
     "documentVersion": "Version du document d'information",
-    "documentHint": "La version que vous avez eue sous les yeux, enregistrée maintenant : elle ne se retrouve pas plus tard.",
+    "documentHint": "La version que vous avez eue sous les yeux, enregistrée maintenant : elle ne se retrouve pas plus tard.",
     "sent": "Demande envoyée.",
-    "blocked": "Votre dossier n'est pas encore accepté : aucune souscription n'est possible tant qu'il ne l'est pas.",
+    "blocked": "Votre dossier n'est pas encore accepté : aucune souscription n'est possible tant qu'il ne l'est pas.",
     "myFile": "Mon dossier",
-    "fileAccepted": "Dossier accepté : vous pouvez souscrire.",
+    "fileAccepted": "Dossier accepté : vous pouvez souscrire.",
     "filePending": "Dossier en cours de vérification."
   },
   "signOut": {
@@ -445,9 +445,9 @@
     "blocked": "Accès suspendu",
     "blockedHint": "Le règlement de l'abonnement n'a pas été constaté. Payer ci-dessous rétablit l'accès.",
     "notManaged": "Aucun abonnement piloté ici",
-    "notManagedHint": "Cette instance n'est rattachée à aucune console d'abonnement : il n'y a rien à payer depuis cet écran.",
+    "notManagedHint": "Cette instance n'est rattachée à aucune console d'abonnement : il n'y a rien à payer depuis cet écran.",
     "howToPay": "Moyens de paiement",
-    "methodsHint": "Le paiement par carte s'ouvre chez notre prestataire : aucune coordonnée bancaire ne transite par ce produit.",
+    "methodsHint": "Le paiement par carte s'ouvre chez notre prestataire : aucune coordonnée bancaire ne transite par ce produit.",
     "noMethod": "Aucun moyen de paiement n'est ouvert pour le moment. Contactez-nous pour régler votre abonnement.",
     "byCard": "Carte bancaire ou prélèvement SEPA",
     "byCardHint": "Paiement immédiat et renouvellement automatique, résiliable à tout moment.",
@@ -458,7 +458,7 @@
     "holder": "Titulaire",
     "declareTransfer": "J'ai fait le virement",
     "declareTitle": "Déclarer un virement",
-    "declareMessage": "Vous signalez avoir émis le virement de votre abonnement. Cette déclaration ne vaut pas paiement : elle sera rapprochée du mouvement bancaire réel, et l'accès est rétabli une fois le virement constaté.",
+    "declareMessage": "Vous signalez avoir émis le virement de votre abonnement. Cette déclaration ne vaut pas paiement : elle sera rapprochée du mouvement bancaire réel, et l'accès est rétabli une fois le virement constaté.",
     "declareConfirm": "Déclarer",
     "declared": "Déclaration enregistrée.",
     "transferPending": "Virement déclaré, en attente de constatation",
@@ -468,7 +468,7 @@
     "subscribe": "Souscrire",
     "changeTitle": "Passer à l'offre {{plan}} ?",
     "changeMessage": "Votre abonnement passera à {{plan}}, soit {{price}} par mois.",
-    "prorationEstimate": "Montant estimé au prorata pour la période en cours : {{amount}}.",
+    "prorationEstimate": "Montant estimé au prorata pour la période en cours : {{amount}}.",
     "changeConfirm": "Changer d'offre",
     "changed": "Offre modifiée.",
     "invoices": "Mes factures",
@@ -502,7 +502,7 @@
     "rvpiHint": "Résiduel rapporté au capital versé. Exige une valorisation.",
     "irr": "Taux de rendement",
     "irrRealised": "Rendement réalisé",
-    "irrRealisedHint": "Ne porte que sur ce qui est déjà revenu : sous-estime un fonds encore ouvert.",
+    "irrRealisedHint": "Ne porte que sur ce qui est déjà revenu : sous-estime un fonds encore ouvert.",
     "incomplete": "Mesure incomplète",
     "nothing": "Rien à mesurer pour l'instant",
     "nothingHint": "Aucun versement n'a encore été constaté. La performance apparaîtra dès le premier appel de fonds encaissé."
@@ -526,11 +526,11 @@
     "noneHint": "Tous les appels échus à cette date ont été réglés.",
     "unsentTitle_one": "{{count}} appel jamais notifié",
     "unsentTitle_other": "{{count}} appels jamais notifiés",
-    "unsentHint": "Ces appels n'ont jamais été envoyés : c'est le premier avis qui manque, pas une relance. Relancer reviendrait à reprocher à l'investisseur une omission du fonds."
+    "unsentHint": "Ces appels n'ont jamais été envoyés : c'est le premier avis qui manque, pas une relance. Relancer reviendrait à reprocher à l'investisseur une omission du fonds."
   },
   "funds": {
     "title": "Les véhicules d'investissement",
-    "subtitle": "Un véhicule est un fonds : il porte des projets, des souscripteurs, ses propres conditions et son compte bancaire.",
+    "subtitle": "Un véhicule est un fonds : il porte des projets, des souscripteurs, ses propres conditions et son compte bancaire.",
     "open": "Ouvrir un véhicule",
     "name": "Nom",
     "status": "Statut",
@@ -549,7 +549,7 @@
     "noTerms": "Aucune condition enregistrée",
     "none": "Aucun véhicule enregistré",
     "noneHint": "Vous n'avez rien à faire ici tant que vous n'en gérez qu'un. Tout ce que vous enregistrez appartient à ce fonds unique, et les calculs portent sur lui. Ouvrir un véhicule devient nécessaire le jour où vous en gérez un second.",
-    "cashNotSeparable": "Pas de compte à lui alors qu'un autre véhicule existe : son actif net ne peut pas être totalisé.",
+    "cashNotSeparable": "Pas de compte à lui alors qu'un autre véhicule existe : son actif net ne peut pas être totalisé.",
     "statusChanged": "{{name}} a changé de statut.",
     "statuses": {
       "raising": "En levée",
@@ -566,14 +566,14 @@
     "netAssetValue": "Actif net",
     "cannotTotal": "L'actif net ne peut pas être totalisé",
     "noValue": "Aucun actif net à cette date",
-    "noValueHint": "Choisissez un véhicule et une date : l'actif net additionne les projets et la trésorerie, puis déduit ce que les prêteurs sont dus."
+    "noValueHint": "Choisissez un véhicule et une date : l'actif net additionne les projets et la trésorerie, puis déduit ce que les prêteurs sont dus."
   },
   "notice": {
     "title": "L'avis à envoyer",
-    "to": "Destinataire :",
+    "to": "Destinataire :",
     "noAddress": "aucune adresse enregistrée",
-    "language": "Écrit en :",
-    "kind": "Nature :",
+    "language": "Écrit en :",
+    "kind": "Nature :",
     "kinds": {
       "first_notice": "Premier avis",
       "reminder": "Relance"
@@ -586,7 +586,7 @@
     "cannotWrite": "Cet avis ne peut pas être écrit",
     "noQr": "Pas de QR de virement",
     "sendingNotSetUp": "L'envoi d'e-mail n'est pas configure",
-    "sendingNotSetUpHint": "L'adresse d'expedition de ce produit n'est pas renseignee. Elle se saisit dans Le Comptoir Alice, onglet « Systeme de communication », portee « Invest ». Elle n'est jamais reprise d'un autre produit : un appel de fonds envoye depuis le domaine d'un logiciel de gestion locative se lit comme une tentative d'hameconnage. En attendant, copiez le texte ci-dessus dans votre propre messagerie ; l'appel ne sera pas enregistre comme notifie, puisqu'il ne l'aura pas ete par le produit."
+    "sendingNotSetUpHint": "L'adresse d'expedition de ce produit n'est pas renseignee. Elle se saisit dans Le Comptoir Alice, onglet « Systeme de communication », portee « Invest ». Elle n'est jamais reprise d'un autre produit : un appel de fonds envoye depuis le domaine d'un logiciel de gestion locative se lit comme une tentative d'hameconnage. En attendant, copiez le texte ci-dessus dans votre propre messagerie ; l'appel ne sera pas enregistre comme notifie, puisqu'il ne l'aura pas ete par le produit."
   },
   "profile": {
     "open": "Ouvrir le menu du compte",
@@ -597,6 +597,6 @@
     "email": "Adresse e-mail",
     "role": "Rôle",
     "notSet": "Non renseigné",
-    "managedByConsole": "Ces informations sont tenues par la console d'administration : elles se modifient là-bas, pour que la facture et cet écran ne puissent pas dire deux choses différentes."
+    "managedByConsole": "Ces informations sont tenues par la console d'administration : elles se modifient là-bas, pour que la facture et cet écran ne puissent pas dire deux choses différentes."
   }
 }
