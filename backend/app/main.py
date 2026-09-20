@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.core import i18n
+from app.core import audit, i18n
 
 from app.config import get_settings
 
@@ -71,7 +71,14 @@ async def carry_the_readers_language(request, call_next):
     i18n.set_current_lang(
         i18n.lang_from_accept_language(request.headers.get("accept-language"))
     )
-    return await call_next(request)
+    # The audit journal's actor starts as an ADDRESS; the sign-in dependency adds the
+    # account once it has loaded it. Put back in `finally`: an actor left behind would
+    # stamp the next request's changes with this one's name.
+    actor = audit.set_actor(ip=audit.client_address(request))
+    try:
+        return await call_next(request)
+    finally:
+        audit.reset_actor(actor)
 
 
 app.add_middleware(

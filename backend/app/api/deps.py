@@ -12,6 +12,7 @@ from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import audit
 from app.core.firm_scope import firm_of, set_current_firm
 from app.core.security import read_access_token
 from app.database import get_db
@@ -53,6 +54,9 @@ async def current_user(
     # is no task per request, and an autouse fixture puts the value back -- this product has
     # already paid for a leaked ContextVar once, on the reader's language.
     set_current_firm(firm_of(user))
+    # The journal's actor gets its name HERE, where the account is loaded: the token only
+    # carries an id, and a journal of ids is one nobody can read.
+    audit.identify(user_id=user.id, user_email=user.email)
     return user
 
 

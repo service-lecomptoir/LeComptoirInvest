@@ -20,15 +20,16 @@ import hmac
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import AliasChoices, BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.core import firm_scope
+from app.core import audit, firm_scope
 from app.core.security import create_access_token, hash_password
 from app.database import get_db
+from app.models.audit_log import AuditLog
 from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.user import FUND_WIDE_ROLES, MANAGER, User
@@ -36,6 +37,9 @@ from app.services import license_service
 from app.core.i18n import pick
 
 router = APIRouter(prefix="/internal", tags=["internal"])
+
+#: How the journal names what the console did through the internal key.
+CONSOLE_ACTOR = "console (internal key)"
 
 #: Accounts Alice may SEE and ACT ON. The administrator is one of them.
 #:
@@ -70,6 +74,10 @@ async def require_internal_key(
             status_code=401,
             detail=pick("Clé interne invalide.", "Invalid internal key."),
         )
+
+    # What comes through this door is written by the CONSOLE, not by a holder: the journal
+    # says so, rather than leaving the creation of an account with no author at all.
+    audit.identify(user_id=None, user_email=CONSOLE_ACTOR)
 
     # 🔴 THE ONE PLACE THAT READS ACROSS MANAGEMENT COMPANIES, AND IT IS NAMED.
     #
@@ -585,3 +593,51 @@ async def stats(
 async def internal_health():
     """Lets Alice tell « the product is up » from « the key is wrong »."""
     return {"status": "ok", "at": datetime.now(UTC).isoformat()}
+
+
+@router.get("/audit")
+async def audit_journal(
+    limit: int = Query(100, ge=1, le=500),
+    skip: int = Query(0, ge=0),
+    action: str | None = None,
+    user_email: str | None = None,
+    entity_type: str | None = None,
+    _: None = Depends(require_internal_key),
+    db: AsyncSession = Depends(get_db),
+):
+    """The audit journal, for the supervision (Portail360).
+
+    🔴 THE HOUSE'S CONTRACT, FIELD FOR FIELD: the same nine keys and the same three filters
+    as Immo, Séjour, Market and Alice, so that one screen reads every product. A key
+    renamed here would show an empty column there, and nothing would fail.
+    """
+    query = select(AuditLog)
+    if action:
+        query = query.where(AuditLog.action == action)
+    if user_email:
+        query = query.where(AuditLog.user_email.ilike(f"%{user_email}%"))
+    if entity_type:
+        query = query.where(AuditLog.entity_type == entity_type)
+    rows = (
+        (
+            await db.execute(
+                query.order_by(AuditLog.created_at.desc()).offset(skip).limit(limit)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return [
+        {
+            "id": str(r.id),
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "user_id": r.user_id,
+            "user_email": r.user_email,
+            "action": r.action,
+            "entity_type": r.entity_type,
+            "entity_id": r.entity_id,
+            "details": r.details,
+            "ip_address": r.ip_address,
+        }
+        for r in rows
+    ]

@@ -24,9 +24,11 @@ from app.models.treasury import (
     Contribution,
     Distribution,
 )
+from app.models.audit_log import AuditLog
 from app.models.user import User
 
 __all__ = [
+    "AuditLog",
     "BankMovement",
     "Base",
     "CapitalCall",
@@ -54,3 +56,9 @@ __all__ = [
 from app.core.firm_scope import install as _install_firm_scope  # noqa: E402
 
 _install_firm_scope((Fund, Investor, Project, BankMovement))
+
+# The audit journal listens to the unit of work from the same moment, and for the same
+# reason: the first write of a session is a write like the others.
+from app.core.audit import install as _install_audit  # noqa: E402
+
+_install_audit()
