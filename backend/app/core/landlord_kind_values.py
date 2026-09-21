@@ -12,8 +12,3 @@ PERSON = "personne"
 COMPANY = "societe"
 
 KINDS: tuple[str, ...] = (PERSON, COMPANY)
-
-
-def is_company(value: str | None) -> bool:
-    """True only for a legal person. Unknown is NOT a company."""
-    return (value or "").strip().lower() == COMPANY
