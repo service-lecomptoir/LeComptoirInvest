@@ -1,12 +1,12 @@
 /**
- * Trois règles d'interface que rien ne rappelle au moment où on les enfreint.
+ * Three interface rules that nothing recalls at the moment one breaks them.
  *
- * 🔴 POURQUOI DES GARDES ET PAS UNE CONVENTION. Les trois défauts ci-dessous ont été
- * signalés par le user, capture d'écran à l'appui, après que je les ai introduits neuf,
- * dix et une fois. Aucun ne casse quoi que ce soit : le produit fonctionne, les tests
- * passent, et l'écran est simplement moins lisible ou porte une marque qu'on ne veut pas.
- * C'est exactement la catégorie de défaut qu'une relecture ne rattrape jamais, parce qu'il
- * n'y a rien à voir tant qu'on ne regarde pas l'écran.
+ * 🔴 WHY GUARDS AND NOT A CONVENTION. The three defects below were reported by the user,
+ * screenshot in hand, after I had introduced them nine, ten and one time. None of them
+ * breaks anything: the product works, the tests pass, and the screen is simply less
+ * readable or carries a mark we do not want. That is exactly the category of defect that a
+ * review never catches, because there is nothing to see as long as one does not look at the
+ * screen.
  */
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
@@ -23,16 +23,16 @@ function walk(dir: string, ext: RegExp): string[] {
   })
 }
 
-/** Retire les commentaires : la règle vise le texte VU, pas les notes du code. */
+/** Strips the comments: the rule targets the text SEEN, not the notes of the code. */
 function withoutComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
 }
 
 describe('pas de tiret cadratin dans ce qui est vu', () => {
   /**
-   * ⚠️ LE SIGNE MOINS U+2212 RESTE AUTORISÉ, et ce n'est pas une exception de complaisance :
-   * c'est de l'arithmétique, pas de la ponctuation. Le confondre avec un tiret remplacerait
-   * des soustractions par des virgules et rendrait les formules fausses au lieu de lisibles.
+   * ⚠️ THE MINUS SIGN U+2212 STAYS ALLOWED, and that is not an exception out of
+   * complacency: it is arithmetic, not punctuation. Confusing it with a dash would replace
+   * subtractions with commas and make the formulas wrong instead of readable.
    */
   const INTERDITS = /[—–]/
 
@@ -72,15 +72,15 @@ describe('pas de tiret cadratin dans ce qui est vu', () => {
 
 describe('une aide ne vit pas dans une barre alignée en bas', () => {
   /**
-   * 🔴 LE DÉFAUT, EXACTEMENT. Dans une rangée `items-end`, les cellules s'alignent par leur
-   * BAS. Un champ qui porte une aide sous lui est donc plus haut que ses voisins, et son
-   * libellé remonte : la ligne se casse visiblement. Et même quand tous les champs en
-   * portent une, deux aides de longueurs différentes ne se replient pas sur le même nombre
-   * de lignes, donc l'alignement casse quand même.
+   * 🔴 THE DEFECT, EXACTLY. In an `items-end` row, the cells align by their BOTTOM. A field
+   * that carries a hint under it is therefore taller than its neighbours, and its label
+   * rises: the line visibly breaks. And even when every field carries one, two hints of
+   * different lengths do not wrap over the same number of lines, so the alignment breaks
+   * all the same.
    *
-   * La règle est simple et n'a pas d'exception utile : l'aide se met SOUS la rangée, où
-   * elle se lit d'ailleurs mieux. Une phrase entière n'a jamais eu sa place sous un champ
-   * de deux centimètres.
+   * The rule is simple and has no useful exception: the hint goes UNDER the row, where it
+   * reads better anyway. A whole sentence never had its place under a field two centimetres
+   * wide.
    */
   it('aucun hint ne se trouve dans un bloc items-end', () => {
     const fautifs: string[] = []
@@ -114,15 +114,15 @@ describe('une aide ne vit pas dans une barre alignée en bas', () => {
 
 describe("aucune boîte du navigateur ne pose de question à l'utilisateur", () => {
   /**
-   * 🔴 `window.confirm`, `window.alert` et `window.prompt` sont interdits. Ce n'est pas une
-   * question de goût : elles ne savent afficher ni un montant, ni un nom, ni distinguer
-   * « annuler » de « détruire » ; elles bloquent le fil du navigateur ; certains navigateurs
-   * les suppriment quand elles viennent d'un onglet en arrière-plan ; et elles portent le
-   * nom du domaine plutôt que celui du produit.
+   * 🔴 `window.confirm`, `window.alert` and `window.prompt` are forbidden. It is not a
+   * matter of taste: they can display neither an amount, nor a name, nor tell « annuler »
+   * from « détruire »; they block the browser's thread; some browsers suppress them when
+   * they come from a background tab; and they carry the name of the domain rather than that
+   * of the product.
    *
-   * Le produit a `confirmDialog()` pour cela. Cette garde existe parce qu'un `window.prompt`
-   * s'était déjà glissé dans l'écran de trésorerie, où il demandait un identifiant de
-   * souscription sans pouvoir montrer le montant qu'on allait imputer.
+   * The product has `confirmDialog()` for that. This guard exists because a `window.prompt`
+   * had already slipped into the treasury screen, where it asked for a subscription id
+   * without being able to show the amount about to be charged.
    */
   it('ni confirm, ni alert, ni prompt', () => {
     const fautifs: string[] = []

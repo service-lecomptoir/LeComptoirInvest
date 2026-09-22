@@ -86,9 +86,9 @@ def _offenders() -> list[str]:
 def test_no_bare_today_or_naive_now_in_the_application():
     faults = _offenders()
     assert not faults, (
-        "Une date y répond au fuseau du conteneur, qui n'est le jour de personne. Utiliser "
-        "`fund_time.platform_today()` pour un acte DU FONDS, ou "
-        "`fund_time.today_for_investor(country_code)` pour un acte de L'INVESTISSEUR :\n  "
+        "A date there answers on the container's time zone, which is nobody's day. Use "
+        "`fund_time.platform_today()` for an act OF THE FUND, or "
+        "`fund_time.today_for_investor(country_code)` for an act of THE INVESTOR:\n  "
         + "\n  ".join(faults)
     )
 

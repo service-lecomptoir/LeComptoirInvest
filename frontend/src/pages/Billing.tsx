@@ -16,20 +16,21 @@ import type {
 } from '@/types'
 
 /**
- * Ce que le gestionnaire paie pour utiliser ce produit, et par quels moyens.
+ * What the manager pays to use this product, and by what means.
  *
- * 🔴 CET ÉCRAN NE PARLE PAS DES SOUSCRIPTIONS AUX FONDS. Le mot « souscription » appartient
- * au métier ici, et l'écran voisin le porte déjà. Confondre les deux dans un produit dont
- * la matière est l'argent des autres serait la pire des économies de vocabulaire.
+ * 🔴 THIS SCREEN DOES NOT SPEAK OF THE SUBSCRIPTIONS TO THE FUNDS. The word
+ * « souscription » belongs to the business here, and the neighbouring screen already
+ * carries it. Confusing the two in a product whose matter is other people's money would be
+ * the worst of savings on vocabulary.
  *
- * 🔴 AUCUN PRIX N'EST ÉCRIT ICI. Les offres, les montants et l'état de l'abonnement
- * viennent de la console : cet écran les affiche et déclenche des actions, il n'en décide
- * aucune. Une valeur en dur y deviendrait une deuxième vérité que personne ne penserait à
- * mettre à jour le jour d'un changement de tarif.
+ * 🔴 NO PRICE IS WRITTEN HERE. The offers, the amounts and the state of the subscription
+ * come from the console: this screen displays them and triggers actions, it decides none of
+ * them. A hard-coded value would become a second truth that nobody would think of updating
+ * on the day of a tariff change.
  *
- * ⚠️ « JE NE SAIS PAS » N'EST PAS « C'EST GRATUIT ». Quand la console ne répond pas, ou
- * qu'aucune ne pilote l'instance, l'écran le dit franchement. Afficher un abonnement vide
- * à 0 € laisserait croire à un droit que personne n'a accordé.
+ * ⚠️ « JE NE SAIS PAS » IS NOT « C'EST GRATUIT ». When the console does not answer, or when
+ * none drives the instance, the screen says so plainly. Showing an empty subscription at
+ * 0 € would let one believe in a right nobody has granted.
  */
 export default function Billing() {
   const { t } = useTranslation()
@@ -42,11 +43,11 @@ export default function Billing() {
   const [busy, setBusy] = useState<string | null>(null)
   const [refusal, setRefusal] = useState<string | null>(null)
 
-  // 🔴 C'EST ICI QUE STRIPE RENVOIE LE PAYEUR, et l'écran doit le reconnaître. Sans cela,
-  // un gestionnaire qui vient de payer revient sur une page identique à celle qu'il a
-  // quittée : rien ne lui dit que son paiement est passé, et le premier réflexe est de
-  // repayer. Le paramètre est retiré de l'adresse aussitôt lu, pour qu'un rafraîchissement
-  // ne rejoue pas le message.
+  // 🔴 THIS IS WHERE STRIPE SENDS THE PAYER BACK, and the screen must recognise it.
+  // Without that, a manager who has just paid comes back to a page identical to the one
+  // they left: nothing tells them that their payment went through, and the first reflex
+  // is to pay again. The parameter is removed from the address as soon as it is read, so
+  // that a refresh does not replay the message.
   const [params, setParams] = useSearchParams()
   const [outcome, setOutcome] = useState<'succes' | 'annule' | null>(null)
   useEffect(() => {
@@ -59,8 +60,8 @@ export default function Billing() {
 
   const load = () => {
     setLoading(true)
-    // Appels indépendants : une facture illisible ne doit pas emporter l'offre en cours,
-    // et une console partiellement disponible vaut mieux qu'un écran blanc.
+    // Independent calls: an unreadable invoice must not carry away the current offer,
+    // and a partially available console is worth more than a blank screen.
     Promise.allSettled([
       billingApi.mine(),
       billingApi.paymentMethods(),
@@ -83,7 +84,7 @@ export default function Billing() {
     return typeof detail === 'string' ? detail : t('billing.unavailable')
   }
 
-  /** Ouvre la page de paiement dans le même onglet : on quitte le produit le temps de payer. */
+  /** Opens the payment page in the same tab: one leaves the product for the time of paying. */
   const goToPayment = async (planId?: string) => {
     setBusy('checkout')
     setRefusal(null)
@@ -133,8 +134,8 @@ export default function Billing() {
   }
 
   const changePlan = async (plan: BillingPlan) => {
-    // L'estimation au prorata est demandée AVANT la question : confirmer un changement
-    // d'offre sans savoir ce qu'il coûte aujourd'hui, ce n'est pas confirmer.
+    // The pro rata estimate is asked for BEFORE the question: confirming a change of
+    // offer without knowing what it costs today is not confirming.
     let estimate = ''
     try {
       const { data } = await billingApi.previewChange(plan.id)
@@ -144,7 +145,7 @@ export default function Billing() {
         })
       }
     } catch {
-      /* une estimation absente n'empêche pas de changer d'offre */
+      /* a missing estimate does not prevent changing the offer */
     }
     const confirmed = await confirmDialog({
       title: t('billing.changeTitle', { plan: plan.name }),
@@ -168,7 +169,7 @@ export default function Billing() {
     }
   }
 
-  /** Le PDF passe par le client authentifié : une adresse nue rendrait un 401. */
+  /** The PDF goes through the authenticated client: a bare address would return a 401. */
   const openInvoice = async (invoice: BillingInvoice) => {
     try {
       const response = await apiClient.get(billingApi.invoicePdfUrl(invoice.id), {
@@ -177,7 +178,7 @@ export default function Billing() {
       })
       const url = URL.createObjectURL(response.data as Blob)
       window.open(url, '_blank', 'noopener')
-      // Libéré au tour suivant : révoquer tout de suite couperait l'ouverture.
+      // Released on the next turn: revoking right away would cut off the opening.
       setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch {
       toast.error(t('billing.invoiceUnavailable'))
@@ -218,7 +219,7 @@ export default function Billing() {
             <Notice tone="bad" title={t('billing.blocked')}>{t('billing.blockedHint')}</Notice>
           )}
 
-          {/* ── L'offre en cours ──────────────────────────────────────────────── */}
+          {/* ── The current offer ─────────────────────────────────────────────── */}
           <Card>
             <div className="p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
@@ -262,7 +263,7 @@ export default function Billing() {
             </div>
           </Card>
 
-          {/* ── Les moyens de paiement ────────────────────────────────────────── */}
+          {/* ── The payment methods ───────────────────────────────────────────── */}
           <Card>
             <div className="p-5 sm:p-6">
               <h2 className="text-sm font-semibold text-gray-900">{t('billing.howToPay')}</h2>
@@ -338,12 +339,12 @@ export default function Billing() {
                   )}
                 </div>
               )}
-              {/* L'aide vit SOUS la rangée, jamais dans une cellule alignée en bas. */}
+              {/* The hint lives UNDER the row, never in a cell aligned at the bottom. */}
               <p className="mt-4 text-xs text-gray-500">{t('billing.methodsHint')}</p>
             </div>
           </Card>
 
-          {/* ── Les offres ────────────────────────────────────────────────────── */}
+          {/* ── The offers ────────────────────────────────────────────────────── */}
           {plans.length > 0 && (
             <Card>
               <div className="p-5 sm:p-6 pb-3">
@@ -395,7 +396,7 @@ export default function Billing() {
             </Card>
           )}
 
-          {/* ── Les factures ──────────────────────────────────────────────────── */}
+          {/* ── The invoices ──────────────────────────────────────────────────── */}
           <Card>
             <div className="p-5 sm:p-6 pb-3">
               <h2 className="text-sm font-semibold text-gray-900">{t('billing.invoices')}</h2>

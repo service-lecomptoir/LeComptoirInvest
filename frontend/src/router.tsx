@@ -23,11 +23,11 @@ import Funds from '@/pages/Funds'
    table: it exports `router` beside the four guard components that only make
    sense next to it. Fast refresh reloads the whole tree on a change here anyway. */
 
-// 🔴 LE PROFIL EST AUSSI LA PORTE DU CHANGEMENT IMPOSE, et c'est pourquoi il n'y a
-// qu'une constante. Le mot de passe y est une SECTION : deux ecrans, l'un pour se
-// presenter et l'autre pour changer son mot de passe, auraient laisse le changement force
-// atterrir sur une page sans contexte, celle-la meme qu'un compte tout neuf voit en
-// premier. Voir pages/profile/MyProfile.tsx.
+// 🔴 THE PROFILE IS ALSO THE DOOR OF THE FORCED CHANGE, and that is why there is
+// only one constant. The password is a SECTION there: two screens, one to introduce
+// oneself and the other to change one's password, would have let the forced change
+// land on a page without context, the very one a brand-new account sees first.
+// See pages/profile/MyProfile.tsx.
 const PROFILE_ROUTE = '/profile'
 
 function RequireAuth() {
@@ -37,9 +37,9 @@ function RequireAuth() {
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
 
-  // 🔴 LE CHANGEMENT IMPOSÉ BLOQUE TOUT LE RESTE, et c'est le seul endroit où l'appliquer.
-  // Le poser sur chaque écran laisserait celui qu'on oublie servir de porte dérobée, et
-  // c'est toujours le douzième écran ajouté sous pression qui l'est.
+  // 🔴 THE FORCED CHANGE BLOCKS EVERYTHING ELSE, and this is the only place to apply it.
+  // Putting it on every screen would leave the one we forget serve as a back door, and it
+  // is always the twelfth screen added under pressure that gets forgotten.
   if (mustChangePassword && location.pathname !== PROFILE_ROUTE) {
     return <Navigate to={PROFILE_ROUTE} replace />
   }
@@ -67,12 +67,12 @@ function FundOnly({ children }: { children: ReactElement }) {
 }
 
 /**
- * Et la réciproque, qui manquait.
+ * And the converse, which was missing.
  *
- * ⚠️ Un gestionnaire qui atteignait `/statement` lisait « Rien à déclarer pour 2026 » —
- * une phrase FAUSSE : il n'est pas investisseur, l'écran ne le concerne pas, et l'API
- * répondait 400 que la page traduisait en état vide. Un écran qui ment sur un cas limite
- * est un écran auquel on cesse de croire sur les autres.
+ * ⚠️ A manager who reached `/statement` read « Rien à déclarer pour 2026 » -- a FALSE
+ * sentence: they are not an investor, the screen does not concern them, and the API
+ * answered 400, which the page turned into an empty state. A screen that lies about an edge
+ * case is a screen one stops believing on the others.
  */
 function InvestorOnly({ children }: { children: ReactElement }) {
   const seesWholeFund = useAuthStore((s) => s.seesWholeFund)
@@ -94,7 +94,7 @@ export const router = createBrowserRouter([
           { path: '/distributions', element: <FundOnly><Distributions /></FundOnly> },
           { path: '/investors', element: <FundOnly><Investors /></FundOnly> },
           { path: '/subscriptions', element: <FundOnly><Subscriptions /></FundOnly> },
-          // L'abonnement AU PRODUIT : réservé à qui le paie, donc à la gestion du fonds.
+          // The subscription TO THE PRODUCT: reserved for whoever pays for it, so for the fund's management.
           { path: '/billing', element: <FundOnly><Billing /></FundOnly> },
           { path: '/funds', element: <FundOnly><Funds /></FundOnly> },
           { path: '/performance', element: <FundOnly><Performance /></FundOnly> },

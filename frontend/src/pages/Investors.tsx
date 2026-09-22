@@ -134,9 +134,9 @@ export default function Investors() {
                     </Pill>
                   </Td>
                   <Td className="text-gray-500 whitespace-nowrap">{day(r.kyc_review_due_on)}</Td>
-                  {/* 🔴 « NON ÉVALUÉ » N'EST PAS UN BLANC : c'est l'état qui REFUSE tout
-                      engagement, parce qu'une catégorie absente est lue comme protégée.
-                      L'afficher comme une case vide laisserait croire à un détail. */}
+                  {/* 🔴 « NON ÉVALUÉ » IS NOT A BLANK: it is the state that REFUSES every
+                      commitment, because an absent category is read as protected.
+                      Showing it as an empty cell would let one believe in a detail. */}
                   <Td>
                     <button
                       type="button"
@@ -263,15 +263,16 @@ function Allowance({ quota }: { quota: InvestorQuota | null }) {
 }
 
 /**
- * Rendre un verdict — l'écran sans lequel le registre ne servait à rien.
+ * Delivering a verdict -- the screen without which the register served no purpose.
  *
- * 🔴 UN VERDICT QUI N'EST PAS « ACCEPTÉ » BLOQUE L'ARGENT, et c'est écrit sur l'écran. Le
- * contrôle existait côté serveur depuis le premier jour ; sans ce formulaire, personne ne
- * pouvait accepter un investisseur, donc aucun engagement ni aucun encaissement n'était
- * possible. Un contrôle qu'on ne peut pas lever n'est pas prudent, il est mort.
+ * 🔴 A VERDICT THAT IS NOT « ACCEPTÉ » BLOCKS THE MONEY, and that is written on the screen.
+ * The check had existed on the server side from the first day; without this form, nobody
+ * could accept an investor, so no commitment and no collection was possible. A check that
+ * cannot be lifted is not prudent, it is dead.
  *
- * ⚠️ UN REFUS SANS MOTIF EST REFUSÉ ICI AUSSI, pas seulement par l'API. L'investisseur à
- * qui on dit « non » sans raison ne peut ni corriger son dossier ni demander à le revoir.
+ * ⚠️ A REFUSAL WITHOUT A REASON IS REFUSED HERE TOO, not only by the API. The investor told
+ * « non » without a reason can neither correct their file nor ask for it to be looked at
+ * again.
  */
 function KycVerdict({
   investor, onCancel, onDone,
@@ -446,12 +447,14 @@ function NewInvestor({ onCancel, onDone }: { onCancel: () => void; onDone: () =>
 /**
  * Which protections apply to this investor, and on what declared basis.
  *
- * 🔴 SÉPARÉ DU VERDICT KYC, ET C'EST LE SUJET. Le KYC dit si le fonds peut traiter avec
- * cette personne ; ceci dit combien elle peut engager avant qu'un avertissement soit dû.
- * Les réunir dans un même écran laisserait un clic « accepté » lever un plafond au passage.
+ * 🔴 SEPARATE FROM THE KYC VERDICT, AND THAT IS THE POINT. The KYC says whether the fund
+ * may deal with this person; this one says how much they may commit before a warning is
+ * due. Bringing them together on one screen would let a click on « accepté » lift a ceiling
+ * on the way past.
  *
- * ⚠️ UNE CAPACITÉ REMISE À VIDE REND LE REFUS, et c'est voulu : oublier ce que quelqu'un a
- * déclaré doit ramener le fonds à « nous ne savons pas », jamais à « pas de plafond ».
+ * ⚠️ A CAPACITY SET BACK TO EMPTY RESTORES THE REFUSAL, and that is intended: forgetting
+ * what somebody declared must bring the fund back to « nous ne savons pas », never to
+ * « pas de plafond ».
  */
 function Eligibility({
   investor, onCancel, onDone,
@@ -511,7 +514,7 @@ function Eligibility({
           <Button type="button" variant="secondary" onClick={onCancel}>{t('common.cancel')}</Button>
         </div>
       </form>
-      {/* L'aide vit SOUS la rangée, jamais dans une cellule alignée en bas. */}
+      {/* The hint lives UNDER the row, never in a cell aligned at the bottom. */}
       <p className="mt-2 text-xs text-gray-500 max-w-3xl">{t('investors.capacityHint')}</p>
     </Card>
   )

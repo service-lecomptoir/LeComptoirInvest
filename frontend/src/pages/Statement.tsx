@@ -28,12 +28,12 @@ export default function StatementPage() {
   const [downloading, setDownloading] = useState(false)
 
   /**
-   * Ouvrir le document, sans jamais le fabriquer ici.
+   * Opening the document, without ever building it here.
    *
-   * 🔴 LE PDF EST CONSTRUIT PAR LE SERVEUR, ET C'EST TOUT LE SUJET. Cet ecran connait la
-   * langue de l'utilisateur connecte ; le document, lui, appartient a l'INVESTISSEUR, qui
-   * n'est pas forcement la meme personne. Le rendre ici le ferait parler la langue du
-   * gestionnaire qui clique, et rien n'aurait l'air faux : les chiffres seraient exacts.
+   * 🔴 THE PDF IS BUILT BY THE SERVER, AND THAT IS THE WHOLE POINT. This screen knows the
+   * language of the signed-in user; the document itself belongs to the INVESTOR, who is not
+   * necessarily the same person. Rendering it here would make it speak the language of the
+   * manager who clicks, and nothing would look wrong: the figures would be exact.
    */
   const download = async () => {
     setDownloading(true)
@@ -41,8 +41,8 @@ export default function StatementPage() {
       const { data: file } = await statementsApi.pdf(Number(year))
       const url = URL.createObjectURL(file)
       window.open(url, '_blank', 'noopener')
-      // ⚠️ L'URL est liberee plus tard : la revoquer tout de suite fermerait l'onglet
-      // qui vient de s'ouvrir sur un document vide.
+      // ⚠️ The URL is released later: revoking it right away would close the tab
+      // that has just opened on an empty document.
       setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch (error) {
       toast.error(errorMessage(error))

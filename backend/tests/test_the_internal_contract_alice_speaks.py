@@ -194,7 +194,7 @@ class TestNothingIsSwallowedInSilence:
         ).scalar_one()
         for field in IGNORED_BY_DESIGN:
             assert not hasattr(user, field), (
-                f"{field} est stocké : la décision a changé"
+                f"{field} is stored: the decision has changed"
             )
 
     async def test_a_partial_update_does_not_blank_what_it_did_not_send(
@@ -260,7 +260,7 @@ class TestTheGuardProtectsTheOutcomeNotTheRole:
     async def test_an_inactive_second_account_does_not_count_as_a_way_back_in(
         self, client, db
     ):
-        """Un compte bloqué ne peut pas administrer : il ne remplace pas le dernier actif."""
+        """A blocked account cannot administer: it does not replace the last active one."""
         user = await _manager(db, "actif@fonds.fr")
         await _manager(db, "bloque@fonds.fr", active=False)
         r = await client.delete(f"/internal/managers/{user.id}", headers=auth())
@@ -364,7 +364,7 @@ class TestStatsSayWhatTheProductActuallyDoes:
         assert body["managers"] == 2
         assert body["active_managers"] == 1
         assert body["users"] == 3
-        # Un tableau de bord qui n'affiche qu'un nombre de clients ne dit rien de l'usage.
+        # A dashboard showing nothing but a client count says nothing about usage.
         assert "investors" in body and "subscriptions" in body
 
 

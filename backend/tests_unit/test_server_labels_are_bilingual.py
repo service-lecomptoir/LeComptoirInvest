@@ -133,10 +133,10 @@ def test_every_reader_facing_message_is_written_in_both_languages():
             untranslated.append(f"{path.name}:{lineno}  {text[:70]}")
 
     assert not untranslated, (
-        "Ces messages atteignent un lecteur sans passer par pick(fr, en) :\n  "
+        "These messages reach a reader without going through pick(fr, en):\n  "
         + "\n  ".join(untranslated)
-        + "\n\nUn libelle qui vient du serveur se traduit au serveur : ni le PDF, ni "
-        "l'e-mail, ni l'export CSV n'ont de front-end pour le faire a leur place."
+        + "\n\nA label that comes from the server is translated on the server: neither the "
+        "PDF, nor the e-mail, nor the CSV export has a front end to do it for them."
     )
 
 
@@ -165,10 +165,10 @@ def test_no_french_prose_survives_outside_pick_without_a_verdict():
                 stray.append(f"{path.name}:{node.lineno}  {text[:70]}")
 
     assert not stray, (
-        "Ces chaines francaises ne sont ni traduites ni classees :\n  "
+        "These French strings are neither translated nor classified:\n  "
         + "\n  ".join(stray)
-        + "\n\nSoit elles passent par pick(fr, en), soit elles rejoignent SETTLED avec le "
-        "motif qui les y garde."
+        + "\n\nEither they go through pick(fr, en), or they join SETTLED with the "
+        "reason that keeps them there."
     )
 
 
@@ -187,6 +187,6 @@ def test_a_verdict_that_names_nothing_is_removed():
         for prefix in PROGRAMMING_ERRORS
     ]
     stale = [text for text in verdicts if text not in blob]
-    assert not stale, "Ces verdicts ne correspondent plus a rien :\n  " + "\n  ".join(
+    assert not stale, "These verdicts no longer match anything:\n  " + "\n  ".join(
         stale
     )

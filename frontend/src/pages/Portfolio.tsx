@@ -13,10 +13,10 @@ import type { Investor, Portfolio as PortfolioData } from '@/types'
 const CURRENCIES = ['EUR', 'XOF', 'USD', 'GBP', 'MAD', 'XAF']
 
 /**
- * L'espace de l'investisseur. Chaque chiffre est RECALCULÉ à partir de ce qui s'est passé —
- * rien n'est stocké — et celui qu'il regarde en premier est le capital encore au travail :
- * ce qu'il a versé, moins le capital déjà rendu. Si ce nombre est faux, plus rien sur la
- * page ne veut dire quoi que ce soit.
+ * The space of the investor. Every figure is RECOMPUTED from what happened -- nothing is
+ * stored -- and the one they look at first is the capital still at work: what they paid in,
+ * less the capital already returned. If that number is wrong, nothing else on the page
+ * means anything at all.
  */
 export default function Portfolio() {
   const { t } = useTranslation()
@@ -30,8 +30,8 @@ export default function Portfolio() {
       .portfolio()
       .then((r) => setData(r.data))
       .catch(() => setEmpty(true))
-    // Son propre dossier : un investisseur bloqué doit savoir POURQUOI il l'est, plutôt
-    // que de se heurter à un refus sans explication au moment de souscrire.
+    // Their own file: a blocked investor must know WHY they are, rather than running
+    // into a refusal without an explanation at the moment of subscribing.
     investorsApi.me().then((r) => setMe(r.data)).catch(() => setMe(null))
   }
   useEffect(load, [])
@@ -103,10 +103,9 @@ export default function Portfolio() {
         const block = data.totals_by_currency[currency]
         return (
           <div key={currency} className="mb-6">
-            {/* Un bloc par devise, jamais un chiffre unique : détenir des euros et des
-                francs CFA, c'est détenir deux portefeuilles, et les additionner donne un
-                nombre qui n'est un avoir nulle part. C'est aussi ainsi que la banque le
-                présente. */}
+            {/* One block per currency, never a single figure: holding euros and CFA
+                francs is holding two portfolios, and adding them up gives a number that is
+                an asset nowhere. That is also how the bank presents it. */}
             {currencies.length > 1 && (
               <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 {t('dashboard.positionIn', { currency })}
@@ -178,16 +177,16 @@ export default function Portfolio() {
 }
 
 /**
- * « Investir en ligne » — l'écran que le produit promettait et n'avait pas.
+ * « Investir en ligne » -- the screen the product promised and did not have.
  *
- * 🔴 CE FORMULAIRE ÉCRIT UNE DEMANDE, JAMAIS UN ENGAGEMENT. S'il créait une souscription,
- * quiconque détient un identifiant créerait un engagement contraignant du fonds — et un
- * investisseur que personne n'a vérifié le ferait avant que quiconque ait regardé qui il
- * est. C'est le fonds qui accepte, et c'est cette acceptation seule qui engage.
+ * 🔴 THIS FORM WRITES A REQUEST, NEVER A COMMITMENT. If it created a subscription, whoever
+ * holds an id would create a binding commitment of the fund -- and an investor nobody has
+ * checked would do so before anybody had looked at who they are. It is the fund that
+ * accepts, and that acceptance alone is what binds.
  *
- * ⚠️ LA VERSION DU DOCUMENT D'INFORMATION EST ENREGISTRÉE MAINTENANT, pas retrouvée plus
- * tard. Le document change ; « ce qu'on lui a montré » n'est répondable que si on l'a écrit
- * à ce moment-là.
+ * ⚠️ THE VERSION OF THE INFORMATION DOCUMENT IS RECORDED NOW, not found again later. The
+ * document changes; « ce qu'on lui a montré » is answerable only if it was written down at
+ * that moment.
  */
 function AskToSubscribe({ onCancel, onDone }: { onCancel: () => void; onDone: () => void }) {
   const { t } = useTranslation()
@@ -210,7 +209,7 @@ function AskToSubscribe({ onCancel, onDone }: { onCancel: () => void; onDone: ()
       toast.success(t('invest.sent'))
       onDone()
     } catch {
-      /* le message du serveur est déjà affiché par l'intercepteur */
+      /* the message of the server is already shown by the interceptor */
     } finally {
       setBusy(false)
     }

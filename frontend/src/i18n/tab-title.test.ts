@@ -1,15 +1,15 @@
 /**
- * Chaque écran nomme son onglet, et le nomme dans la langue du lecteur.
+ * Every screen names its tab, and names it in the reader's language.
  *
- * 🔴 POURQUOI UNE GARDE. Le titre d'onglet est la seule étiquette de l'interface que
- * personne ne regarde en développant : on travaille avec un onglet unique, déjà ouvert, dont
- * le titre est hors du champ de vision. Un écran ajouté sans son entrée retombe sur la marque
- * seule, et ça se découvre le jour où quelqu'un a huit onglets et cherche le sien.
+ * 🔴 WHY A GUARD. The tab title is the only label of the interface that nobody looks at
+ * while developing: one works with a single tab, already open, whose title is out of sight.
+ * A screen added without its entry falls back on the brand alone, and that gets discovered
+ * the day somebody has eight tabs and is looking for theirs.
  *
- * ⚠️ ET LA CARTE EST DÉRIVÉE DU MENU, pas écrite une seconde fois. Les trois produits frères
- * tiennent chacun un `PAGE_TITLES` à la main ; une liste recopiée est une liste qui dérive, et
- * ce dépôt a déjà oublié « invest » dans quatre d'entre elles. Cette garde vérifie la règle
- * — toute route a un titre — et non le contenu d'une liste.
+ * ⚠️ AND THE MAP IS DERIVED FROM THE MENU, not written a second time. The three sibling
+ * products each keep a `PAGE_TITLES` by hand; a copied list is a list that drifts, and this
+ * repository has already forgotten « invest » in four of them. This guard checks the rule
+ * -- every route has a title -- and not the contents of a list.
  */
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
@@ -19,7 +19,7 @@ const SRC = join(__dirname, '..')
 const router = readFileSync(join(SRC, 'router.tsx'), 'utf8')
 const shell = readFileSync(join(SRC, 'components', 'layout', 'Shell.tsx'), 'utf8')
 
-/** Les routes que l'application sert réellement, lues dans le routeur. */
+/** The routes the application really serves, read from the router. */
 function routes(): string[] {
   return [...router.matchAll(/path:\s*'([^']+)'/g)]
     .map((match) => match[1])
@@ -44,8 +44,8 @@ function titled(): string[] {
 describe("le titre d'onglet", () => {
   it('couvre chaque route servie par le routeur', () => {
     const known = new Set(titled())
-    // PASSWORD_ROUTE est déclaré comme constante dans le routeur : son chemin littéral
-    // n'apparaît pas dans un `path:`. Il est couvert par OFF_MENU_TITLES.
+    // PASSWORD_ROUTE is declared as a constant in the router: its literal path
+    // does not appear in a `path:`. It is covered by OFF_MENU_TITLES.
     const missing = routes().filter((path) => !known.has(path))
 
     expect(
@@ -60,9 +60,9 @@ describe("le titre d'onglet", () => {
   })
 
   it("se retraduit quand la langue change, et pas seulement quand la route change", () => {
-    // ⚠️ Le piège : `document.title` est posé dans un effet. Sans la langue dans ses
-    // dépendances, changer de langue retraduit tout l'écran et laisse l'onglet en arrière —
-    // le seul endroit que personne ne pense à vérifier.
+    // ⚠️ The trap: `document.title` is set in an effect. Without the language in its
+    // dependencies, switching language retranslates the whole screen and leaves the tab
+    // behind -- the one place nobody thinks of checking.
     const effect = shell.slice(shell.indexOf('document.title'))
     const deps = effect.slice(effect.indexOf('}, ['), effect.indexOf('])') + 2)
 

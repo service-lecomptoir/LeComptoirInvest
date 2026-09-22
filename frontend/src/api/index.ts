@@ -11,9 +11,9 @@ export const authApi = {
   login: (email: string, password: string) =>
     apiClient.post<{ access_token: string; role: string; must_change_password: boolean }>(
       '/auth/login', { email, password }, { skipErrorToast: true }),
-  // Un rechargement ne garde que le jeton : l'application redemande QUI elle sert plutôt
-  // que de faire confiance à un rôle recopié dans le stockage local, qu'un utilisateur
-  // peut éditer et qui reste figé après un changement décidé ailleurs.
+  // A reload keeps only the token: the application asks again WHO it serves rather
+  // than trusting a role copied into local storage, which a user can edit and which
+  // stays frozen after a change decided elsewhere.
   me: () => apiClient.get<Me>('/auth/me'),
   changePassword: (currentPassword: string, newPassword: string) =>
     apiClient.post('/auth/change-password',
@@ -117,16 +117,16 @@ export const statementsApi = {
       params: investorId ? { investor_id: investorId } : {},
     }),
   /**
-   * Le meme releve, en document.
+   * The same statement, as a document.
    *
-   * ⚠️ `responseType: 'blob'`, ET C'EST OBLIGATOIRE. Sans lui axios decode les octets du
-   * PDF comme du texte UTF-8 : la reponse arrive, rien n'echoue, et le fichier enregistre
-   * est un PDF corrompu que le lecteur decouvre en l'ouvrant, plus tard, ailleurs.
+   * ⚠️ `responseType: 'blob'`, AND IT IS MANDATORY. Without it axios decodes the bytes of
+   * the PDF as UTF-8 text: the response arrives, nothing fails, and the saved file is a
+   * corrupt PDF that the reader discovers on opening it, later, elsewhere.
    *
-   * 🔴 LA LANGUE DU DOCUMENT EST CELLE DE L'INVESTISSEUR, pas celle de cet ecran. Le
-   * serveur la decide seul ; l'en-tete `Accept-Language` que pose l'intercepteur ne la
-   * touche pas. Un gestionnaire francais qui telecharge le releve d'un investisseur
-   * britannique obtient un document anglais, et c'est le but.
+   * 🔴 THE LANGUAGE OF THE DOCUMENT IS THE INVESTOR'S, not that of this screen. The server
+   * decides it alone; the `Accept-Language` header the interceptor sets does not touch it.
+   * A French manager who downloads the statement of a British investor gets an English
+   * document, and that is the point.
    */
   pdf: (year: number, investorId?: string) =>
     apiClient.get<Blob>(`/statements/${year}/pdf`, {
@@ -136,19 +136,19 @@ export const statementsApi = {
 }
 
 /**
- * L'abonnement du gestionnaire AU PRODUIT.
+ * The manager's subscription TO THE PRODUCT.
  *
- * ⚠️ `billingApi` et `subscriptionsApi` ne parlent pas de la même chose, et c'est pour
- * cela qu'ils portent des noms sans rapport : le second, ce sont les investisseurs qui
- * souscrivent au fonds. Un nom partagé aurait fini par mêler les deux dans un écran.
+ * ⚠️ `billingApi` and `subscriptionsApi` do not speak of the same thing, and that is why
+ * they carry unrelated names: the second one is the investors subscribing to the fund. A
+ * shared name would have ended up mixing the two on one screen.
  */
 export const billingApi = {
   mine: () => apiClient.get<BillingSubscription>('/billing'),
   paymentMethods: () => apiClient.get<PaymentMethods>('/billing/payment-methods'),
   status: () => apiClient.get<BillingStatus>('/billing/status'),
   plans: () => apiClient.get<BillingPlan[]>('/billing/plans'),
-  // Le refus est MONTRÉ EN PLACE, à côté du bouton : une console injoignable est une
-  // information utile, pas une bannière rouge fugace en haut de l'écran.
+  // The refusal is SHOWN IN PLACE, next to the button: an unreachable console is
+  // useful information, not a fleeting red banner at the top of the screen.
   checkout: (planId?: string) =>
     apiClient.post<{ url?: string }>('/billing/checkout', planId ? { plan_id: planId } : {},
       { skipErrorToast: true }),

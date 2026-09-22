@@ -92,9 +92,9 @@ def _offenders() -> list[str]:
 def test_no_comment_or_docstring_is_written_in_french():
     faults = _offenders()
     assert not faults, (
-        f"{len(faults)} ligne(s) de prose en français dans le code. Les commentaires et les "
-        "docstrings s'écrivent en anglais ; seuls les messages lus par un utilisateur "
-        "restent en français.\n  " + "\n  ".join(faults)
+        f"{len(faults)} line(s) of French prose in the code. Comments and docstrings are "
+        "written in English; only the messages read by a user stay in French.\n  "
+        + "\n  ".join(faults)
     )
 
 

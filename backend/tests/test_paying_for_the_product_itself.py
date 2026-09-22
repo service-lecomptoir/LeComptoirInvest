@@ -109,7 +109,7 @@ async def test_the_payer_is_the_session_never_a_parameter(client, db, monkeypatc
         f"/api/v1/billing/invoices?user_id={other}", headers=_auth(manager)
     )
     assert resp.status_code == 200
-    assert seen == [manager.id], "l'identifiant du payeur ne vient pas de la session"
+    assert seen == [manager.id], "the payer's id does not come from the session"
 
 
 async def test_a_read_degrades_but_a_payment_refuses(client, db, monkeypatch):

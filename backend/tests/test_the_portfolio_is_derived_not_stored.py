@@ -204,7 +204,7 @@ class TestAConversionKeepsTheHistory:
             for p in await portfolio_service.positions_of(db, investor.id)
         }
         assert loan.id in positions, (
-            "Le prêt converti doit rester lisible dans l'historique."
+            "The converted loan must stay readable in the history."
         )
         assert equity.id in positions
         # The money paid stays attached to the loan it was paid into: what converted is the

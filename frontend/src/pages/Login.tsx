@@ -9,9 +9,9 @@ import { useAuthStore } from '@/store/authStore'
 export default function Login() {
   const { t, i18n } = useTranslation()
 
-  // ⚠️ LA CONNEXION EST HORS DU SHELL, donc hors de l'effet qui nomme les onglets. C'est
-  // pourtant le seul écran qu'un lecteur voit AVANT d'avoir un compte ouvert, et souvent
-  // celui qu'il laisse dans un onglet en cherchant son mot de passe ailleurs.
+  // ⚠️ SIGN-IN IS OUTSIDE THE SHELL, therefore outside the effect that names the tabs. It
+  // is however the only screen a reader sees BEFORE having an account open, and often the
+  // one they leave in a tab while looking for their password elsewhere.
   useEffect(() => {
     document.title = `Le Comptoir Invest | ${t('login.title')}`
   }, [t, i18n.language])

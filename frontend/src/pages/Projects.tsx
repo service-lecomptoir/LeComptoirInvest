@@ -74,9 +74,9 @@ export default function Projects() {
                 <Th right>{t('common.income')}</Th>
                 <Th right>{t('projects.stillIn')}</Th>
                 <Th right>{t('projects.multiple')}</Th>
-                {/* ⚠️ PAS `common.status` : la colonne d'état existe déjà trois
-                    colonnes plus tôt, et deux en-têtes identiques dans un même
-                    tableau rendent la lecture impossible — vu à l'écran. */}
+                {/* ⚠️ NOT `common.status`: the state column already exists three
+                    columns earlier, and two identical headers in the same table
+                    make reading impossible -- seen on screen. */}
                 {seesWholeFund && <Th right>{t('common.actions')}</Th>}
               </tr>
             </thead>
@@ -223,18 +223,17 @@ function NewProject({ onCancel, onDone }: { onCancel: () => void; onDone: () => 
 type Action = 'deploy' | 'return' | 'status' | 'value'
 
 /**
- * Les trois gestes qui font vivre un projet, et qui n'avaient aucun écran : l'argent
- * partait, revenait et l'état changeait — dans l'API seulement. Un projet qui ne bouge
- * jamais rend un tableau de bord parfaitement cohérent et parfaitement faux.
+ * The three gestures that make a project live, and that had no screen at all: the money
+ * left, came back and the state changed -- in the API only. A project that never moves
+ * makes a dashboard perfectly consistent and perfectly wrong.
  *
- * 🔴 CHAQUE MONTANT S'IMPUTE SUR UN MOUVEMENT BANCAIRE, jamais sur une saisie libre. C'est
- * la règle du produit : un projet dont la performance est tapée à la main rapporte ce que
- * son gestionnaire croit, et croire est précisément ce qu'un investisseur paie pour ne pas
- * avoir à faire.
+ * 🔴 EVERY AMOUNT IS CHARGED TO A BANK MOVEMENT, never to a free entry. That is the rule of
+ * the product: a project whose performance is typed in by hand returns what its manager
+ * believes, and believing is precisely what an investor pays not to have to do.
  *
- * 🔴 ET LE RETOUR EST SCINDÉ EN DEUX CHAMPS, capital et produit. Un seul chiffre laisserait
- * présenter comme une performance un projet qui a seulement rendu l'argent qu'on lui avait
- * confié — la plus vieille erreur flatteuse du métier.
+ * 🔴 AND THE RETURN IS SPLIT INTO TWO FIELDS, capital and income. A single figure would let
+ * one present as a performance a project that has merely given back the money entrusted to
+ * it -- the oldest flattering mistake of the trade.
  */
 function ProjectAction({
   project, what, onCancel, onDone,
@@ -252,9 +251,9 @@ function ProjectAction({
   const [note, setNote] = useState('')
   const [status, setStatus] = useState(project.status)
   const [closedOn, setClosedOn] = useState('')
-  // 🔴 LA DATE D'ARRÊTÉ, PAS CELLE DE SAISIE. Une valorisation de mars enregistrée en mai
-  // reste un chiffre de mars ; la dater du jour où on la tape décalerait chaque rapport
-  // trimestriel du délai de celui qui l'écrit.
+  // 🔴 THE CLOSING DATE, NOT THE DATE OF ENTRY. A valuation of March recorded in May
+  // stays a figure of March; dating it from the day it is typed would shift every
+  // quarterly report by the delay of whoever writes it.
   const [valuedOn, setValuedOn] = useState('')
   const [valuation, setValuation] = useState('')
   const [basis, setBasis] = useState('')
@@ -295,7 +294,7 @@ function ProjectAction({
       }
       onDone()
     } catch {
-      /* le message du serveur est déjà affiché par l'intercepteur */
+      /* the message of the server is already shown by the interceptor */
     } finally {
       setBusy(false)
     }
@@ -320,10 +319,10 @@ function ProjectAction({
         <p className="mt-0.5 mb-3 text-xs text-gray-500 max-w-2xl">{t('project.splitRequired')}</p>
       )}
       <form onSubmit={submit} className="grid gap-3 sm:grid-cols-4 items-end mt-2">
-        {/* ⚠️ UNE VALORISATION NE S'IMPUTE SUR AUCUN MOUVEMENT BANCAIRE. C'est un jugement,
-            pas un flux : exiger une référence de virement ici obligerait à en inventer une,
-            et la règle « chaque montant vient de la banque » perdrait son sens là où elle
-            compte vraiment, c'est-à-dire sur l'argent. */}
+        {/* ⚠️ A VALUATION IS CHARGED TO NO BANK MOVEMENT. It is a judgement,
+            not a flow: demanding a transfer reference here would force one to invent one,
+            and the rule « chaque montant vient de la banque » would lose its meaning where
+            it really counts, that is to say on the money. */}
         {what !== 'status' && what !== 'value' && (
           <Input
             label={t('project.movement')}

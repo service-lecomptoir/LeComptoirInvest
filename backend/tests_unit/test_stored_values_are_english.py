@@ -123,10 +123,10 @@ def test_no_stored_value_appears_without_being_approved():
     """A new constant fails until it is listed above. That pause is the guard."""
     unknown = {n: v for n, v in _found().items() if n not in APPROVED}
     assert not unknown, (
-        "Ces valeurs sont écrites en base sans avoir été inscrites dans l'inventaire :\n"
+        "These values are written to the database without being listed in the inventory:\n"
         + "\n".join(f"  {n} = {v!r}" for n, v in sorted(unknown.items()))
-        + "\n\nAjoutez-les à APPROVED, en anglais. Une valeur stockée ne se renomme plus "
-        "une fois qu'il y a des lignes."
+        + "\n\nAdd them to APPROVED, in English. A stored value is no longer renamed "
+        "once there are rows."
     )
 
 
@@ -139,9 +139,9 @@ def test_an_approved_value_has_not_drifted():
         if name in found and found[name] != APPROVED[name]
     }
     assert not drifted, (
-        "Ces valeurs ont changé sans que l'inventaire suive :\n"
+        "These values have changed without the inventory following:\n"
         + "\n".join(
-            f"  {n} : inventaire {a!r}, code {b!r}"
+            f"  {n}: inventory {a!r}, code {b!r}"
             for n, (a, b) in sorted(drifted.items())
         )
     )

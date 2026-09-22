@@ -110,8 +110,8 @@ export default function Subscriptions() {
                     )}
                   </Td>
                   <Td right>
-                    {/* 🔴 Un prêt ACCEPTÉ peut devenir une souscription — la décision du
-                        17 août. Elle n'avait aucun écran, donc elle était inapplicable. */}
+                    {/* 🔴 An ACCEPTED loan can become a subscription -- the decision of
+                        17 August. It had no screen, so it was inapplicable. */}
                     {r.status === 'accepted' && r.instrument === 'loan' && r.subscription_id && (
                       <Button
                         size="sm"
@@ -188,17 +188,17 @@ export default function Subscriptions() {
 }
 
 /**
- * Convertir un prêt en souscription — la décision prise le 17 août, sans écran jusqu'ici.
+ * Converting a loan into a subscription -- the decision taken on 17 August, with no screen
+ * until now.
  *
- * 🔴 C'EST UN ÉVÉNEMENT, PAS UNE MODIFICATION. La ligne de prêt se ferme, une ligne de
- * souscription s'ouvre, et les deux survivent : chaque relevé déjà envoyé disait que
- * l'investisseur détenait un prêt, et chaque distribution passée l'a classé comme dette.
- * Muter la ligne existante ferait prétendre à l'historique qu'il s'agissait de capital
- * depuis toujours.
+ * 🔴 IT IS AN EVENT, NOT A MODIFICATION. The loan row closes, a subscription row opens, and
+ * both survive: every statement already sent said that the investor held a loan, and every
+ * past distribution classified it as debt. Mutating the existing row would make the history
+ * claim it had been capital all along.
  *
- * ⚠️ ET JAMAIS L'INVERSE. Transformer du capital en dette placerait cet investisseur devant
- * les autres en liquidation, après coup — ce qui n'est pas une conversion mais une
- * préférence consentie à un créancier, et celles-là se font annuler.
+ * ⚠️ AND NEVER THE OTHER WAY ROUND. Turning capital into debt would place this investor
+ * ahead of the others in a liquidation, after the fact -- which is not a conversion but a
+ * preference granted to a creditor, and those get set aside.
  */
 function ConvertLoan({
   request, onCancel, onDone,
@@ -215,8 +215,8 @@ function ConvertLoan({
     e.preventDefault()
     setBusy(true)
     try {
-      // 🔴 L'ENGAGEMENT, PAS LA DEMANDE. Envoyer l'identifiant de la demande donne un 404
-      // dont la cause n'a rien d'évident : deux objets distincts, deux identifiants.
+      // 🔴 THE COMMITMENT, NOT THE REQUEST. Sending the id of the request gives a 404
+      // whose cause is anything but obvious: two distinct objects, two ids.
       await subscriptionsApi.convert(request.subscription_id!, {
         converted_on: convertedOn,
         principal_converted: principal,
@@ -226,7 +226,7 @@ function ConvertLoan({
       toast.success(t('convert.done'))
       onDone()
     } catch {
-      /* le message du serveur est déjà affiché par l'intercepteur */
+      /* the message of the server is already shown by the interceptor */
     } finally {
       setBusy(false)
     }

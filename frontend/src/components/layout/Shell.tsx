@@ -29,9 +29,9 @@ interface Item {
  */
 const FUND_NAV: { section: string; items: Item[] }[] = [
   {
-    // ⚠️ L'ORDRE RACONTE LE CYCLE DU FONDS, il n'est pas alphabétique ni historique :
-    // la vue d'ensemble, ce dans quoi on investit, ce qui revient, puis l'argent à gérer
-    // au quotidien. Un menu rangé par ordre d'ajout fait chercher deux fois.
+    // ⚠️ THE ORDER TELLS THE CYCLE OF THE FUND, it is neither alphabetical nor historical:
+    // the overview, what one invests in, what comes back, then the money to manage day to
+    // day. A menu filed in order of addition makes one look twice.
     section: 'nav.fund',
     items: [
       { to: '/', key: 'nav.dashboard', icon: LayoutDashboard },
@@ -66,15 +66,15 @@ const INVESTOR_NAV: { section: string; items: Item[] }[] = [
 ]
 
 /**
- * En haut du bandeau : la marque, puis la société de gestion.
+ * At the top of the side bar: the brand, then the management company.
  *
- * 🔴 DEUX LIGNES, ET L'ORDRE COMPTE. Le produit d'abord, parce que c'est lui qui
- * répond à « où suis-je » quand on ouvre trois consoles de la maison côte à côte ; le nom
- * de la société ensuite, parce qu'il répond à « pour qui ». L'inverse ferait chercher la
- * marque en second, et c'est elle qu'on cherche en premier dans une barre des tâches.
+ * 🔴 TWO LINES, AND THE ORDER COUNTS. The product first, because it is what answers
+ * « où suis-je » when one opens three consoles of the house side by side; the name of the
+ * company next, because it answers « pour qui ». The other way round would make one look
+ * for the brand in second place, and the brand is what one looks for first in a task bar.
  *
- * ⚠️ LA SECONDE LIGNE DISPARAÎT SI ELLE EST VIDE, plutôt que de laisser un blanc. Un
- * compte sans nom de société existe ; une ligne vide se lit comme un défaut d'affichage.
+ * ⚠️ THE SECOND LINE DISAPPEARS IF IT IS EMPTY, rather than leaving a blank. An account
+ * without a company name exists; an empty line reads as a display defect.
  */
 function Brand() {
   const { t } = useTranslation()
@@ -87,8 +87,8 @@ function Brand() {
           {t('brand.full')}
         </div>
         {accountName && (
-          // ⚠️ `truncate` : une raison sociale est saisie par quelqu'un, et
-          // « Meridian Capital Partners Gestion SAS » déborderait d'un bandeau de 240 px.
+          // ⚠️ `truncate`: a company name is typed in by somebody, and
+          // « Meridian Capital Partners Gestion SAS » would overflow a 240 px side bar.
           <div className="text-[11.5px] text-white/55 leading-tight truncate" title={accountName}>
             {accountName}
           </div>
@@ -144,9 +144,9 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
  *  new account sees first. A tab reading just « Le Comptoir Invest » there says nothing. */
 const OFF_MENU_TITLES: Record<string, string> = {
   '/profile': 'profile.title',
-  // 🔴 SORTI DU MENU, DONC SORTI DE LA CARTE DES TITRES qui en est dérivée. La garde l'a
-  // signalé à la seconde où la ligne a quitté `FUND_NAV` : c'est exactement ce qu'elle
-  // existe pour attraper, un écran qui reste servi et dont l'onglet retombe sur la marque.
+  // 🔴 OUT OF THE MENU, THEREFORE OUT OF THE MAP OF TITLES derived from it. The guard
+  // reported it the second the line left `FUND_NAV`: that is exactly what it
+  // exists to catch, a screen still served whose tab falls back on the brand.
   '/billing': 'nav.billing',
 }
 
@@ -221,13 +221,13 @@ export function Shell() {
       )}
 
       <div className="lg:pl-60">
-        {/* ⚠️ UNE SEULE BARRE, PAS UNE PAR TAILLE D'ECRAN. Elle portait le menu burger en
-            mobile ; elle porte maintenant la langue et le compte partout. En faire deux
-            aurait laisse l'une des deux prendre du retard sur l'autre, et c'est toujours
-            celle qu'on ne regarde pas qui le prend.
+        {/* ⚠️ A SINGLE BAR, NOT ONE PER SCREEN SIZE. It carried the burger menu on
+            mobile; it now carries the language and the account everywhere. Making two of
+            them would have let one of the two fall behind the other, and it is always the
+            one nobody looks at that falls behind.
 
-            Le bandeau navy reste en mobile parce qu'il y remplace le menu lateral, absent ;
-            en grand ecran le menu est la, et la barre s'efface en blanc. */}
+            The navy side bar stays on mobile because there it replaces the side menu, which
+            is absent; on a large screen the menu is there, and the bar fades to white. */}
         <header className="sticky top-0 z-30 flex items-center gap-3 h-14 px-4 lg:px-8 bg-brand-navy lg:bg-white lg:border-b lg:border-gray-200">
           <button
             onClick={() => setOpen(true)}
@@ -236,15 +236,15 @@ export function Shell() {
           >
             <Menu size={20} />
           </button>
-          {/* ⚠️ LA MÊME MARQUE QU'À GAUCHE, pas une variante. Deux écritures du même nom
-              selon la taille de l'écran, c'est celle qu'on regarde le moins qui prend du
-              retard le jour où le nom change. */}
+          {/* ⚠️ THE SAME BRAND AS ON THE LEFT, not a variant. Two spellings of the same name
+              depending on the size of the screen means the one we look at least falls
+              behind the day the name changes. */}
           <span className="lg:hidden flex items-center gap-2 text-[15px] font-semibold text-white">
             <LogoMark size={22} className="shrink-0 text-brand-teal" />
             {t('brand.full')}
           </span>
 
-          {/* Pousse le reste a droite : c'est la seule chose que cette barre a a dire. */}
+          {/* Pushes the rest to the right: that is the only thing this bar has to say. */}
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher />
             <ProfileMenu />

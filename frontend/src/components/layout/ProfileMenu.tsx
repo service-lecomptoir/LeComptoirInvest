@@ -6,13 +6,13 @@ import { useAuthStore } from '@/store/authStore'
 import { confirmDialog } from '@/store/confirm'
 
 /**
- * Le compte, en haut à droite, comme dans Le Comptoir Immo.
+ * The account, top right, as in Le Comptoir Immo.
  *
- * ⚠️ CE QUI ÉTAIT EN BAS DU MENU N'Y AVAIT PAS SA PLACE. Le bandeau latéral répond à
- * « où vais-je » ; « qui suis-je » et « comment je pars » sont une autre question, et les
- * ranger sous les écrans du fonds les faisait lire comme deux écrans de plus. Un lecteur
- * qui vient d'un autre produit de la maison les cherche en haut à droite, parce que c'est
- * là qu'ils sont partout ailleurs.
+ * ⚠️ WHAT WAS AT THE BOTTOM OF THE MENU DID NOT BELONG THERE. The side bar answers
+ * « où vais-je » ; « qui suis-je » and « comment je pars » are another question, and filing
+ * them under the screens of the fund made them read as two more screens. A reader coming
+ * from another product of the house looks for them at the top right, because that is where
+ * they are everywhere else.
  */
 export function ProfileMenu() {
   const { t } = useTranslation()
@@ -25,8 +25,8 @@ export function ProfileMenu() {
   const logout = useAuthStore((state) => state.logout)
   const seesWholeFund = useAuthStore((state) => state.seesWholeFund)
 
-  // Un menu se ferme quand on clique ailleurs. Sans cela il reste ouvert derrière le
-  // premier clic suivant, et ce clic-là est perdu pour l'écran qu'il visait.
+  // A menu closes when one clicks elsewhere. Without that it stays open behind the
+  // next click, and that click is lost for the screen it was aimed at.
   useEffect(() => {
     if (!open) return
     const outside = (event: MouseEvent) => {
@@ -43,9 +43,9 @@ export function ProfileMenu() {
     }
   }, [open])
 
-  // ⚠️ Une fenêtre du PRODUIT, jamais `window.confirm`. Se déconnecter d'un clic mal placé
-  // fait perdre ce qu'un formulaire ouvert contenait, et la boîte du navigateur ne sait ni
-  // nommer le compte ni distinguer « annuler » de « partir ».
+  // ⚠️ A window of the PRODUCT, never `window.confirm`. Signing out on a misplaced click
+  // loses what an open form held, and the box of the browser can neither name the account
+  // nor tell « annuler » from « partir ».
   const signOut = async () => {
     setOpen(false)
     const ok = await confirmDialog({
@@ -58,8 +58,8 @@ export function ProfileMenu() {
     navigate('/login')
   }
 
-  /** L'initiale de l'adresse, faute de mieux : ce produit ne stocke pas de nom d'affichage
-   *  sur le compte. Un point d'interrogation vaut mieux qu'une lettre inventée. */
+  /** The initial of the address, for want of better: this product stores no display name
+   *  on the account. A question mark is worth more than an invented letter. */
   const initial = email?.trim().charAt(0).toUpperCase() || '?'
 
   return (
@@ -85,8 +85,8 @@ export function ProfileMenu() {
           role="menu"
           className="absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50"
         >
-          {/* Qui est connecté, en toutes lettres. C'est la question à laquelle ce menu
-              répond en premier, et la seule que l'avatar ne sait pas dire. */}
+          {/* Who is signed in, in full. That is the question this menu answers
+              first, and the only one the avatar cannot say. */}
           <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
             <p className="text-sm font-medium text-gray-900 truncate">{email ?? '-'}</p>
             <p className="text-xs text-gray-500 capitalize">{role ?? ''}</p>
@@ -104,13 +104,13 @@ export function ProfileMenu() {
               <UserRound size={15} className="text-gray-400" />
               {t('profile.title')}
             </button>
-            {/* 🔴 RÉSERVÉ À QUI PAIE. `/billing` est un écran de la gestion du fonds :
-                l'afficher à un investisseur lui proposerait une page qui le renvoie chez
-                lui. Une ligne de menu qui ne mène nulle part est pire qu'une absente, elle
-                laisse croire à un droit qu'on n'a pas.
+            {/* 🔴 RESERVED FOR WHOEVER PAYS. `/billing` is a screen of the management of the fund:
+                showing it to an investor would offer them a page that sends them back
+                home. A menu line that leads nowhere is worse than a missing one, it lets
+                one believe in a right one does not have.
 
-                ⚠️ Et ce n'est PAS une protection : l'API refuse ces lectures d'elle-même.
-                C'est de la politesse, comme le `FundOnly` du routeur. */}
+                ⚠️ And it is NOT a protection: the API refuses these reads by itself.
+                It is politeness, like the `FundOnly` of the router. */}
             {seesWholeFund && (
               <button
                 role="menuitem"

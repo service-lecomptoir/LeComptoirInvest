@@ -159,10 +159,10 @@ export default function Distributions() {
             </div>
           )}
 
-          {/* 🔴 LES DEUX MONTANTS DU GESTIONNAIRE SONT MONTRÉS, ET SÉPARÉMENT. Les fondre
-              dans « réparti » ferait passer pour une part d'investisseur ce qui va au
-              gestionnaire ; les fondre l'un dans l'autre ferait croire qu'une année plate
-              ne lui a rien rapporté, alors que les frais courent quoi qu'il arrive. */}
+          {/* 🔴 THE TWO AMOUNTS OF THE MANAGER ARE SHOWN, AND SEPARATELY. Merging them
+              into « réparti » would pass off as an investor's share what goes to the
+              manager; merging one into the other would suggest that a flat year brought
+              them nothing, when the fees run whatever happens. */}
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5 mb-4">
             {[
               [t('distributions.available'), waterfall.available],
@@ -208,10 +208,10 @@ export default function Distributions() {
                 <div>
                   <p className="text-sm font-semibold text-red-900">{t('distributions.blockedTitle')}</p>
                   <p className="mt-1 text-sm text-red-800 leading-relaxed">{waterfall.blocked_reason}</p>
-                  {/* ⚠️ CETTE JUSTIFICATION NE VAUT QUE POUR UNE DETTE. Affichée quand le
-                      blocage vient d'ailleurs — « aucune souscription ouverte », par
-                      exemple — elle fait chercher un problème de dette qui n'existe pas.
-                      Vu à l'écran le 18 août. */}
+                  {/* ⚠️ THIS JUSTIFICATION HOLDS ONLY FOR A DEBT. Shown when the block
+                      comes from elsewhere -- « aucune souscription ouverte », for
+                      instance -- it makes one look for a debt problem that does not
+                      exist. Seen on screen on 18 August. */}
                   {Number(waterfall.debt_remaining) > 0 && (
                     <p className="mt-2 text-xs text-red-700/80 leading-relaxed">
                       {t('distributions.blockedWhy')}
@@ -311,16 +311,17 @@ export default function Distributions() {
 }
 
 /**
- * Attacher le virement sortant — sans quoi tout restait « décidée, non payée » à jamais.
+ * Attaching the outgoing transfer -- without which everything stayed « décidée, non payée »
+ * for ever.
  *
- * 🔴 LA DISTINCTION DÉCIDÉ / PAYÉ EXISTAIT DANS LA BASE DEPUIS LA PREMIÈRE MIGRATION, et
- * aucun écran ne permettait de franchir la seconde étape. Le produit tenait scrupuleusement
- * un état que personne ne pouvait quitter : chaque investisseur restait éternellement « à
- * payer », et le relevé fiscal — qui ne compte que ce qui a été PAYÉ — restait vide.
+ * 🔴 THE DECIDED / PAID DISTINCTION HAD EXISTED IN THE DATABASE SINCE THE FIRST MIGRATION,
+ * and no screen allowed the second step to be taken. The product scrupulously kept a state
+ * nobody could leave: every investor stayed eternally « à payer », and the tax statement --
+ * which counts only what has been PAID -- stayed empty.
  *
- * ⚠️ C'est le virement qui paie, pas le clic. `paid_on` prend par défaut la date de valeur
- * du mouvement : la date à laquelle l'argent a réellement quitté le compte, pas celle où
- * quelqu'un s'en est occupé.
+ * ⚠️ It is the transfer that pays, not the click. `paid_on` takes by default the value date
+ * of the movement: the date on which the money really left the account, not the one on
+ * which somebody dealt with it.
  */
 function PayDistribution({
   distribution, onCancel, onDone,
@@ -341,7 +342,7 @@ function PayDistribution({
       toast.success(t('pay.done'))
       onDone()
     } catch {
-      /* le message du serveur est déjà affiché par l'intercepteur */
+      /* the message of the server is already shown by the interceptor */
     } finally {
       setBusy(false)
     }

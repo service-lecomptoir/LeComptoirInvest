@@ -1,18 +1,18 @@
 /**
- * Ce qu'un 402 doit devenir à l'écran, et ce qu'il ne doit jamais devenir.
+ * What a 402 must become on screen, and what it must never become.
  *
- * 🔴 POURQUOI UNE GARDE ICI. Le serveur refuse en 402 quand un ajout dépasse le forfait et
- * que l'offre autorise le dépassement : la phrase porte le compte et le prix mensuel. Trois
- * façons de perdre ça, et aucune ne casse quoi que ce soit :
+ * 🔴 WHY A GUARD HERE. The server refuses with a 402 when an addition goes past the plan
+ * and the offer allows the overage: the sentence carries the count and the monthly price.
+ * Three ways to lose that, and none of them breaks anything:
  *
- *   1. l'intercepteur le traite comme une erreur et l'affiche en toast rouge fugace, alors
- *      que c'est une QUESTION à laquelle il faut pouvoir répondre « oui » ;
- *   2. l'écran redemande sans `accept_overage`, et le gestionnaire retombe sur le même
- *      refus en boucle sans comprendre pourquoi ;
- *   3. l'écran annonce « ajouté » alors que la personne a répondu « non ».
+ *   1. the interceptor treats it as an error and shows it as a fleeting red toast, when it
+ *      is a QUESTION one must be able to answer « oui » to;
+ *   2. the screen asks again without `accept_overage`, and the manager falls back on the
+ *      same refusal in a loop without understanding why;
+ *   3. the screen announces « ajouté » when the person answered « non ».
  *
- * Les trois donnent un produit qui a l'air de marcher. Seule la dernière se voit, et
- * seulement une fois.
+ * The three give a product that looks as if it works. Only the last one shows, and only
+ * once.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -34,7 +34,7 @@ vi.mock('@/store/confirm', () => ({
 
 const { withOverageConsent } = await import('./overage')
 
-/** Un refus du serveur, dans la forme exacte qu'axios donne à l'appelant. */
+/** A refusal from the server, in the exact shape axios gives the caller. */
 function refusal(status: number, detail: string) {
   return Object.assign(new Error(detail), { response: { status, data: { detail } } })
 }
@@ -58,9 +58,9 @@ describe('withOverageConsent', () => {
   })
 
   it('pose la question du serveur, mot pour mot', async () => {
-    // 🔴 LE PRIX VIENT DE LA CONSOLE, PAS DU FRONT. Reconstruire la phrase ici créerait une
-    // seconde vérité sur un tarif que cet écran ne connaît pas : le jour où l'offre change,
-    // il annoncerait l'ancien montant et rien n'aurait l'air faux.
+    // 🔴 THE PRICE COMES FROM THE CONSOLE, NOT FROM THE FRONT END. Rebuilding the sentence
+    // here would create a second truth about a tariff this screen does not know: the day
+    // the offer changes, it would announce the old amount and nothing would look wrong.
     const run = vi.fn()
       .mockRejectedValueOnce(refusal(402, OVER_PLAN))
       .mockResolvedValueOnce('créé')
@@ -71,8 +71,8 @@ describe('withOverageConsent', () => {
   })
 
   it('rejoue avec le consentement, jamais sans', async () => {
-    // ⚠️ Le second appel doit porter `true`. Rejouer à l'identique redonnerait le même 402,
-    // et l'écran tournerait en rond en ayant l'air d'obéir.
+    // ⚠️ The second call must carry `true`. Replaying it identically would give back the
+    // same 402, and the screen would go round in circles while looking as if it obeyed.
     const run = vi.fn()
       .mockRejectedValueOnce(refusal(402, OVER_PLAN))
       .mockResolvedValueOnce('créé')
@@ -90,8 +90,8 @@ describe('withOverageConsent', () => {
   })
 
   it('laisse passer tout ce qui n est pas une question', async () => {
-    // 400 = l'offre interdit le dépassement. Aucune confirmation ne peut lever ça : la
-    // transformer en dialogue proposerait un « oui » qui n'existe pas.
+    // 400 = the offer forbids the overage. No confirmation can lift that: turning it into
+    // a dialogue would offer a « oui » that does not exist.
     const run = vi.fn().mockRejectedValue(refusal(400, 'Limite atteinte (50/50).'))
     await expect(withOverageConsent(run)).rejects.toThrow('Limite atteinte (50/50).')
     expect(asked).toEqual([])

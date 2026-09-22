@@ -3,31 +3,30 @@ import { authApi } from '@/api'
 import { TOKEN_KEY } from '@/api/client'
 
 /**
- * Qui est connecté, et ce que l'application a le droit de lui dessiner.
+ * Who is signed in, and what the application is allowed to draw for them.
  *
- * 🔴 LE RÔLE EST REDEMANDÉ AU SERVEUR, PLUS RELU DANS LE STOCKAGE LOCAL. La première
- * version recopiait le rôle renvoyé à la connexion dans `localStorage` et s'y fiait à
- * chaque rechargement. Deux défauts : n'importe qui peut éditer cette valeur dans sa
- * console, et surtout elle reste FIGÉE — un compte rétrogradé ou bloqué depuis Alice
- * continuait de voir la navigation du gestionnaire jusqu'à sa prochaine connexion. Le jeton
- * reste local ; ce qu'il autorise vient de `/auth/me`.
+ * 🔴 THE ROLE IS ASKED OF THE SERVER AGAIN, NO LONGER RE-READ FROM LOCAL STORAGE. The first
+ * version copied the role returned at sign-in into `localStorage` and relied on it at every
+ * reload. Two defects: anybody can edit that value in their console, and above all it stays
+ * FROZEN -- an account demoted or blocked from Alice kept seeing the manager's navigation
+ * until its next sign-in. The token stays local; what it authorises comes from `/auth/me`.
  *
- * ⚠️ CELA RESTE UNE RÈGLE D'AFFICHAGE. Ce qu'un investisseur peut LIRE est décidé par le
- * périmètre de l'API : un portail qui filtre dans le navigateur a déjà reçu ce qu'il cache.
+ * ⚠️ THIS REMAINS A DISPLAY RULE. What an investor can READ is decided by the scope of the
+ * API: a portal that filters in the browser has already received what it hides.
  */
 interface AuthState {
   role: string | null
   email: string | null
-  /** Le nom de la SOCIETE DE GESTION, celui que porte le compte.
+  /** The name of the MANAGEMENT COMPANY, the one the account carries.
    *
-   *  ⚠️ Ce n'est pas le nom du produit. La barre laterale montrait la marque et rien
-   *  d'autre : un gestionnaire qui ouvre trois consoles de la maison ne savait pas, d'un
-   *  coup d'oeil, laquelle etait la sienne. `/auth/me` le renvoyait deja. */
+   *  ⚠️ It is not the name of the product. The side bar showed the brand and nothing
+   *  else: a manager who opens three consoles of the house could not tell, at a glance,
+   *  which one was theirs. `/auth/me` was already returning it. */
   accountName: string | null
   isAuthenticated: boolean
   isInitializing: boolean
   seesWholeFund: boolean
-  /** Le titulaire doit remplacer un identifiant que quelqu'un d'autre lui a transmis. */
+  /** The holder must replace an id that somebody else passed on to them. */
   mustChangePassword: boolean
 
   login: (email: string, password: string) => Promise<void>
@@ -69,8 +68,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       await useAuthStore.getState().refreshMe()
     } catch {
-      // Jeton expiré ou compte désactivé : on repart d'un état propre plutôt que de
-      // dessiner une application à moitié autorisée.
+      // Expired token or disabled account: we start again from a clean state rather
+      // than drawing a half-authorised application.
       localStorage.removeItem(TOKEN_KEY)
       set({ ...CLEARED })
     } finally {
@@ -81,8 +80,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     const { data } = await authApi.login(email, password)
     localStorage.setItem(TOKEN_KEY, data.access_token)
-    // On relit `/auth/me` plutôt que de se contenter de la réponse de connexion : une
-    // seule source décide de ce que l'application dessine.
+    // We re-read `/auth/me` rather than settling for the sign-in response: a single
+    // source decides what the application draws.
     await useAuthStore.getState().refreshMe()
   },
 

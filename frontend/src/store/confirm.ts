@@ -1,25 +1,25 @@
 import { create } from 'zustand'
 
 /**
- * Demander confirmation, sans jamais passer par une boîte du navigateur.
+ * Asking for confirmation, without ever going through a box of the browser.
  *
- * 🔴 `window.confirm` EST INTERDIT ICI, et pas pour des raisons d'esthétique. Elle ne peut
- * rien dire d'utile : pas de mise en forme, pas de montant, pas de nom, pas de distinction
- * entre « annuler » et « détruire ». Elle bloque le fil d'exécution du navigateur, certains
- * navigateurs la suppriment purement et simplement quand elle vient d'une iframe ou d'un
- * onglet en arrière-plan, et elle porte le nom du domaine plutôt que celui du produit. Une
- * question qui décide d'une action irréversible mérite d'être posée par le produit.
+ * 🔴 `window.confirm` IS FORBIDDEN HERE, and not for reasons of looks. It can say nothing
+ * useful: no formatting, no amount, no name, no distinction between « annuler » and
+ * « détruire ». It blocks the browser's execution thread, some browsers suppress it purely
+ * and simply when it comes from an iframe or a background tab, and it carries the name of
+ * the domain rather than that of the product. A question that decides an irreversible
+ * action deserves to be asked by the product.
  *
- * L'API est une PROMESSE, pour que l'appelant écrive la suite à la ligne suivante plutôt
- * que d'éclater sa logique dans deux fonctions de rappel.
+ * The API is a PROMISE, so that the caller writes what follows on the next line rather than
+ * scattering its logic across two callbacks.
  */
 export interface ConfirmRequest {
   title: string
   message?: string
-  /** Libellé du bouton qui agit. Par défaut : « Confirmer ». */
+  /** Label of the button that acts. By default: « Confirmer ». */
   confirmLabel?: string
   cancelLabel?: string
-  /** Rouge plutôt que navy : réservé à ce qui détruit ou coupe un accès. */
+  /** Red rather than navy: reserved for what destroys or cuts off an access. */
   danger?: boolean
 }
 
@@ -34,8 +34,8 @@ export const useConfirmStore = create<ConfirmState>((set, get) => ({
 
   ask: (request) =>
     new Promise<boolean>((resolve) => {
-      // ⚠️ Une seconde demande pendant qu'une première attend répondrait « non » à la
-      // première sans que personne l'ait décidé. On refuse plutôt de l'ouvrir.
+      // ⚠️ A second request while a first one is waiting would answer « non » to the
+      // first without anybody having decided it. We refuse to open it instead.
       if (get().request) {
         resolve(false)
         return
@@ -51,6 +51,6 @@ export const useConfirmStore = create<ConfirmState>((set, get) => ({
   },
 }))
 
-/** À appeler depuis n'importe quel écran : `if (await confirmDialog({ title })) …` */
+/** To be called from any screen: `if (await confirmDialog({ title })) …` */
 export const confirmDialog = (request: ConfirmRequest): Promise<boolean> =>
   useConfirmStore.getState().ask(request)

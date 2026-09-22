@@ -4,16 +4,16 @@ import { Button } from '@/components/ui'
 import { useConfirmStore } from '@/store/confirm'
 
 /**
- * La fenêtre de confirmation du produit. Montée une fois, au-dessus de tout.
+ * The confirmation window of the product. Mounted once, above everything.
  *
- * ⚠️ ELLE NE SE FERME PAS SUR UN CLIC À CÔTÉ, et c'est une règle de la maison. Le clic hors
- * cadre est le geste qu'on fait sans y penser : le traiter comme un « non » est acceptable,
- * le traiter comme une réponse tout court ne l'est pas, parce que la personne n'a pas
- * répondu. Elle se ferme par « Annuler », par la croix, ou par Échap, qui sont trois gestes
- * délibérés.
+ * ⚠️ IT DOES NOT CLOSE ON A CLICK BESIDE IT, and that is a rule of the house. The click
+ * outside the frame is the gesture one makes without thinking: treating it as a « non » is
+ * acceptable, treating it as an answer at all is not, because the person has not answered.
+ * It closes through « Annuler », through the cross, or through Escape, which are three
+ * deliberate gestures.
  *
- * ⚠️ LE FOCUS PART SUR « ANNULER », jamais sur le bouton qui agit. Une fenêtre qui apparaît
- * sous un doigt déjà en train d'appuyer sur Entrée ne doit pas détruire quoi que ce soit.
+ * ⚠️ THE FOCUS GOES TO « ANNULER », never to the button that acts. A window that appears
+ * under a finger already pressing Enter must not destroy anything.
  */
 export function ConfirmHost() {
   const { t } = useTranslation()
@@ -40,7 +40,7 @@ export function ConfirmHost() {
       aria-modal="true"
       aria-labelledby="confirm-title"
     >
-      {/* Le voile n'a PAS de gestionnaire de clic : voir le commentaire ci-dessus. */}
+      {/* The veil has NO click handler: see the comment above. */}
       <div className="absolute inset-0 bg-gray-900/40" />
 
       <div className="relative w-full max-w-md rounded-xl bg-white border border-gray-200 shadow-xl">

@@ -30,11 +30,10 @@ const ACCENTED = /[àâäçéèêëîïôöùûüÿœÀÂÄÇÉÈÊËÎÏÔÖÙ�
 
 /** Files whose accented text is data, or a message meant for a developer.
  *
- *  ⚠️ TOUT FICHIER DE TEST EST EXEMPT, et c'est une règle, pas une commodité : le message
- *  d'une assertion s'adresse à qui lit l'échec, jamais à un utilisateur. La première
- *  version nommait les fichiers un par un, et la garde s'est déclenchée sur le test suivant
- *  que j'ai écrit. Une liste qu'il faut allonger à chaque ajout est une liste qu'on finit
- *  par vider. */
+ *  ⚠️ EVERY TEST FILE IS EXEMPT, and that is a rule, not a convenience: the message of an
+ *  assertion speaks to whoever reads the failure, never to a user. The first version named
+ *  the files one by one, and the guard fired on the very next test I wrote. A list that has
+ *  to be lengthened on every addition is a list that ends up being emptied. */
 const EXEMPT = new Set(['fr.json', 'en.json', 'index.ts'])
 const IS_TEST = /\.test\.tsx?$/
 
@@ -85,10 +84,10 @@ describe('the interface is translated, not written twice', () => {
   it('no English entry is a copy of its French counterpart', () => {
     const frMap = Object.fromEntries(flatten(fr as Record<string, unknown>))
     const enMap = Object.fromEntries(flatten(en as Record<string, unknown>))
-    // 🔴 LA REGLE VIT DANS `copyRule.ts`, ET PAS ICI. Elle etait ecrite deux fois : ici
-    // et dans `scripts/i18n-check.mjs`. Ajouter `brand.full` a fait tomber les deux, l'une
-    // apres l'autre -- et la premiere chose qu'on fait devant une garde rouge qu'on croit
-    // avoir corrigee, c'est douter de la garde.
+    // 🔴 THE RULE LIVES IN `copyRule.ts`, AND NOT HERE. It was written twice: here
+    // and in `scripts/i18n-check.mjs`. Adding `brand.full` brought both down, one
+    // after the other -- and the first thing one does in front of a red guard one
+    // believes to have fixed is to doubt the guard.
     const copied = copiedKeys(frMap, enMap)
     expect(copied, `Recopiés du français : ${copied.join(', ')}`).toEqual([])
   })

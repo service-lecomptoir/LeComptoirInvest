@@ -109,9 +109,9 @@ export default function Treasury() {
           className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-navy file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-brand-navy/90"
         />
 
-        {/* 🔴 CHAQUE LIGNE REFUSÉE EST MONTRÉE, UNE PAR UNE. Un compte « 3 lignes ignorées »
-            n'est pas exploitable, et un relevé amputé d'une écriture se rapproche sur un
-            chiffre qui est faux et qui a l'air juste. */}
+        {/* 🔴 EVERY REFUSED LINE IS SHOWN, ONE BY ONE. A count reading « 3 lignes ignorées »
+            is not actionable, and a statement short of one entry reconciles on a figure
+            that is wrong and looks right. */}
         {refused.length > 0 && (
           <div className="mt-3">
             <Notice tone="warn" title={t('treasury.camtRefused', { count: refused.length })}>

@@ -7,21 +7,21 @@ import { useAuthStore } from '@/store/authStore'
 import { PasswordSection } from './PasswordSection'
 
 /**
- * Mon profil : qui je suis ici, et le seul réglage qui m'appartienne.
+ * My profile: who I am here, and the only setting that belongs to me.
  *
- * 🔴 CE QUI EST MONTRÉ N'EST PAS MODIFIABLE, ET C'EST LA RÈGLE DE LA MAISON. Le nom de la
- * société de gestion, l'adresse, le téléphone d'un compte sont tenus par la console
- * (Alice) : c'est elle qui provisionne les comptes et qui facture. Offrir ici un champ
- * modifiable créerait une seconde vérité sur une raison sociale, et la facture porterait
- * l'une pendant que l'écran montre l'autre.
+ * 🔴 WHAT IS SHOWN IS NOT EDITABLE, AND THAT IS THE RULE OF THE HOUSE. The name of the
+ * management company, the address, the telephone of an account are held by the console
+ * (Alice): it is the console that provisions the accounts and that invoices. Offering an
+ * editable field here would create a second truth about a company name, and the invoice
+ * would carry one while the screen shows the other.
  *
- * ⚠️ L'ÉCRAN LE DIT PLUTÔT QUE DE LAISSER DEVINER. Un champ grisé sans explication se lit
- * comme une panne ; une phrase qui nomme l'endroit où la valeur se change fait gagner
- * l'appel au support.
+ * ⚠️ THE SCREEN SAYS SO RATHER THAN LEAVING ONE TO GUESS. A greyed-out field without an
+ * explanation reads as a breakdown; a sentence that names the place where the value is
+ * changed saves the call to support.
  *
- * 🔴 LE MOT DE PASSE, LUI, EST À MOI. Il n'est ni connu ni modifiable depuis la console :
- * c'est la seule chose de cette page que son titulaire décide seul, et c'est pourquoi elle
- * y a sa place plutôt que dans un écran séparé.
+ * 🔴 THE PASSWORD, FOR ITS PART, IS MINE. It is neither known nor editable from the
+ * console: it is the only thing on this page that its holder decides alone, and that is why
+ * it has its place here rather than on a separate screen.
  */
 export default function MyProfile() {
   const { t } = useTranslation()
@@ -50,9 +50,9 @@ export default function MyProfile() {
                 <row.icon size={16} className="mt-0.5 shrink-0 text-gray-400" />
                 <div className="min-w-0">
                   <p className="text-xs text-gray-500">{row.label}</p>
-                  {/* ⚠️ Une valeur absente se dit, elle ne se remplace pas par du vide :
-                      un compte sans raison sociale existe, et une ligne blanche se lit
-                      comme un défaut d'affichage. */}
+                  {/* ⚠️ An absent value is said, it is not replaced by emptiness:
+                      an account without a company name exists, and a blank line reads
+                      as a display defect. */}
                   <p className="text-sm text-gray-900 break-words">
                     {row.value?.trim() ? row.value : t('profile.notSet')}
                   </p>

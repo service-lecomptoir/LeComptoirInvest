@@ -71,8 +71,8 @@ export interface SubscriptionRequest {
   requested_on: string
   status: string
   decision_reason: string | null
-  /** L'engagement né de cette demande. NULL tant qu'elle est en attente, et NULL pour
-   *  toujours si elle est refusée — c'est ce qui rend les deux lignes utiles séparément. */
+  /** The commitment born of this request. NULL while it is pending, and NULL for ever
+   *  if it is refused -- that is what makes the two rows useful separately. */
   subscription_id: string | null
 }
 
@@ -196,13 +196,13 @@ export interface Statement {
   decided_not_paid: Record<string, string>
 }
 
-// ── L'abonnement AU LOGICIEL ────────────────────────────────────────────────────────
-// ⚠️ À NE PAS CONFONDRE avec `SubscriptionRequest`, qui est l'engagement d'un investisseur
-// dans un fonds. Le métier a pris le mot « souscription » ; ce que le gestionnaire paie
-// pour utiliser le produit s'appelle donc « billing » d'un bout à l'autre du code.
+// ── The subscription TO THE SOFTWARE ────────────────────────────────────────────
+// ⚠️ NOT TO BE CONFUSED with `SubscriptionRequest`, which is an investor's commitment
+// in a fund. The business has taken the word « souscription » ; what the manager pays
+// to use the product is therefore called « billing » from one end of the code to the other.
 
 export interface BillingSubscription {
-  /** false = aucune console ne pilote cette instance. Ce n'est PAS « gratuit ». */
+  /** false = no console drives this instance. It is NOT « gratuit ». */
   managed: boolean
   plan_name: string | null
   monthly_price: number | null

@@ -10,23 +10,22 @@ import { useAuthStore } from '@/store/authStore'
 import { toast } from '@/store/toast'
 
 /**
- * Changer son mot de passe. Une SECTION du profil, plus un écran à part.
+ * Changing one's password. A SECTION of the profile, no longer a screen apart.
  *
- * 🔴 POURQUOI CE N'EST PLUS UNE PAGE. « Changer de mot de passe » répondait à une
- * question qu'on ne se pose presque jamais, et occupait la seule entrée de menu qui
- * répondait à « qui suis-je ». Un lecteur qui vient du Comptoir Immo cherche son profil,
- * et y trouve son mot de passe parmi le reste : c'est l'organisation de la maison.
+ * 🔴 WHY IT IS NO LONGER A PAGE. « Changer de mot de passe » answered a question one almost
+ * never asks, and took up the only menu entry that answered « qui suis-je ». A reader
+ * coming from Le Comptoir Immo looks for their profile, and finds their password there
+ * among the rest: that is the organisation of the house.
  *
- * 🔴 L'ÉCRAN QUI MANQUAIT, ET SON ABSENCE NE RESSEMBLAIT PAS À UNE PANNE.
- * `must_change_password` était posé à trois endroits — l'amorçage, la création d'un compte
- * par Alice, chaque réinitialisation — et fidèlement renvoyé à la connexion. Rien ne
- * permettait d'y répondre. Un contrôle qu'on ne peut pas satisfaire n'est pas un contrôle,
- * c'est un panneau.
+ * 🔴 THE SCREEN THAT WAS MISSING, AND ITS ABSENCE DID NOT LOOK LIKE A BREAKDOWN.
+ * `must_change_password` was set in three places -- the seeding, the creation of an account
+ * by Alice, every reset -- and faithfully returned at sign-in. Nothing allowed it to be
+ * answered. A check one cannot satisfy is not a check, it is a signpost.
  *
- * ⚠️ LE MOT DE PASSE ACTUEL EST DEMANDÉ MÊME QUAND LE CHANGEMENT EST IMPOSÉ. C'est
- * précisément là qu'on serait tenté de l'assouplir — « de toute façon il doit changer » —
- * et là que ça coûte : un jeton dérobé suffirait à s'approprier le compte définitivement,
- * la victime perdant l'accès que l'attaquant conserve.
+ * ⚠️ THE CURRENT PASSWORD IS ASKED FOR EVEN WHEN THE CHANGE IS FORCED. That is precisely
+ * where one would be tempted to soften it -- « de toute façon il doit changer » -- and
+ * where it costs: a stolen token would be enough to take over the account for good, the
+ * victim losing the access the attacker keeps.
  */
 export function PasswordSection() {
   const { t } = useTranslation()
@@ -58,8 +57,8 @@ export function PasswordSection() {
       await refreshMe()
       navigate('/', { replace: true })
     } catch (err) {
-      // En place, pas en toast : l'utilisateur regarde ce formulaire, et un message qui
-      // s'efface pendant qu'il ressaisit est un message qu'il ne lira pas.
+      // In place, not in a toast: the user is looking at this form, and a message that
+      // fades away while they type it again is a message they will not read.
       setError(errorMessage(err))
     } finally {
       setBusy(false)
@@ -71,8 +70,8 @@ export function PasswordSection() {
       <h2 className="mb-3 text-sm font-semibold text-gray-900">{t('password.title')}</h2>
       <div>
         <div className="mb-5">
-          {/* Le titre de l'encadré n'est PAS celui de la page : répété, il ne dit
-              rien et pousse le message utile plus bas. */}
+          {/* The title of the box is NOT that of the page: repeated, it says
+              nothing and pushes the useful message further down. */}
           <Notice
             tone={mustChange ? 'warn' : 'info'}
             title={mustChange ? t('password.mustTitle') : t('password.optionalTitle')}

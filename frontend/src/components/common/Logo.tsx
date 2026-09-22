@@ -21,7 +21,7 @@ export function LogoMark({ size = 28, className = '' }: { size?: number; classNa
       aria-label="Le Comptoir Invest"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Le carré navy du favicon : c'est lui qui fait reconnaître la famille. */}
+      {/* The navy square of the favicon: it is what makes the family recognisable. */}
       <rect width="64" height="64" rx="14" fill="#0D2F5C" />
       <path
         d="M41.5 22.8a13.2 13.2 0 0 0-9.4-3.8c-7.4 0-13.1 5.7-13.1 13s5.7 13 13.1 13c3.7 0 7-1.4 9.4-3.8"

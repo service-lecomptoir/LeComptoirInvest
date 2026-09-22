@@ -18,16 +18,16 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   /** Decorative content on the left (an icon). */
   leftIcon?: ReactNode
   containerClassName?: string
-  /** Ajoute l'oeil qui devoile le contenu. Reserve aux champs de mot de passe.
+  /** Adds the eye that reveals the content. Reserved for password fields.
    *
-   *  ⚠️ POURQUOI DANS LA PRIMITIVE ET PAS SUR UN ECRAN. Le produit compte quatre champs de
-   *  mot de passe (connexion, et les trois du changement). Poser l'oeil sur l'un d'eux
-   *  laisse les autres sans, et c'est toujours celui qu'on a oublie qui sert le jour ou
-   *  quelqu'un tape un mot de passe long au clavier d'un telephone.
+   *  ⚠️ WHY IN THE PRIMITIVE AND NOT ON A SCREEN. The product holds four password fields
+   *  (sign-in, and the three of the change). Putting the eye on one of them leaves the
+   *  others without, and it is always the forgotten one that serves the day somebody types
+   *  a long password on the keyboard of a telephone.
    *
-   *  ⚠️ L'ETAT PART TOUJOURS DE « MASQUE » et n'est jamais memorise : un champ qui se
-   *  rouvre devoile parce qu'on l'avait devoile la veille montre un mot de passe a qui
-   *  passe derriere l'ecran. */
+   *  ⚠️ THE STATE ALWAYS STARTS FROM « MASQUE » and is never memorised: a field that
+   *  reopens revealed because it had been revealed the day before shows a password to
+   *  whoever walks behind the screen. */
   revealable?: boolean
 }
 
@@ -67,8 +67,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       {showEye && (
         <button
           type="button"
-          // ⚠️ `tabIndex={-1}` : la tabulation doit mener du mot de passe au bouton qui
-          // valide, pas a un bouton d'affichage. On l'atteint a la souris, ou en revenant.
+          // ⚠️ `tabIndex={-1}`: the tab key must lead from the password to the button that
+          // submits, not to a display button. One reaches it with the mouse, or by
+          // coming back.
           tabIndex={-1}
           onClick={() => setRevealed((v) => !v)}
           aria-pressed={revealed}

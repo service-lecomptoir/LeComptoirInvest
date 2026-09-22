@@ -14,19 +14,20 @@ import { dayOf } from './day'
  */
 
 /**
- * 🔴 LA LANGUE ACTIVE, PAS `fr-FR` EN DUR. La première version documentait longuement qu'il
- * ne faut JAMAIS supposer la devise… en codant la locale en dur trois lignes plus bas. Vu à
- * l'écran le 18 août : l'interface passait entièrement en anglais et la date restait
- * « 18 août 2029 ». La devise reste portée par le montant ; la LANGUE vient du lecteur.
+ * 🔴 THE ACTIVE LANGUAGE, NOT `fr-FR` HARD-CODED. The first version documented at length
+ * that one must NEVER assume the currency... while hard-coding the locale three lines below.
+ * Seen on screen on 18 August: the interface went entirely English and the date stayed
+ * « 18 août 2029 ». The currency stays carried by the amount; the LANGUAGE comes from the
+ * reader.
  *
- * ⚠️ Lue à chaque appel et jamais mémorisée : un module qui capture la langue à l'import la
- * fige pour la session, et le sélecteur de langue ne change plus rien — le produit frère a
- * payé exactement cela.
+ * ⚠️ Read on every call and never memoised: a module that captures the language at import
+ * freezes it for the session, and the language selector no longer changes anything -- the
+ * sibling product paid exactly that price.
  */
 /**
- * ⚠️ LE TIRET CADRATIN EST INTERDIT DANS TOUT TEXTE VISIBLE, la marque de valeur vide
- * comprise. Elle en portait un, repete a six endroits : « c'est la marque de l'IA ». Un
- * trait d'union simple dit la meme chose, et le produit frere l'ecrit deja ainsi.
+ * ⚠️ THE EM DASH IS FORBIDDEN IN ANY VISIBLE TEXT, the empty-value mark included. It
+ * carried one, repeated in six places: « c'est la marque de l'IA ». A plain hyphen says the
+ * same thing, and the sibling product already writes it that way.
  */
 export const EMPTY = '-'
 
