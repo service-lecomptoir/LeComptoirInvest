@@ -56,7 +56,7 @@ _MANAGED_ROLES: tuple[str, ...] = FUND_WIDE_ROLES
 async def require_internal_key(
     x_internal_key: str | None = Header(default=None),
 ) -> None:
-    """🔴 `async`, ET CE N'EST PAS COSMETIQUE.
+    """🔴 `async`, AND THAT IS NOT COSMETIC.
 
     A synchronous dependency is run by FastAPI in a THREADPOOL, whose context is not the
     endpoint's. The ContextVar this function sets to open the cross-firm exception would

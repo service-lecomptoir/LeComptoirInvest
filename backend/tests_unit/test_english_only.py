@@ -68,13 +68,23 @@ FRENCH_WORDS = {
 # them is French. This is what keeps the guard quiet enough to survive.
 MIN_MARKERS = 2
 
-_QUOTED = re.compile(r"«[^»]*»|\"[^\"]*\"|“[^”]*”|'[^']{4,}'")
+# 🔴 THE FRENCH QUOTES ARE TAKEN OUT FIRST, ON THEIR OWN PASS, and the apostrophe form
+# never crosses a line break. Both rules were paid for on 21 Sept 2026: an English
+# possessive apostrophe ("the agency's name") paired with the apostrophe of a French
+# `c'est` INSIDE a « » quote, the pair swallowed the opening «, and the rest of the
+# quotation was read as unquoted French. A block was refused for words the guard's own
+# rule says are allowed, and -- worse the other way round -- such a pair can also swallow
+# French that is NOT quoted. One alternation cannot do both jobs: position wins over
+# alternation order in a regular expression, so the « » form has to run first. The double
+# quotes still span lines: a quoted message wrapped over two lines is ordinary prose.
+_FRENCH_QUOTED = re.compile(r"«[^»]*»|“[^”]*”")
+_QUOTED = re.compile(r'"[^"]*"' + r"|'[^'\n]{4,}'")
 _WORD = re.compile(r"[a-zà-ÿ]+", re.IGNORECASE)
 
 
 def _is_french(text: str) -> bool:
     """Does this READ as French, once every quotation is taken out?"""
-    stripped = _QUOTED.sub(" ", text)
+    stripped = _QUOTED.sub(" ", _FRENCH_QUOTED.sub(" ", text))
     found = {w.lower() for w in _WORD.findall(stripped) if w.lower() in FRENCH_WORDS}
     return len(found) >= MIN_MARKERS
 
