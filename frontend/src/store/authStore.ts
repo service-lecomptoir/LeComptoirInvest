@@ -65,16 +65,26 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ ...CLEARED, isInitializing: false })
       return
     }
-    try {
-      await useAuthStore.getState().refreshMe()
-    } catch {
-      // Expired token or disabled account: we start again from a clean state rather
-      // than drawing a half-authorised application.
-      localStorage.removeItem(TOKEN_KEY)
-      set({ ...CLEARED })
-    } finally {
-      set({ isInitializing: false })
+    // 🔴 ONLY A REFUSAL SIGNS OUT, NEVER A SILENCE. The first version dropped the token on
+    // ANY failure of `/auth/me`: a page reloaded while the API restarted (every
+    // deployment, twenty seconds) sent the holder back to the sign-in page, token gone
+    // (found in the sister product Compta, 27 Sept 2026). A 401 is the server saying
+    // « this session is over »; a network error or a 5xx says nothing about the session,
+    // so it is asked again, a few times.
+    for (let attempt = 0; attempt < 8; attempt++) {
+      try {
+        await useAuthStore.getState().refreshMe()
+        set({ isInitializing: false })
+        return
+      } catch (error: any) {
+        if (error?.response?.status === 401 || error?.response?.status === 403) break
+        await new Promise((resolve) => window.setTimeout(resolve, 2500))
+      }
     }
+    // Expired token or disabled account: start from a clean state rather than draw a
+    // half-authorised application.
+    localStorage.removeItem(TOKEN_KEY)
+    set({ ...CLEARED, isInitializing: false })
   },
 
   login: async (email, password) => {
