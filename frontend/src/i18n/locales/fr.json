@@ -598,5 +598,83 @@
     "role": "Rôle",
     "notSet": "Non renseigné",
     "managedByConsole": "Ces informations sont tenues par la console d'administration : elles se modifient là-bas, pour que la facture et cet écran ne puissent pas dire deux choses différentes."
+  },
+  "guide": {
+    "title": "Guide",
+    "intro": "Ce que fait chaque écran du Comptoir Invest, et les gestes pour s'en servir.",
+    "gestures": "Les gestes",
+    "help": "Chaque champ porte une aide juste en dessous : elle dit ce qu'il attend.",
+    "sections": {
+      "fund": "Le fonds",
+      "investors": "Les investisseurs",
+      "mySpace": "Mon espace",
+      "account": "Votre compte"
+    },
+    "cards": {
+      "dashboard": {
+        "what": "La position du fonds par devise : trésorerie, dette envers les prêteurs, ce qui est distribuable, et l'argent reçu qui attend d'être imputé.",
+        "how": "Commencez par importer un relevé depuis la trésorerie : tout le reste en découle. Touchez un projet ou la pile d'argent non identifié pour l'ouvrir."
+      },
+      "projects": {
+        "what": "Les projets dans lesquels le fonds déploie l'argent reçu, avec ce qui en est revenu et leur multiple.",
+        "how": "Créez un projet, déployez l'argent en désignant le virement sortant, enregistrez un retour en séparant capital et produit, valorisez-le et changez son état."
+      },
+      "funds": {
+        "what": "Les véhicules d'investissement : chacun porte ses projets, ses souscripteurs, ses conditions et son compte bancaire.",
+        "how": "Ouvrez un véhicule avec sa devise et son compte, renseignez ses conditions (rendement préférentiel, intéressement, frais de gestion) et faites évoluer son statut, de la levée à la clôture."
+      },
+      "distributions": {
+        "what": "La répartition de ce que le fonds reverse : les prêteurs d'abord, puis les souscripteurs au prorata de leur capital au travail.",
+        "how": "Indiquez le montant, la date et la nature, calculez la cascade, puis enregistrez la décision. La distribution est payée quand vous y attachez le virement sortant."
+      },
+      "performance": {
+        "what": "Ce qui est revenu aux investisseurs à une date donnée : capital versé, déjà distribué, valeur résiduelle et taux de rendement.",
+        "how": "Choisissez la date d'arrêté. Une mesure incomplète le dit, plutôt que d'afficher un chiffre faux."
+      },
+      "treasury": {
+        "what": "Les lignes du relevé bancaire, ce qu'elles sont probablement, et ce que vous déclarez qu'elles sont. Les appels de fonds s'y émettent aussi.",
+        "how": "Importez le relevé (CAMT.053). Imputez chaque virement reçu sur une souscription : la règle propose, vous décidez. Émettez un appel de fonds pour demander à un investisseur une part de son engagement."
+      },
+      "lateCalls": {
+        "what": "Les appels de fonds en retard à une date donnée : ce qui manque, les intérêts de retard et la relance due.",
+        "how": "Écrivez le premier avis ou la relance, relisez-la dans la langue de l'investisseur, puis envoyez-la."
+      },
+      "investors": {
+        "what": "Le registre des investisseurs : qui a le droit de placer de l'argent ici, sur quelle vérification, et dans quelle catégorie.",
+        "how": "Ajoutez un investisseur, personne physique ou morale, avec ses coordonnées bancaires. Enregistrez la vérification de son dossier et son éligibilité : un dossier qui n'est pas accepté bloque tout engagement."
+      },
+      "subscriptions": {
+        "what": "Les demandes de souscription venues du portail des investisseurs, et ce que le fonds en a fait.",
+        "how": "Acceptez une demande pour créer l'engagement, ou refusez-la en donnant un motif. Un prêt accepté peut ensuite être converti en souscription."
+      },
+      "portfolio": {
+        "what": "Ce que vous détenez dans le fonds : engagé, versé, capital au travail, produits reçus et reste à verser.",
+        "how": "Suivez l'état de votre dossier. Une fois accepté, demandez à souscrire : c'est une intention, rien n'est prélevé."
+      },
+      "capitalCalls": {
+        "what": "Ce que le fonds vous demande de verser, avec la référence à citer dans votre virement.",
+        "how": "Citez la référence dans le libellé du virement, ou scannez le code avec votre application bancaire pour un virement prérempli en euros."
+      },
+      "myDistributions": {
+        "what": "Ce que le fonds vous a reversé, séparé entre votre capital et ce que vous avez gagné.",
+        "how": "Parcourez vos versements, votre capital et vos produits comptés à part."
+      },
+      "statement": {
+        "what": "Le relevé de l'année : ce qui vous a été payé, sous la forme dont une déclaration a besoin.",
+        "how": "Choisissez l'année et téléchargez le relevé. Le capital remboursé n'est pas un revenu."
+      },
+      "theProjects": {
+        "what": "Les projets du fonds, leur état et ce qu'ils ont rendu.",
+        "how": "Consultez les projets dans lesquels votre argent est placé."
+      },
+      "profile": {
+        "what": "Votre compte : l'adresse e-mail, le rôle et l'espace de travail.",
+        "how": "Changez votre mot de passe ici. Le nom et l'adresse se modifient dans la console d'administration."
+      },
+      "billing": {
+        "what": "L'abonnement au Comptoir Invest : l'offre en cours, les moyens de paiement et les factures.",
+        "how": "Payez par carte ou par prélèvement, ou déclarez un virement. Changez d'offre et téléchargez vos factures en PDF."
+      }
+    }
   }
 }

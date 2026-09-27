@@ -18,6 +18,7 @@ import Billing from '@/pages/Billing'
 import Performance from '@/pages/Performance'
 import LateCalls from '@/pages/LateCalls'
 import Funds from '@/pages/Funds'
+import Guide from '@/pages/Guide'
 
 /* eslint-disable react-refresh/only-export-components -- this file IS the route
    table: it exports `router` beside the four guard components that only make
@@ -89,6 +90,8 @@ export const router = createBrowserRouter([
         children: [
           { path: '/', element: <Home /> },
           { path: PROFILE_ROUTE, element: <MyProfile /> },
+          // What each screen is for, a card per screen. Every account reads it.
+          { path: '/guide', element: <Guide /> },
           { path: '/projects', element: <Projects /> },
           { path: '/treasury', element: <FundOnly><Treasury /></FundOnly> },
           { path: '/distributions', element: <FundOnly><Distributions /></FundOnly> },

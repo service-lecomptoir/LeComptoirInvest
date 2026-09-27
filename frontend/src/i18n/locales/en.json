@@ -598,5 +598,83 @@
     "role": "Role",
     "notSet": "Not set",
     "managedByConsole": "These details are held by the administration console: they are changed there, so that the invoice and this screen cannot say two different things."
+  },
+  "guide": {
+    "title": "Guide",
+    "intro": "What each screen of Le Comptoir Invest does, and how to use it.",
+    "gestures": "How to use it",
+    "help": "Every field has a short help right under it: it says what the field expects.",
+    "sections": {
+      "fund": "The fund",
+      "investors": "The investors",
+      "mySpace": "My space",
+      "account": "Your account"
+    },
+    "cards": {
+      "dashboard": {
+        "what": "The fund's position by currency: cash, debt owed to lenders, what can be distributed, and money received that waits to be allocated.",
+        "how": "Start by importing a statement from the treasury: everything else follows. Tap a project or the pile of unidentified money to open it."
+      },
+      "projects": {
+        "what": "The projects the fund deploys the money it received into, with what came back and their multiple.",
+        "how": "Create a project, deploy money by naming the outgoing transfer, record a return with capital and income apart, value it and change its status."
+      },
+      "funds": {
+        "what": "The investment vehicles: each carries its projects, its subscribers, its terms and its bank account.",
+        "how": "Open a vehicle with its currency and its account, fill in its terms (preferred return, carried interest, management fee) and move its status from raising to closed."
+      },
+      "distributions": {
+        "what": "How what the fund pays out is split: lenders first, then subscribers pro rata to their capital at work.",
+        "how": "Enter the amount, the date and the nature, compute the waterfall, then record the decision. The distribution is paid when you attach the outgoing transfer to it."
+      },
+      "performance": {
+        "what": "What came back to investors on a given date: capital paid in, already distributed, residual value and rate of return.",
+        "how": "Choose the valuation date. An incomplete measure says so, rather than showing a wrong figure."
+      },
+      "treasury": {
+        "what": "The lines of the bank statement, what they probably are, and what you declare they are. Capital calls are issued here too.",
+        "how": "Import the statement (CAMT.053). Allocate each incoming transfer to a subscription: the rule proposes, you decide. Issue a capital call to ask an investor for part of their commitment."
+      },
+      "lateCalls": {
+        "what": "The capital calls overdue on a given date: what is missing, late interest and the reminder due.",
+        "how": "Write the first notice or the reminder, review it in the investor's language, then send it."
+      },
+      "investors": {
+        "what": "The investor register: who may invest here, on what verification, and in which category.",
+        "how": "Add an investor, a person or a company, with their bank details. Record the verification of their file and their eligibility: a file that is not accepted blocks any commitment."
+      },
+      "subscriptions": {
+        "what": "The subscription requests from the investors' portal, and what the fund did with them.",
+        "how": "Accept a request to create the commitment, or refuse it with a reason. An accepted loan can later be converted into a subscription."
+      },
+      "portfolio": {
+        "what": "What you hold in the fund: committed, paid in, capital at work, income received and still to pay.",
+        "how": "Follow the status of your file. Once it is accepted, ask to subscribe: it is an intention, nothing is debited."
+      },
+      "capitalCalls": {
+        "what": "What the fund asks you to pay in, with the reference to quote in your transfer.",
+        "how": "Quote the reference in the transfer's wording, or scan the code with your banking app for a prefilled transfer in euros."
+      },
+      "myDistributions": {
+        "what": "What the fund paid back to you, split between your capital and what you earned.",
+        "how": "Browse your payments, with your capital and your income counted apart."
+      },
+      "statement": {
+        "what": "The yearly statement: what you were paid, in the shape a tax return needs.",
+        "how": "Choose the year and download the statement. Repaid capital is not income."
+      },
+      "theProjects": {
+        "what": "The fund's projects, their status and what they returned.",
+        "how": "Look at the projects your money is invested in."
+      },
+      "profile": {
+        "what": "Your account: e-mail address, role and workspace.",
+        "how": "Change your password here. The name and the address are changed in the administration console."
+      },
+      "billing": {
+        "what": "The subscription to Le Comptoir Invest: the current plan, the payment methods and the invoices.",
+        "how": "Pay by card or direct debit, or declare a bank transfer. Change plan and download your invoices as PDF."
+      }
+    }
   }
 }

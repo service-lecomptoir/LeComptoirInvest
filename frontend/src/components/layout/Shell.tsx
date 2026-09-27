@@ -148,6 +148,7 @@ const OFF_MENU_TITLES: Record<string, string> = {
   // reported it the second the line left `FUND_NAV`: that is exactly what it
   // exists to catch, a screen still served whose tab falls back on the brand.
   '/billing': 'nav.billing',
+  '/guide': 'guide.title',
 }
 
 /** Path -> catalogue key, built from the menu itself.
