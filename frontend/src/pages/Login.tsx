@@ -5,6 +5,7 @@ import { Button, Input } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { errorMessage } from '@/api/client'
 import { useAuthStore } from '@/store/authStore'
+import { LogoMark } from '@/components/common/Logo'
 
 export default function Login() {
   const { t, i18n } = useTranslation()
@@ -46,9 +47,7 @@ export default function Login() {
           is a table: a fund console earns trust by being legible, not by being styled. */}
       <div className="hidden lg:flex flex-col justify-between bg-brand-navy p-10 text-white">
         <div className="flex items-center gap-2.5">
-          <span className="grid place-items-center w-8 h-8 rounded-md bg-brand-teal text-white text-sm font-bold">
-            C
-          </span>
+          <LogoMark size={32} className="shrink-0 rounded-md ring-1 ring-white/25" />
           <span className="text-base font-semibold tracking-tight">
             {t('brand.first')} <span className="text-brand-teal">{t('brand.second')}</span>
           </span>
@@ -64,9 +63,7 @@ export default function Login() {
         <form onSubmit={submit} className="w-full max-w-sm">
           <div className="flex items-center justify-between mb-8">
             <div className="lg:hidden flex items-center gap-2.5">
-              <span className="grid place-items-center w-8 h-8 rounded-md bg-brand-navy text-white text-sm font-bold">
-                C
-              </span>
+              <LogoMark size={32} className="shrink-0 rounded-md" />
               <span className="text-base font-semibold text-brand-navy tracking-tight">
                 {t('brand.name')}
               </span>
