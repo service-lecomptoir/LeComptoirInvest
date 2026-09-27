@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     SMTP_FROM_NAME: str = "Le Comptoir Invest"
     SMTP_TLS: bool = True
 
+    #: How many days a line of the audit journal is kept, as in every sibling product
+    #: (the manager, 27 Sept 2026). Purged once a day by `services/audit_retention.py`;
+    #: `0` keeps everything. Only the journal: never the business data.
+    AUDIT_RETENTION_DAYS: int = 90
+
     #: Alice, the SaaS console that owns manager accounts. Same contract as the sister
     #: products: a manager is never minted here.
     ALICE_URL: str = ""

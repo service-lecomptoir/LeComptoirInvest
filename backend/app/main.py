@@ -50,7 +50,20 @@ async def lifespan(app: FastAPI):
             except Exception:  # noqa: BLE001
                 logger.exception("The first manager could not be bootstrapped")
 
-    yield
+    # The audit journal's retention, in process. ⚠️ Two workers each start one; the
+    # advisory lock in `services/audit_retention.py` makes the second a no-op.
+    sweeper = None
+    if settings.AUDIT_RETENTION_DAYS > 0:
+        import asyncio
+
+        from app.services.audit_retention import run_forever
+
+        sweeper = asyncio.create_task(run_forever())
+    try:
+        yield
+    finally:
+        if sweeper is not None:
+            sweeper.cancel()
 
 
 app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
