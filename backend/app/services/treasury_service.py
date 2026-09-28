@@ -56,13 +56,20 @@ async def propose_for(db: AsyncSession, movement: BankMovement) -> Proposal:
     """What this statement line probably is. A proposal, never an attribution."""
     from app.core import crypto
 
+    candidates = await _candidates(db)
+    # ⚠️ EVERY FINGERPRINT THE PAYER MAY BE STORED UNDER, not only the current one: between
+    # a new data key being put first and the re-encryption pass rewriting the stored
+    # fingerprints, a transfer imported must still be recognised. The current form wins.
+    known = {c.iban_fingerprint for c in candidates if c.iban_fingerprint}
+    forms = crypto.fingerprints(movement.counterparty_iban)
+    payer = next((fp for fp in forms if fp in known), forms[0] if forms else None)
     return propose(
         received_on_iban=movement.account_iban,
         label=movement.label,
         payer_name=movement.counterparty_name,
-        payer_iban_fingerprint=crypto.fingerprint(movement.counterparty_iban),
+        payer_iban_fingerprint=payer,
         amount=movement.amount,
-        candidates=await _candidates(db),
+        candidates=candidates,
     )
 
 

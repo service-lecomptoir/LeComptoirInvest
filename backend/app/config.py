@@ -1,7 +1,8 @@
 """Application settings.
 
-⚠️ NO DEFAULT FOR `SECRET_KEY`. It derives the key that encrypts investors' bank details,
-so a fallback value would mean every deployment that forgot to set one shares the same
+⚠️ NO DEFAULT FOR `SECRET_KEY`. It signs the session tokens and, until the data key is made
+explicit in `DATA_ENCRYPTION_KEYS`, derives the key that encrypts investors' bank details:
+a fallback value would mean every deployment that forgot to set one shares the same
 encryption key — which is the same as having none, while looking encrypted.
 """
 
@@ -20,9 +21,18 @@ class Settings(BaseSettings):
     #: Async URL (asyncpg). Alembic derives its own sync URL from this one.
     DATABASE_URL: str = "postgresql+asyncpg://invest_user:devpassword123@localhost:5432/lecomptoirinvest"
 
-    #: Signs tokens AND derives the encryption key of the bank details. Required.
+    #: Signs the session tokens. Required. While `DATA_ENCRYPTION_KEYS` is empty it ALSO
+    #: derives the key of the bank details, exactly as it always did.
     SECRET_KEY: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 720
+
+    #: 🔴 THE KEYS OF THE BANK DETAILS, APART FROM THE SESSION SECRET. Comma-separated
+    #: Fernet keys: the FIRST encrypts, EVERY one is tried to decrypt (`core/crypto.py`).
+    #: Empty: the one key derived from `SECRET_KEY`, byte for byte as before, so an
+    #: installation that never set it reads its data unchanged. Once set, rotating
+    #: `SECRET_KEY` no longer touches the data. Rotated with `docs/rotation_cle_donnees.ps1`
+    #: and `python -m app.services.reencrypt`, never edited by hand without that pass.
+    DATA_ENCRYPTION_KEYS: str = ""
 
     #: The fund's own accounts, one per currency it holds. Statement imports check that the
     #: file they were handed belongs to one of them: importing another entity's statement

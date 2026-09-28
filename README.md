@@ -84,7 +84,8 @@ Et un prêt dont le montant dû n'est pas calculable **bloque tout** : sans rép
 | `app/core/accrual.py` | **ce qu'un prêteur est dû**, en jours, sur une convention nommée ; ce qui n'est pas calculable est refusé avec un motif ; une répartition qui ne perd pas un centime |
 | `app/core/kyc.py` | les quatre états, le verdict qui **bloque l'argent**, la péremption d'une acceptation |
 | `app/core/money.py` | `Money` indissociable de sa devise, l'arithmétique qui **refuse** de mélanger |
-| `app/core/crypto.py` | chiffrement des IBAN, et l'**empreinte salée** qui permet de rapprocher sans déchiffrer |
+| `app/core/crypto.py` | chiffrement des IBAN par un **trousseau de clés** (`DATA_ENCRYPTION_KEYS`), et l'**empreinte salée** qui permet de rapprocher sans déchiffrer |
+| `app/services/reencrypt.py` | le **rechiffrement** de chaque IBAN sur la clé courante, avec aperçu et preuve (voir « Rotation de la clé des données ») |
 | `app/core/references.py` | la référence que l'investisseur recopie : alphabet sans ambiguïté, caractère de contrôle, QR EPC |
 | `app/core/matching.py` | **à qui appartient ce virement** : quatre indices par ordre de ce qu'ils prouvent, et le refus de deviner |
 | `app/services/distribution_service.py` | **la cascade et sa garde**, portée par véhicule |
@@ -235,6 +236,49 @@ sur une autre. `INVEST_TEST_DB` permet de passer outre, sciemment.
 ⚠️ `SECRET_KEY` n'a **aucune valeur par défaut**. Un repli donnerait à tout déploiement qui
 l'oublie la même clé de chiffrement, c'est-à-dire aucun chiffrement avec l'apparence du
 contraire.
+
+## 🔑 Rotation de la clé des données
+
+**Ce qui est chiffré** : l'IBAN de chaque investisseur (`investors.iban_encrypted`, Fernet),
+et son **empreinte** (`investors.iban_fingerprint`), un HMAC-SHA256 qui permet de
+reconnaître un virement sans rien déchiffrer. Le journal d'audit ne garde de ces colonnes
+que `***`.
+
+**La clé** est un **trousseau** : `DATA_ENCRYPTION_KEYS`, des clés Fernet séparées par des
+virgules. **La première chiffre, toutes déchiffrent.** Tant que la variable est vide, le
+trousseau est exactement l'ancienne clé, **dérivée de `SECRET_KEY`** (SHA-256), et
+l'empreinte est l'ancien hachage salé par `SECRET_KEY` : un déploiement ne change rien.
+
+🔴 **Tant que la clé n'est pas explicite, changer `SECRET_KEY` rend tous les IBAN
+illisibles.** La première chose à faire est donc l'étape « Expliciter » ci-dessous ; après
+elle, `SECRET_KEY` ne signe plus que les sessions et se change sans toucher aux données.
+
+Tout se fait avec **un seul script**, `docs/rotation_cle_donnees.ps1`, lancé depuis
+PowerShell sur le poste qui a l'accès `ssh lecomptoir-vps`. Il n'affiche jamais une clé ni
+un IBAN : seulement des comptes et des empreintes courtes de 8 caractères qui désignent une
+clé sans la révéler. Il s'arrête à la première erreur.
+
+| Étape | Commande | Ce qu'elle fait |
+|---|---|---|
+| 0. Regarder | `.\docs\rotation_cle_donnees.ps1 -Produit invest -Apercu` | l'état du trousseau (fichier et conteneur), puis combien de valeurs sont sur la clé courante, à rechiffrer, illisibles. **N'écrit rien.** |
+| 1. Expliciter (une fois) | `.\docs\rotation_cle_donnees.ps1 -Produit invest -Expliciter` | sauvegarde de la base, copie datée de `.env.prod`, écrit la clé **dérivée d'aujourd'hui** comme clé explicite (les valeurs n'en changent pas), recrée `invest_backend`, recalcule les empreintes, preuve. Rejouable : la 2e fois dit « DEJA FAIT ». |
+| 2. Tourner | `.\docs\rotation_cle_donnees.ps1 -Produit invest` | sauvegarde, copie de `.env.prod`, **nouvelle clé en tête**, l'ancienne en second, recrée le conteneur, vérifie qu'il lit ce trousseau, aperçu, rechiffrement, **preuve**. |
+| 3. Retirer l'ancienne | `.\docs\rotation_cle_donnees.ps1 -Produit invest -RetirerAnciennes` | seulement si **tout** s'ouvre avec la clé courante seule ; ne garde qu'elle, recrée, revérifie, et remet l'ancien trousseau si une seule valeur ne s'ouvrait plus. |
+| Reprise | `.\docs\rotation_cle_donnees.ps1 -Produit invest -Rechiffrer` | relance le rechiffrement sans changer de clé (après une coupure, par exemple). |
+
+**La preuve** (`python -m app.services.reencrypt`, dans le conteneur) : chaque IBAN s'ouvre
+avec la clé courante **seule**, les comptes avant et après sont égaux, chacun se déchiffre
+**à l'identique** (comparé par empreinte en mémoire), chaque empreinte est à jour, et le
+journal ne garde aucune copie chiffrée. Le passage laisse une ligne
+`encryption.reencrypt` dans le journal d'audit (comptes, durée, clé courante désignée par
+son empreinte courte). `--apercu` compte sans écrire ; `--verifier` répond 0 seulement si
+tout est déjà sur la clé courante seule. Une valeur qu'aucune clé n'ouvre arrête tout
+**avant la première écriture**, en donnant l'identifiant de la ligne.
+
+⚠️ **Les sauvegardes faites avant une rotation ne s'ouvrent qu'avec l'ancienne clé.** Elle
+reste dans la copie datée `backend/.env.prod.avant-cle-AAAAMMJJ-HHMMSS` (chmod 600) : la
+garder tant que ces sauvegardes existent. Les sauvegardes du script vont dans
+`~/backups/rotation-cle/`.
 
 ## ⚠️ Le cadre réglementaire décide de colonnes, pas seulement de droit
 

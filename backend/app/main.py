@@ -22,9 +22,14 @@ async def lifespan(app: FastAPI):
     # schema is applied by the deployment, which fails loudly when it cannot.
     if not settings.SECRET_KEY:
         raise RuntimeError(
-            "SECRET_KEY is not set: it derives the key that encrypts investors' bank "
-            "details. Refusing to start rather than write them in clear."
+            "SECRET_KEY is not set: it signs the sessions and, until DATA_ENCRYPTION_KEYS "
+            "is set, derives the key of investors' bank details. Refusing to start."
         )
+    # The keyring is read NOW: a malformed `DATA_ENCRYPTION_KEYS` stops the start, rather
+    # than surfacing on the first IBAN read as « no bank details ».
+    from app.core import crypto
+
+    crypto.keyring()
 
     # The first account, and only when nobody can administer yet. A failure here must not
     # stop the API: a fund that cannot be signed into is bad, a fund that will not start is
