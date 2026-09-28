@@ -81,7 +81,7 @@ export function Select({
         onKeyDown={onKeyDown}
         className={clsx(className, 'text-left flex items-center justify-between gap-2', disabled && 'opacity-60 cursor-not-allowed')}
       >
-        <span className={clsx('truncate', !current && 'text-gray-400')}>
+        <span className={clsx('min-w-0 truncate', !current && 'text-gray-400')}>
           {current ? current.label : placeholder}
         </span>
         <ChevronDown size={16} className="shrink-0 text-gray-400" />

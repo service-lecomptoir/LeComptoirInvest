@@ -18,13 +18,10 @@ this door.
 
 from __future__ import annotations
 
-import time
-from collections import deque
-
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
-from app.core import audit
 from app.core.i18n import pick
+from app.core.visitor_window import VisitorWindow
 from app.services import alice_client
 
 router = APIRouter(prefix="/public/lookups", tags=["public"])
@@ -34,27 +31,13 @@ _FRANCE_ONLY = [{"code": "FR", "name": "France", "number_label": "SIREN / SIRET"
 
 #: A form types letter after letter: generous, but a robot is still stopped.
 LOOKUPS_PER_MINUTE = 60
-_WINDOW_SECONDS = 60.0
-#: Beyond this many addresses held, the idle ones are forgotten: the table of a public
-#: route must not grow with every address that ever called it.
-_MAX_TRACKED = 4096
-_recent: dict[str, deque[float]] = {}
+_window = VisitorWindow(LOOKUPS_PER_MINUTE)
 
 
 def _limited(request: Request) -> None:
     # The edge proxy's hop, not the socket: behind it every caller shares one peer, and a
     # per-socket window would throttle the whole internet as one visitor.
-    who = audit.client_address(request)
-    now = time.monotonic()
-    if len(_recent) > _MAX_TRACKED:
-        for idle in [
-            k for k, w in _recent.items() if not w or now - w[-1] > _WINDOW_SECONDS
-        ]:
-            del _recent[idle]
-    window = _recent.setdefault(who, deque())
-    while window and now - window[0] > _WINDOW_SECONDS:
-        window.popleft()
-    if len(window) >= LOOKUPS_PER_MINUTE:
+    if not _window.admit(request):
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,
             pick(
@@ -62,7 +45,6 @@ def _limited(request: Request) -> None:
                 "Too many searches: please wait a moment.",
             ),
         )
-    window.append(now)
 
 
 @router.get("/countries", dependencies=[Depends(_limited)])

@@ -237,8 +237,8 @@ export default function Billing() {
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  {current?.fund_limit != null && (
-                    <Pill tone="info">{t('billing.fundLimit', { count: current.fund_limit })}</Pill>
+                  {current?.investor_limit != null && (
+                    <Pill tone="info">{t('billing.investorLimit', { count: current.investor_limit })}</Pill>
                   )}
                   {status?.has_subscription ? (
                     <Badge variant="green">{t('billing.active')}</Badge>
@@ -374,8 +374,8 @@ export default function Billing() {
                       </p>
                       <p className="mt-1 text-sm text-gray-600 flex-1">
                         {plan.managed_limit != null
-                          ? t('billing.fundLimit', { count: plan.managed_limit })
-                          : t('billing.unlimitedFunds')}
+                          ? t('billing.investorLimit', { count: plan.managed_limit })
+                          : t('billing.unlimitedInvestors')}
                       </p>
                       {!isCurrent && (
                         <Button

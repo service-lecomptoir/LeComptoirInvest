@@ -27,12 +27,12 @@ INBOUND = "cle-entrante-de-test"
 
 @pytest.fixture
 async def client():
-    lookups._recent.clear()
+    lookups._window.clear()
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://invest.test"
     ) as c:
         yield c
-    lookups._recent.clear()
+    lookups._window.clear()
 
 
 @pytest.fixture

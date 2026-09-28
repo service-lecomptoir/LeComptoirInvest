@@ -18,6 +18,9 @@ export const apiClient = axios.create({
 
 export const TOKEN_KEY = 'lecomptoirinvest-token'
 
+/** The pages open without an account: an expired session never redirects away from them. */
+const PUBLIC_DOORS = ['/login', '/pricing']
+
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEY)
   if (token) config.headers.Authorization = `Bearer ${token}`
@@ -59,7 +62,9 @@ apiClient.interceptors.response.use(
     const isRead = method === 'get' || method === 'head'
     if (error?.response?.status === 401) {
       localStorage.removeItem(TOKEN_KEY)
-      if (!window.location.pathname.startsWith('/login')) {
+      // ⚠️ NOT FROM A PUBLIC DOOR: a visitor on the pricing page holding a stale token
+      // would be thrown to the sign-in while reading the prices.
+      if (!PUBLIC_DOORS.some((door) => window.location.pathname.startsWith(door))) {
         window.location.href = '/login'
       }
       return Promise.reject(error)

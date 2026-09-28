@@ -199,6 +199,77 @@ async def lookup(path: str, params: dict[str, str], fallback: Any) -> Any:
     return data if isinstance(data, type(fallback)) else fallback
 
 
+#: 🔴 WRITTEN OUT IN FULL, NOT ASSEMBLED. These paths are a contract with ANOTHER
+#: repository, the same one every sibling product calls; the product code travels as a
+#: parameter the console REQUIRES (it used to default to Immo and published Immo's prices).
+_PLANS_PATH = "/api/v1/internal/plans"
+_LEADS_PATH = "/api/v1/internal/leads"
+PRODUCT = "invest"
+
+
+class SignupRefused(ValueError):
+    """The console refused a sign-up and said why, in one sentence the person can act on."""
+
+
+async def public_plans() -> list[dict]:
+    """The plans the console sells for THIS product, as its catalogue lists them.
+
+    ⚠️ FAIL-SOFT: an empty list when the console is silent, unconfigured or answers
+    something that is not a list. The pricing page then says so and still offers the form.
+    """
+    try:
+        data = await _call("GET", _PLANS_PATH, params={"product": PRODUCT})
+    except ValueError:
+        return []
+    return data if isinstance(data, list) else []
+
+
+def _lead_unavailable() -> str:
+    return pick(
+        "Nous n'avons pas pu enregistrer votre demande. Réessayez dans un instant, ou "
+        "écrivez-nous à contact@lecomptoir.services.",
+        "We could not record your request. Try again in a moment, or write to us at "
+        "contact@lecomptoir.services.",
+    )
+
+
+async def file_lead(payload: dict) -> dict:
+    """Hand a sign-up to the console and return what it answered.
+
+    🔴 NEVER FAIL-SOFT, and that is the one difference with every read above: a request
+    swallowed in silence sends the prospect waiting for an answer that will never come.
+    Raises `SignupRefused` with the console's sentence on a 422 (« Indiquez votre prénom
+    et votre nom. »), `AliceUnavailable` on any other failure.
+    """
+    target = _target()
+    if target is None:
+        raise AliceUnavailable(_lead_unavailable())
+    base, headers = target
+    try:
+        async with httpx.AsyncClient(timeout=_ACTION_TIMEOUT) as client:
+            resp = await client.post(
+                f"{base}{_LEADS_PATH}", headers=headers, json=payload
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Alice POST %s injoignable : %s", _LEADS_PATH, exc)
+        raise AliceUnavailable(_lead_unavailable()) from None
+    if resp.status_code >= 400:
+        detail = None
+        try:
+            detail = resp.json().get("detail")
+        except Exception:  # noqa: BLE001
+            pass
+        if resp.status_code == 422 and isinstance(detail, str) and detail.strip():
+            raise SignupRefused(detail.strip())
+        logger.warning("Alice POST %s -> %s", _LEADS_PATH, resp.status_code)
+        raise AliceUnavailable(_lead_unavailable())
+    try:
+        said = resp.json() if resp.content else {}
+    except ValueError:
+        said = {}
+    return said if isinstance(said, dict) else {}
+
+
 async def invoices(user_id: UUID) -> list[dict]:
     data = await _call("GET", f"/api/v1/internal/invoices/{user_id}")
     return data if isinstance(data, list) else []

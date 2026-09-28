@@ -62,6 +62,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           className,
         )}
         aria-invalid={!!error}
+        // ⚠️ THE ASTERISK AND THE RULE TOGETHER: `required` drew the star beside the label
+        // and never reached the box, so a form marked « required » sent an empty field.
+        required={required}
         {...rest}
       />
       {showEye && (

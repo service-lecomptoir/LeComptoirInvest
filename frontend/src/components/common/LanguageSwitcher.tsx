@@ -72,12 +72,13 @@ export function LanguageSwitcher({ dark = false }: { dark?: boolean }) {
             title={l.label}
             className={clsx(
               'flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors',
-              active
-                ? 'bg-brand-navy text-white shadow-sm'
-                : dark
-                  ? 'text-white/60 hover:text-white hover:bg-white/10'
-                  : 'text-gray-500 hover:text-gray-800 hover:bg-white',
-              active && dark && 'bg-white text-brand-navy',
+              // ⚠️ ONE CLASS PER STATE, never two stacked: the active dark button carried
+              // both `text-white` and `text-brand-navy`, the stylesheet's order picked white,
+              // and the code vanished on its white pill (seen on the pricing page's header).
+              active && dark && 'bg-white text-brand-navy shadow-sm',
+              active && !dark && 'bg-brand-navy text-white shadow-sm',
+              !active && dark && 'text-white/60 hover:text-white hover:bg-white/10',
+              !active && !dark && 'text-gray-500 hover:text-gray-800 hover:bg-white',
             )}
           >
             <Flag code={l.code} className="w-4 h-auto rounded-[2px] ring-1 ring-black/10" />

@@ -204,3 +204,78 @@ export const fundsApi = {
   netAssetValue: (params: { as_of: string; currency: string; fund_id?: string }) =>
     apiClient.get<FundNetAssetValue[]>('/funds/net-asset-value', { params }),
 }
+
+/** A catalogue plan, as the console sells it (`GET /public/plans`). */
+export interface PublicPlan {
+  id: string
+  name: string
+  description: string | null
+  /** The most investors covered: the billed unit of this product. `null`: no ceiling. */
+  investor_limit: number | null
+  monthly_price: number
+  overage_price: number
+  tva_rate: number
+  /** A quotation: never shown on the public page, which lists the catalogue only. */
+  sur_devis: boolean
+}
+
+/** A country the platform serves, as the console lists it. */
+export interface Country {
+  code: string
+  name: string
+  /** « SIREN / SIRET » in France, the local name of the company number elsewhere. */
+  number_label: string
+}
+
+/** One suggestion of the address search, as the console words it. */
+export interface AddressRow {
+  street: string
+  zip_code: string
+  city: string
+  label: string
+  department?: string
+  region?: string
+  country?: string
+}
+
+/** What the register says of a company number (`unreachable` when nobody looked). */
+export interface CompanyRow {
+  status: string
+  name?: string | null
+  street?: string | null
+  zip_code?: string | null
+  city?: string | null
+  siret?: string | null
+  ape?: string | null
+  legal_form?: string | null
+}
+
+/** The console's answer to a sign-up. */
+export interface SignupOutcome {
+  /** `confirmation_sent`, `account_exists`, `account_created`, `received`. */
+  status: string
+  message: string
+  login_url: string | null
+  subscription_url: string | null
+}
+
+/**
+ * What is open before any account exists: the plans, the sign-up and the common lookups.
+ *
+ * 🔴 THROUGH THIS PRODUCT'S OWN SERVER, which relays to the console (28 Sept 2026: « tout
+ * ce qui est commun, ça sera dans Alice »). The gateway's policy is `connect-src 'self'`: a
+ * browser call to a register would be blocked, silently.
+ *
+ * ⚠️ THE SIGN-UP SKIPS THE GLOBAL TOAST: the form shows the refusal in place, next to the
+ * field to correct, and a toast on top would say it twice.
+ */
+export const publicApi = {
+  plans: () => apiClient.get<PublicPlan[]>('/public/plans'),
+  countries: () => apiClient.get<Country[]>('/public/lookups/countries'),
+  company: (number: string, signal?: AbortSignal) =>
+    apiClient.get<CompanyRow>('/public/lookups/company', { params: { number }, signal }),
+  address: (q: string, country: string, signal?: AbortSignal) =>
+    apiClient.get<AddressRow[]>('/public/lookups/address', { params: { q, country }, signal }),
+  accessRequest: (body: Record<string, unknown>) =>
+    apiClient.post<SignupOutcome>('/public/access-request', body, { skipErrorToast: true }),
+}

@@ -53,6 +53,12 @@ SETTLED: dict[str, str] = {
     # paid for that lesson. Translating it would take a migration for one row that its
     # holder renames in a single click.
     "Gestion du fonds": "seeded data, renamed by its holder",
+    # The first line of a sign-up as the CONSOLE files it (`public._profile_sentence`).
+    # ⚠️ IT IS DATA HANDED TO ANOTHER PRODUCT, not a label: Alice stores it in « Demandes »
+    # and its operators read it there, in French, whatever language the prospect chose.
+    "Société de gestion : gère plusieurs véhicules pour des clients.": (
+        "a sign-up's first line, stored and read in the console"
+    ),
 }
 
 #: 🔴 RAISED WHEN A CALLER IS BROKEN, NOT WHEN A USER ASKED FOR SOMETHING IMPOSSIBLE, and

@@ -49,8 +49,9 @@ class SubscriptionInfo(BaseModel):
     is_blocked: bool = False
     features: list[str] | None = None
     access_until: str | None = None
-    #: How many funds the plan includes, when it sets a limit at all.
-    fund_limit: int | None = None
+    #: How many INVESTORS the plan includes, when it sets a limit at all: the billed unit
+    #: of this product (Alice's registry), never a number of funds or vehicles.
+    investor_limit: int | None = None
 
 
 def _as_info(license_: dict | None) -> SubscriptionInfo:
@@ -70,7 +71,7 @@ def _as_info(license_: dict | None) -> SubscriptionInfo:
         # code that reads like a safety net.
         #
         # ⚠️ None IS A VALUE, NOT AN ABSENCE: « unlimited » is null on the wire.
-        fund_limit=license_.get("managed_limit"),
+        investor_limit=license_.get("managed_limit"),
     )
 
 

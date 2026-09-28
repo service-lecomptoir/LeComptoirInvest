@@ -105,6 +105,10 @@ APPROVED: dict[str, str] = {
     # stored one - Alice and every sister product would move at once.
     "SELF": "self",
     "CLIENTS": "clients",
+    # ⚠️ THIS PRODUCT'S CODE AT THE CONSOLE (`alice_client.PRODUCT`), which reaches no
+    # column here: it names the product on the internal contract (the catalogue it reads,
+    # the sign-up it files), and Alice's registry spells it so for every product at once.
+    "PRODUCT": "invest",
     # ⚠️ THE TWO DELIBERATE EXCEPTIONS, and they are not an oversight. Le Comptoir Immo
     # stores exactly these two words on its landlords, and an investor is very often a
     # landlord. A second vocabulary would have to be translated wherever the two products

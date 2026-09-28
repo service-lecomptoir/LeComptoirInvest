@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router
 import { Shell } from '@/components/layout/Shell'
 import { useAuthStore } from '@/store/authStore'
 import Login from '@/pages/Login'
+import Pricing from '@/pages/Pricing'
 import MyProfile from '@/pages/profile/MyProfile'
 import Dashboard from '@/pages/Dashboard'
 import Treasury from '@/pages/Treasury'
@@ -82,6 +83,9 @@ function InvestorOnly({ children }: { children: ReactElement }) {
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
+  // 🔴 PUBLIC, as on Le Comptoir Immo and RH: the catalogue plans and the sign-up, no
+  // account needed. Outside `RequireAuth`, so a visitor is never sent to the sign-in first.
+  { path: '/pricing', element: <Pricing /> },
   {
     element: <RequireAuth />,
     children: [

@@ -136,7 +136,7 @@ async def test_a_read_degrades_but_a_payment_refuses(client, db, monkeypatch):
     assert "indisponible" in paiement.json()["detail"].lower()
 
 
-async def test_the_fund_limit_reads_alices_shared_field_name(monkeypatch):
+async def test_the_investor_limit_reads_alices_shared_field_name(monkeypatch):
     """🔴 Alice names this ceiling `managed_limit` FOR EVERY PRODUCT.
 
     It is the cross-product contract: the same key counts properties at Immo, homes at
@@ -152,7 +152,7 @@ async def test_the_fund_limit_reads_alices_shared_field_name(monkeypatch):
     info = billing_api._as_info(
         {"plan_name": "Fonds Pro", "monthly_price": 149.0, "managed_limit": 3}
     )
-    assert info.fund_limit == 3
+    assert info.investor_limit == 3
     assert info.managed is True
 
     # 🔴 AND THE OLD NAME MUST NOW GIVE NOTHING. Without this half the test would
@@ -160,4 +160,4 @@ async def test_the_fund_limit_reads_alices_shared_field_name(monkeypatch):
     stale = billing_api._as_info(
         {"plan_name": "Fonds Pro", "monthly_price": 149.0, "property_limit": 3}
     )
-    assert stale.fund_limit is None
+    assert stale.investor_limit is None

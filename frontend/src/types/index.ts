@@ -214,7 +214,8 @@ export interface BillingSubscription {
   is_blocked: boolean
   features: string[] | null
   access_until: string | null
-  fund_limit: number | null
+  /** The investors the plan includes: the billed unit. `null`: no ceiling. */
+  investor_limit: number | null
 }
 
 export interface PaymentMethods {

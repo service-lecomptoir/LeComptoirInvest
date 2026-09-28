@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button, Input } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { errorMessage } from '@/api/client'
 import { useAuthStore } from '@/store/authStore'
 import { LogoMark } from '@/components/common/Logo'
+import { SignupForm } from '@/components/signup/SignupForm'
 
 export default function Login() {
   const { t, i18n } = useTranslation()
@@ -22,6 +23,9 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // 🔴 THE SIGN-UP GOES THROUGH THE CONSOLE (`SignupForm`), as on Le Comptoir RH: the
+  // prospect chooses a catalogue plan, Alice confirms the e-mail and opens the account.
+  const [signingUp, setSigningUp] = useState(false)
 
   if (isAuthenticated) return <Navigate to="/" replace />
 
@@ -42,7 +46,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
       {/* The left panel is the only decorative surface in the product. Every other screen
           is a table: a fund console earns trust by being legible, not by being styled. */}
       <div className="hidden lg:flex flex-col justify-between bg-brand-navy p-10 text-white">
@@ -59,8 +63,8 @@ export default function Login() {
         <p className="text-xs text-white/40">Le Comptoir</p>
       </div>
 
-      <div className="flex items-center justify-center p-6 bg-white">
-        <form onSubmit={submit} className="w-full max-w-sm">
+      <div className="flex min-w-0 items-center justify-center p-6 bg-white">
+        <div className={signingUp ? 'w-full max-w-md' : 'w-full max-w-sm'}>
           <div className="flex items-center justify-between mb-8">
             <div className="lg:hidden flex items-center gap-2.5">
               <LogoMark size={32} className="shrink-0 rounded-md" />
@@ -75,39 +79,68 @@ export default function Login() {
             </div>
           </div>
 
-          <h1 className="text-xl font-semibold text-gray-900 tracking-tight">{t('login.title')}</h1>
-          <p className="mt-1 mb-6 text-sm text-gray-500">{t('login.subtitle')}</p>
+          {signingUp ? (
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900 tracking-tight">{t('login.askAccess')}</h1>
+              <p className="mt-1 text-sm text-gray-500">{t('login.askAccessHelp')}</p>
+              <Link to="/pricing" className="mt-2 mb-6 inline-block text-sm text-brand-navy underline">
+                {t('login.seePricing')}
+              </Link>
+              <SignupForm onBack={() => setSigningUp(false)} />
+            </div>
+          ) : (
+            <form onSubmit={submit}>
+              <h1 className="text-xl font-semibold text-gray-900 tracking-tight">{t('login.title')}</h1>
+              <p className="mt-1 mb-6 text-sm text-gray-500">{t('login.subtitle')}</p>
 
-          <div className="space-y-4">
-            <Input
-              label={t('login.email')}
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <Input
-              label={t('login.password')}
-              type="password"
-              revealable
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
+              <div className="space-y-4">
+                <Input
+                  label={t('login.email')}
+                  type="email"
+                  autoComplete="username"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                <Input
+                  label={t('login.password')}
+                  type="password"
+                  revealable
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
 
-          {error && (
-            <p className="mt-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {error}
-            </p>
+              {error && (
+                <p className="mt-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {error}
+                </p>
+              )}
+
+              <Button type="submit" fullWidth isLoading={busy} className="mt-6">
+                {t('login.submit')}
+              </Button>
+
+              <div className="mt-6 border-t border-gray-100 pt-4 text-sm text-gray-600">
+                <p>
+                  {t('login.noAccount')}{' '}
+                  <button
+                    type="button"
+                    onClick={() => setSigningUp(true)}
+                    className="font-medium text-brand-navy underline"
+                  >
+                    {t('login.askAccess')}
+                  </button>
+                </p>
+                <Link to="/pricing" className="mt-2 inline-block text-brand-navy underline">
+                  {t('login.seePricing')}
+                </Link>
+              </div>
+            </form>
           )}
-
-          <Button type="submit" fullWidth isLoading={busy} className="mt-6">
-            {t('login.submit')}
-          </Button>
-        </form>
+        </div>
       </div>
     </div>
   )
