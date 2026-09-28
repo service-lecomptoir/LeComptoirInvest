@@ -119,6 +119,7 @@ from app.api.v1.internal_admin import router as internal_router  # noqa: E402
 from app.api.v1.distributions import router as distributions_router  # noqa: E402
 from app.api.v1.funds import router as funds_router  # noqa: E402
 from app.api.v1.investors import router as investors_router  # noqa: E402
+from app.api.v1.lookups import router as lookups_router  # noqa: E402
 from app.api.v1.performance import router as performance_router  # noqa: E402
 from app.api.v1.projects import router as projects_router  # noqa: E402
 from app.api.v1.statements import router as statements_router  # noqa: E402
@@ -135,6 +136,8 @@ app.include_router(distributions_router, prefix="/api/v1")
 app.include_router(statements_router, prefix="/api/v1")
 app.include_router(billing_router, prefix="/api/v1")
 app.include_router(performance_router, prefix="/api/v1")
+# Public and throttled: a form asks it before anybody is signed in.
+app.include_router(lookups_router, prefix="/api/v1")
 
 # 🔴 MOUNTED AT THE ROOT, WITHOUT `/api`. The edge proxy forwards only `/api/` and
 # `/health` to this backend; everything else goes to the front end, whose SPA fallback

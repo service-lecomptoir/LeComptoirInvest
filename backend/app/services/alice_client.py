@@ -30,6 +30,9 @@ logger = logging.getLogger(__name__)
 #: Stripe session is created upstream and a timeout there loses a real intent.
 _READ_TIMEOUT = 5.0
 _ACTION_TIMEOUT = 15.0
+#: A lookup waits on a register the console itself asks (the national company search is
+#: the slow one): longer than a read, and still short enough for a form being typed.
+_LOOKUP_TIMEOUT = 8.0
 
 
 def _target() -> tuple[str, dict[str, str]] | None:
@@ -171,6 +174,29 @@ async def billing(
         timeout=_ACTION_TIMEOUT,
         strict=strict,
     )
+
+
+async def lookup(path: str, params: dict[str, str], fallback: Any) -> Any:
+    """One of Alice's common lookups (`countries`, `company`, `address`, `town`).
+
+    🔴 THE REGISTERS ARE READ BY THE CONSOLE, NEVER HERE (the manager, 28 Sept 2026:
+    everything common lives in Alice, reachable by API). This product only relays, with
+    the same outbound key as every other call in this file.
+
+    ⚠️ THE FALLBACK IS RETURNED FOR ANY ANSWER OF THE WRONG SHAPE, not only for silence: a
+    list where a dict was expected, or a body that is not JSON, must degrade the form to
+    typing by hand, never turn into a 500 on a sign-up screen.
+    """
+    try:
+        data = await _call(
+            "GET",
+            f"/api/v1/internal/lookups/{path}",
+            params=params,
+            timeout=_LOOKUP_TIMEOUT,
+        )
+    except ValueError:
+        return fallback
+    return data if isinstance(data, type(fallback)) else fallback
 
 
 async def invoices(user_id: UUID) -> list[dict]:
