@@ -596,6 +596,8 @@
     "company": "Management company",
     "email": "E-mail address",
     "role": "Role",
+    "accountKind": "Account type",
+    "accountKindHelp": "Set by the console, depending on whether the account manages its own money or its clients' money.",
     "notSet": "Not set",
     "managedByConsole": "These details are held by the administration console: they are changed there, so that the invoice and this screen cannot say two different things."
   },

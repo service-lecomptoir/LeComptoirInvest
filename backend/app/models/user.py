@@ -113,6 +113,15 @@ class User(Base, TimestampMixin):
     #: mean the company number on one table and the social security number on another,
     #: at the product this one descends from. Two things nobody confuses twice.
     company_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    #: 🔴 WHO THE ACCOUNT WORKS FOR, IN THIS PRODUCT'S OWN WORDS: `single_fund` (a club
+    #: or a fund managing its own money) or `management_company` (a firm managing money
+    #: for clients). Alice sends the neutral `acts_for`; `core.account_kind` holds the
+    #: translation, the reverse and the labels, and nothing else spells them.
+    #:
+    #: ⚠️ NULL IS « NOT KNOWN », never a default: accounts created before 28 September
+    #: 2026, or by a console that sends only a role, were never told. Guessing would state
+    #: something nobody said.
+    account_kind: Mapped[str | None] = mapped_column(String(30), nullable=True)
 
     @property
     def sees_whole_fund(self) -> bool:

@@ -97,6 +97,14 @@ APPROVED: dict[str, str] = {
     "ADMIN": "admin",
     "MANAGER": "manager",
     "INVESTOR": "investor",
+    # Who an account works for (`users.account_kind`), since 28 September 2026.
+    "SINGLE_FUND": "single_fund",
+    "MANAGEMENT_COMPANY": "management_company",
+    # ⚠️ THE CONSOLE'S WORD FOR IT, which reaches no column: `acts_for` travels on the
+    # internal contract, in and out, and a published value is as hard to rename as a
+    # stored one - Alice and every sister product would move at once.
+    "SELF": "self",
+    "CLIENTS": "clients",
     # ⚠️ THE TWO DELIBERATE EXCEPTIONS, and they are not an oversight. Le Comptoir Immo
     # stores exactly these two words on its landlords, and an investor is very often a
     # landlord. A second vocabulary would have to be translated wherever the two products

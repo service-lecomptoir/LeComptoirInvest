@@ -20,7 +20,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
-from app.api.v1.internal_admin import IGNORED_BY_DESIGN
+from app.api.v1.internal_admin import IGNORED_BY_DESIGN, ManagerIn
 from app.config import get_settings
 from app.core.security import verify_password
 from app.database import get_db
@@ -196,6 +196,28 @@ class TestNothingIsSwallowedInSilence:
             assert not hasattr(user, field), (
                 f"{field} is stored: the decision has changed"
             )
+
+    async def test_who_the_account_works_for_is_heard_and_kept(self, client, db):
+        """🔴 `acts_for` IS PART OF WHAT THE CONSOLE SENDS SINCE 28 SEPTEMBER, AND IT IS
+        KEPT. Undeclared, Pydantic would drop it without a word and every account would
+        stay « kind unknown » while both suites stayed green. Its translation is held in
+        detail by `test_alice_says_who_the_account_works_for.py`."""
+        assert "acts_for" in ManagerIn.model_fields
+        assert "acts_for" not in IGNORED_BY_DESIGN
+        r = await client.post(
+            "/internal/managers",
+            headers=auth(),
+            json={
+                "email": "qui-pour-qui@fonds.fr",
+                "password": "provisoire-1234",
+                "acts_for": "clients",
+            },
+        )
+        assert r.status_code == 201, r.text
+        user = (
+            await db.execute(select(User).where(User.email == "qui-pour-qui@fonds.fr"))
+        ).scalar_one()
+        assert user.account_kind == "management_company"
 
     async def test_a_partial_update_does_not_blank_what_it_did_not_send(
         self, client, db

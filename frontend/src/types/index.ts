@@ -18,6 +18,11 @@ export interface Me {
   role: string
   sees_whole_fund: boolean
   must_change_password: boolean
+  /** Who the account works for, in this product's words: `single_fund` or
+   *  `management_company`. Null for an account the console never qualified. */
+  account_kind: string | null
+  /** Its label, translated by the server like every label the server owns. */
+  account_kind_label: string | null
 }
 
 export interface Investor {

@@ -26,7 +26,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.core import audit, firm_scope
+from app.core import account_kind, audit, firm_scope
 from app.core.security import create_access_token, hash_password
 from app.database import get_db
 from app.models.audit_log import AuditLog
@@ -51,6 +51,20 @@ CONSOLE_ACTOR = "console (internal key)"
 #:
 #: Same shape as the sister product's `_MANAGEABLE_ROLES`, and the same lesson.
 _MANAGED_ROLES: tuple[str, ...] = FUND_WIDE_ROLES
+
+#: 🔴 THE CONSOLE'S OLD WORDS, HEARD FOR THE LENGTH OF THE CHANGEOVER. An older Alice still
+#: sends a real-estate role for every account it provisions. This product refused it with a
+#: 422, and that refusal blocked self-service sign-up outright. Both words mean « an account
+#: that runs the business », which is `MANAGER` here, and nothing more:
+#:
+#:   * on creation, the account is a `MANAGER`;
+#:   * on an update, the word changes NOTHING. Every account the console reaches already runs
+#:     the fund, and reading « gestionnaire » as « make this a manager » would quietly demote
+#:     an administrator on the next identity push.
+#:
+#: ⚠️ AND THEY SAY NOTHING ABOUT `account_kind`. « gestionnaire_proprio » is not « works for
+#: itself »: only `acts_for` sets the kind, and without it the kind stays as it is.
+_LEGACY_MANAGER_ROLES: tuple[str, ...] = ("gestionnaire", "gestionnaire_proprio")
 
 
 async def require_internal_key(
@@ -117,6 +131,12 @@ class ManagerOut(BaseModel):
     #: LOST: the console would show the record's form empty every time somebody opens it,
     #: and an operator would eventually retype what is already stored.
     company_number: str | None = None
+    #: 🔴 WHO THE ACCOUNT WORKS FOR, READ BACK IN BOTH VOCABULARIES: this product's own
+    #: kind with its label, and the console's `acts_for` it came from. All three are NULL
+    #: for an account nobody ever qualified, which is the truth rather than a gap.
+    account_kind: str | None = None
+    account_kind_label: str | None = None
+    acts_for: str | None = None
     created_at: datetime | None = None
 
     #: 🔴 THE BILLING QUANTITY, UNDER THE NAME THE PLATFORM ALREADY SPEAKS. Alice reads
@@ -156,12 +176,19 @@ class ManagerIn(BaseModel):
     down — `owner_kind`, `owner_account_name`, `owner_company`, `owner_national_id` — is
     declared and explicitly NOT stored: a fund has no landlord, and the decision is
     readable here instead of being a field that quietly vanished.
+
+    🔴 `acts_for` IS KEPT, TRANSLATED. Alice says who the account works for in a word
+    every product shares; this product stores its own kind for it (`core.account_kind`).
+    `role` is still accepted in the console's old vocabulary: see `_LEGACY_MANAGER_ROLES`.
     """
 
     email: EmailStr
     full_name: str | None = Field(default=None, max_length=200)
     password: str | None = Field(default=None, min_length=8)
     role: str = MANAGER
+    #: « self » or « clients ». Anything else is refused with the two accepted values named,
+    #: rather than stored as a kind this product does not know how to read.
+    acts_for: str | None = None
     phone: str | None = Field(default=None, max_length=30)
     address: str | None = None
     zip_code: str | None = Field(default=None, max_length=20)
@@ -234,6 +261,40 @@ class ResetPasswordIn(BaseModel):
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────────
+def _manager_out(user: User, counted: dict) -> ManagerOut:
+    """THE ONE SHAPE OF A MANAGER ON THE WIRE, for the listing, the record and the answers
+    to a creation or an update alike.
+
+    🔴 ONE SERIALIZER, BECAUSE EVERY SECOND ONE WAS WRONG. The single-record route used to
+    answer `managed_count = 0` for every account, then the installation-wide total; the
+    creation answered the Pydantic defaults. A field computed in one route and not another
+    comes back NULL on the very account the console just wrote, in the exact shape of a
+    real answer.
+
+    `counted` is `license_service.count_investors_by_firm`: one query, whatever the number
+    of rows being answered.
+    """
+    return ManagerOut.model_validate(user).model_copy(
+        update={
+            "managed_count": counted.get(firm_scope.firm_of(user), 0),
+            "account_kind_label": account_kind.label_of(user.account_kind),
+            "acts_for": account_kind.acts_for_of(user.account_kind),
+        }
+    )
+
+
+async def _one_manager_out(db: AsyncSession, user: User) -> ManagerOut:
+    return _manager_out(user, await license_service.count_investors_by_firm(db))
+
+
+def _kind_from(acts_for: str) -> str:
+    """The kind to store for the console's word, or a 422 naming the two accepted values."""
+    kind = account_kind.kind_for(acts_for)
+    if kind is None:
+        raise HTTPException(status_code=422, detail=account_kind.refusal_for(acts_for))
+    return kind
+
+
 async def _managed(db: AsyncSession, manager_id: uuid.UUID) -> User:
     user = await db.get(User, manager_id)
     if user is None or user.role not in _MANAGED_ROLES:
@@ -292,12 +353,7 @@ async def list_managers(
     )
     # 🔴 ONE COUNT PER FIRM, NO LONGER ONE FIGURE FOR EVERYBODY. See the field's note.
     counted = await license_service.count_investors_by_firm(db)
-    return [
-        ManagerOut.model_validate(r).model_copy(
-            update={"managed_count": counted.get(firm_scope.firm_of(r), 0)}
-        )
-        for r in rows
-    ]
+    return [_manager_out(r, counted) for r in rows]
 
 
 @router.get("/managers/{manager_id}", response_model=ManagerOut)
@@ -311,11 +367,9 @@ async def get_manager(
     # for every account, in the exact shape of a real answer. Only the listing is read for
     # billing today, which is why nobody was billed wrongly — a second reader would have
     # been. Two paths to one piece of work, one of them complete: the defect this
-    # repository keeps paying for.
-    manager = await _managed(db, manager_id)
-    return ManagerOut.model_validate(manager).model_copy(
-        update={"managed_count": await license_service.count_investors(db)}
-    )
+    # repository keeps paying for. It now goes through the listing's own serializer, and
+    # therefore counts THIS account's firm, not the whole installation.
+    return await _one_manager_out(db, await _managed(db, manager_id))
 
 
 @router.get("/billing-identity/{user_id}")
@@ -350,7 +404,8 @@ async def create_manager(
     account with no credential would leave a role nobody can use and nobody can see is
     unusable.
     """
-    if data.role not in _MANAGED_ROLES:
+    role = MANAGER if data.role in _LEGACY_MANAGER_ROLES else data.role
+    if role not in _MANAGED_ROLES:
         raise HTTPException(
             status_code=422,
             detail=pick(
@@ -358,6 +413,7 @@ async def create_manager(
                 f"Role « {data.role} » is unknown to this product.",
             ),
         )
+    kind = _kind_from(data.acts_for) if data.acts_for is not None else None
     if not data.password:
         raise HTTPException(
             status_code=422,
@@ -381,7 +437,8 @@ async def create_manager(
         email=email,
         hashed_password=hash_password(data.password),
         account_name=(data.full_name or "").strip() or None,
-        role=data.role,
+        role=role,
+        account_kind=kind,
         # The credential was handed over by Alice, so it is not the holder's yet.
         must_change_password=True,
         **{f: getattr(data, f) for f in _STORED},
@@ -389,7 +446,7 @@ async def create_manager(
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    return ManagerOut.model_validate(user)
+    return await _one_manager_out(db, user)
 
 
 @router.patch("/managers/{manager_id}", response_model=ManagerOut)
@@ -407,6 +464,8 @@ async def update_manager(
     """
     user = await _managed(db, manager_id)
     sent = data.model_dump(exclude_unset=True)
+    # Refused before anything is written, so a bad word never lands half an update.
+    kind = _kind_from(sent["acts_for"]) if sent.get("acts_for") is not None else None
 
     if "email" in sent and sent["email"]:
         email = str(sent["email"]).lower().strip()
@@ -426,7 +485,7 @@ async def update_manager(
         user.email = email
     if "full_name" in sent:
         user.account_name = (sent["full_name"] or "").strip() or None
-    if "role" in sent and sent["role"]:
+    if sent.get("role") and sent["role"] not in _LEGACY_MANAGER_ROLES:
         if sent["role"] not in _MANAGED_ROLES:
             raise HTTPException(
                 status_code=422,
@@ -441,10 +500,12 @@ async def update_manager(
     for field in _STORED:
         if field in sent:
             setattr(user, field, sent[field])
+    if kind is not None:
+        user.account_kind = kind
 
     await db.commit()
     await db.refresh(user)
-    return ManagerOut.model_validate(user)
+    return await _one_manager_out(db, user)
 
 
 @router.delete("/managers/{manager_id}", status_code=204)

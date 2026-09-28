@@ -596,6 +596,8 @@
     "company": "Société de gestion",
     "email": "Adresse e-mail",
     "role": "Rôle",
+    "accountKind": "Type de compte",
+    "accountKindHelp": "Fixé par la console, selon que le compte gère son propre argent ou celui de clients.",
     "notSet": "Non renseigné",
     "managedByConsole": "Ces informations sont tenues par la console d'administration : elles se modifient là-bas, pour que la facture et cet écran ne puissent pas dire deux choses différentes."
   },

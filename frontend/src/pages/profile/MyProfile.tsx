@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Building2, Mail, ShieldCheck } from 'lucide-react'
+import { Building2, Landmark, Mail, ShieldCheck } from 'lucide-react'
 
 import { Card, PageHeader } from '@/components/common/Primitives'
 import { useAuthStore } from '@/store/authStore'
@@ -28,9 +28,24 @@ export default function MyProfile() {
   const email = useAuthStore((state) => state.email)
   const role = useAuthStore((state) => state.role)
   const accountName = useAuthStore((state) => state.accountName)
+  const accountKindLabel = useAuthStore((state) => state.accountKindLabel)
+  const seesWholeFund = useAuthStore((state) => state.seesWholeFund)
 
-  const rows: { icon: typeof Mail; label: string; value: string | null }[] = [
+  const rows: { icon: typeof Mail; label: string; value: string | null; help?: string }[] = [
     { icon: Building2, label: t('profile.company'), value: accountName },
+    // 🔴 WHO THE ACCOUNT WORKS FOR, as the console qualified it. Only for the accounts
+    // that run the fund: an investor's login has no such kind, and « Non renseigné » there
+    // would read as a missing piece of their own file.
+    ...(seesWholeFund
+      ? [
+          {
+            icon: Landmark,
+            label: t('profile.accountKind'),
+            value: accountKindLabel,
+            help: t('profile.accountKindHelp'),
+          },
+        ]
+      : []),
     { icon: Mail, label: t('profile.email'), value: email },
     { icon: ShieldCheck, label: t('profile.role'), value: role },
   ]
@@ -56,6 +71,7 @@ export default function MyProfile() {
                   <p className="text-sm text-gray-900 break-words">
                     {row.value?.trim() ? row.value : t('profile.notSet')}
                   </p>
+                  {row.help && <p className="mt-0.5 text-xs text-gray-500">{row.help}</p>}
                 </div>
               </div>
             ))}

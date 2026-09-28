@@ -23,6 +23,9 @@ interface AuthState {
    *  else: a manager who opens three consoles of the house could not tell, at a glance,
    *  which one was theirs. `/auth/me` was already returning it. */
   accountName: string | null
+  /** « Club ou fonds » or « Société de gestion », as the server words it in the reader's
+   *  language. Null when the console never said who the account works for. */
+  accountKindLabel: string | null
   isAuthenticated: boolean
   isInitializing: boolean
   seesWholeFund: boolean
@@ -39,6 +42,7 @@ const CLEARED = {
   role: null,
   email: null,
   accountName: null,
+  accountKindLabel: null,
   isAuthenticated: false,
   seesWholeFund: false,
   mustChangePassword: false,
@@ -54,6 +58,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       role: data.role,
       email: data.email,
       accountName: data.account_name,
+      accountKindLabel: data.account_kind_label,
       isAuthenticated: true,
       seesWholeFund: data.sees_whole_fund,
       mustChangePassword: data.must_change_password,

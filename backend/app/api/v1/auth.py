@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_user
+from app.core import account_kind
 from app.core.security import (
     create_access_token,
     hash_password,
@@ -65,6 +66,11 @@ class MeOut(BaseModel):
     role: str
     sees_whole_fund: bool
     must_change_password: bool
+    #: Who the account works for, as the console qualified it (`core.account_kind`). The
+    #: label comes translated from here, like every label the server owns; both are NULL
+    #: for an account nobody qualified, and the screen says so rather than guessing.
+    account_kind: str | None = None
+    account_kind_label: str | None = None
 
 
 @router.get("/me", response_model=MeOut)
@@ -76,6 +82,8 @@ async def me(user: User = Depends(current_user)):
         role=user.role,
         sees_whole_fund=user.sees_whole_fund,
         must_change_password=user.must_change_password,
+        account_kind=user.account_kind,
+        account_kind_label=account_kind.label_of(user.account_kind),
     )
 
 
