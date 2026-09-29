@@ -595,7 +595,7 @@
   "profile": {
     "open": "Open the account menu",
     "title": "My profile",
-    "subtitle": "Your account, and the one setting that is yours alone.",
+    "subtitle": "Your account and your settings.",
     "identity": "Account identity",
     "company": "Management company",
     "email": "E-mail address",
@@ -604,6 +604,20 @@
     "accountKindHelp": "Set by the console, depending on whether the account manages its own money or its clients' money.",
     "notSet": "Not set",
     "managedByConsole": "These details are held by the administration console: they are changed there, so that the invoice and this screen cannot say two different things."
+  },
+  "emailTheme": {
+    "title": "E-mail look",
+    "lead": "The letters sent to your investors (capital calls, reminders) wear the look chosen here, for your whole management company.",
+    "productDefault": "The product's own (default)",
+    "productDefaultNamed": "Today: {{name}}. It follows the console's setting.",
+    "productDefaultUnnamed": "The look the console gives this product.",
+    "help": "The list of looks is kept by the administration console. Your choice applies to the next letters sent.",
+    "chosen": "Chosen",
+    "saved": "Look saved.",
+    "unavailableTitle": "List of looks unavailable",
+    "unavailable": "The console does not answer: the list could not be read. Your e-mails keep their current look.",
+    "loading": "Loading the looks",
+    "otherFamily": "Others"
   },
   "guide": {
     "title": "Guide",
@@ -675,7 +689,7 @@
       },
       "profile": {
         "what": "Your account: e-mail address, role and workspace.",
-        "how": "Change your password here. The name and the address are changed in the administration console."
+        "how": "Change your password and choose the look of the e-mails sent to your investors. The name and the address are changed in the administration console."
       },
       "billing": {
         "what": "The subscription to Le Comptoir Invest: the current plan, the payment methods and the invoices.",

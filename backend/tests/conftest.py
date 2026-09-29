@@ -263,3 +263,16 @@ def a_firm_is_always_established():
 
     with firm_scope.use_firm(TEST_FIRM):
         yield
+
+
+@pytest.fixture(autouse=True)
+def the_email_looks_are_never_kept_between_tests():
+    """⚠️ THE CATALOGUE OF E-MAIL LOOKS IS KEPT IN MEMORY, on purpose: a letter must not
+    ask the console each time. Between two tests that copy is a leak like any other -- a
+    test that faked a console would dress the next test's letters -- so it is dropped
+    before and after each one."""
+    from app.services import email_themes
+
+    email_themes.forget()
+    yield
+    email_themes.forget()

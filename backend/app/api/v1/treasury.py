@@ -543,7 +543,8 @@ def _notice_out(prepared, *, sent_on: date | None = None) -> NoticeOut:
         language=prepared.language,
         to=prepared.to,
         subject=prepared.notice.subject,
-        body=prepared.notice.body,
+        # The text that goes out, signature included: what is read is what is sent.
+        body=prepared.letter.text(),
         qr_payload=prepared.notice.qr_payload,
         qr_unavailable_reason=prepared.notice.qr_unavailable_reason,
         sending_is_configured=prepared.sending_is_configured,

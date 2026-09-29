@@ -4,10 +4,11 @@ import { Building2, Landmark, Mail, ShieldCheck } from 'lucide-react'
 import { Card, PageHeader } from '@/components/common/Primitives'
 import { useAuthStore } from '@/store/authStore'
 
+import { EmailThemeSection } from './EmailThemeSection'
 import { PasswordSection } from './PasswordSection'
 
 /**
- * My profile: who I am here, and the only setting that belongs to me.
+ * My profile: who I am here, and the settings that belong to the account.
  *
  * 🔴 WHAT IS SHOWN IS NOT EDITABLE, AND THAT IS THE RULE OF THE HOUSE. The name of the
  * management company, the address, the telephone of an account are held by the console
@@ -22,6 +23,10 @@ import { PasswordSection } from './PasswordSection'
  * 🔴 THE PASSWORD, FOR ITS PART, IS MINE. It is neither known nor editable from the
  * console: it is the only thing on this page that its holder decides alone, and that is why
  * it has its place here rather than on a separate screen.
+ *
+ * ⚠️ THE LOOK OF THE E-MAILS IS SHOWN ONLY TO THOSE WHO RUN THE FUND. It is the management
+ * company's setting, the letters to investors go out in it, and an investor's login sends
+ * nothing: offering it the choice would offer a setting the server refuses.
  */
 export default function MyProfile() {
   const { t } = useTranslation()
@@ -80,6 +85,8 @@ export default function MyProfile() {
             {t('profile.managedByConsole')}
           </p>
         </section>
+
+        {seesWholeFund && <EmailThemeSection />}
 
         <PasswordSection />
       </div>

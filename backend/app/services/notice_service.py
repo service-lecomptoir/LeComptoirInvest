@@ -12,6 +12,10 @@ received is worse than an unsent one: `LateCall.never_notified` is what tells a 
 never wrote to them » apart from « they are late », and a false mark turns the fund's own
 omission into an accusation against the investor.
 
+🔴 THE LETTER WEARS THE LOOK ITS MANAGEMENT COMPANY CHOSE, read from Alice's catalogue
+(`services.email_themes`), and the product's default when it chose none. The look is the
+COMPANY's, not the clicking manager's: the letter goes out on the company's behalf.
+
 ⚠️ PREVIEWING IS NOT SENDING. The two are separate functions because a manager reading the
 letter before it goes out must not thereby have sent it, and a screen that marked on render
 would silence the chasing list for anybody who merely looked.
@@ -19,6 +23,7 @@ would silence the chasing list for anybody who merely looked.
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -26,14 +31,14 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import i18n, notices
+from app.core import email_envelope, i18n, notices
 from app.core.i18n import pick
 from app.models.fund import Fund
 from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.treasury import CapitalCall, Contribution
 from app.models.user import User
-from app.services import call_chasing_service, mailer
+from app.services import call_chasing_service, email_themes, mailer
 
 #: The two letters a fund sends about a call. Named rather than passed as a boolean: a
 #: `is_reminder=True` at a call site reads as a formatting option, and these are two
@@ -51,6 +56,10 @@ class PreparedNotice:
     language: str
     to: str | None
     notice: notices.Notice
+    #: The same letter as it travels: body, signature and footer, in the reader's language.
+    letter: email_envelope.Letter
+    #: The management company it is sent on behalf of: whose look it wears.
+    firm_id: uuid.UUID | None
     #: Whether this installation could send it at all. Carried to the screen so a manager
     #: reads « sending is not set up » before clicking, not after.
     sending_is_configured: bool
@@ -183,18 +192,45 @@ async def prepare(
     # 🔴 THE ONE LINE THIS WHOLE MODULE EXISTS FOR. Everything built inside this block reads
     # the investor's language, whatever language the manager who clicked is using.
     with i18n.use_lang(language):
-        letter = (
+        notice = (
             notices.first_notice(facts)
             if chosen == FIRST_NOTICE
             else notices.reminder(facts)
         )
+        letter = _envelope_words(notice, facts.fund_name, language)
 
     return PreparedNotice(
         kind=chosen,
         language=language,
         to=investor.email,
-        notice=letter,
+        notice=notice,
+        letter=letter,
+        firm_id=investor.firm_id,
         sending_is_configured=await mailer.is_configured(),
+    )
+
+
+def _envelope_words(
+    notice: notices.Notice, fund_name: str, language: str
+) -> email_envelope.Letter:
+    """The words around the letter, in the language in force: the caller poses the reader's.
+
+    The fund signs, because the fund is who asks for the money; the footer names the product
+    that carried the message, so an investor can tell who sent it on the fund's behalf.
+    """
+    from app.config import get_settings
+
+    product = get_settings().APP_NAME
+    return email_envelope.Letter(
+        title=notice.subject,
+        brand=fund_name,
+        body=notice.body,
+        signature=(pick("Cordialement,", "Kind regards,"), fund_name),
+        footer=pick(
+            f"Envoyé par {product} pour le compte de {fund_name}.",
+            f"Sent by {product} on behalf of {fund_name}.",
+        ),
+        lang=language,
     )
 
 
@@ -220,10 +256,12 @@ async def send(
         if not allowed:
             raise ValueError(why)
 
+    look = await email_themes.look_for_firm(db, prepared.firm_id)
     await mailer.send(
         to=prepared.to or "",
         subject=prepared.notice.subject,
-        body=prepared.notice.body,
+        body=prepared.letter.text(),
+        html=email_envelope.render(look, prepared.letter),
     )
 
     if prepared.kind == FIRST_NOTICE:

@@ -277,7 +277,7 @@ async def test_a_send_that_goes_out_records_that_it_did(db, monkeypatch):
     call = await _setup(db)
     sent: list[dict] = []
 
-    async def _accept(*, to, subject, body):
+    async def _accept(*, to, subject, body, html):
         sent.append({"to": to, "subject": subject, "body": body})
 
     async def _configured() -> bool:

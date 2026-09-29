@@ -595,7 +595,7 @@
   "profile": {
     "open": "Ouvrir le menu du compte",
     "title": "Mon profil",
-    "subtitle": "Votre compte, et le seul réglage qui vous appartienne.",
+    "subtitle": "Votre compte et vos réglages.",
     "identity": "Identité du compte",
     "company": "Société de gestion",
     "email": "Adresse e-mail",
@@ -604,6 +604,20 @@
     "accountKindHelp": "Fixé par la console, selon que le compte gère son propre argent ou celui de clients.",
     "notSet": "Non renseigné",
     "managedByConsole": "Ces informations sont tenues par la console d'administration : elles se modifient là-bas, pour que la facture et cet écran ne puissent pas dire deux choses différentes."
+  },
+  "emailTheme": {
+    "title": "Apparence des e-mails",
+    "lead": "Les lettres envoyées à vos investisseurs (appels de fonds, relances) portent l'apparence choisie ici, pour toute votre société de gestion.",
+    "productDefault": "Celle du produit (par défaut)",
+    "productDefaultNamed": "Aujourd'hui : {{name}}. Elle suit le réglage de la console.",
+    "productDefaultUnnamed": "L'apparence que la console donne à ce produit.",
+    "help": "La liste des apparences est tenue par la console d'administration. Votre choix s'applique aux prochains envois.",
+    "chosen": "Choisie",
+    "saved": "Apparence enregistrée.",
+    "unavailableTitle": "Liste des apparences indisponible",
+    "unavailable": "La console ne répond pas : la liste n'a pas pu être lue. Vos e-mails gardent leur apparence actuelle.",
+    "loading": "Chargement des apparences",
+    "otherFamily": "Autres"
   },
   "guide": {
     "title": "Guide",
@@ -675,7 +689,7 @@
       },
       "profile": {
         "what": "Votre compte : l'adresse e-mail, le rôle et l'espace de travail.",
-        "how": "Changez votre mot de passe ici. Le nom et l'adresse se modifient dans la console d'administration."
+        "how": "Changez votre mot de passe et choisissez l'apparence des e-mails envoyés à vos investisseurs. Le nom et l'adresse se modifient dans la console d'administration."
       },
       "billing": {
         "what": "L'abonnement au Comptoir Invest : l'offre en cours, les moyens de paiement et les factures.",

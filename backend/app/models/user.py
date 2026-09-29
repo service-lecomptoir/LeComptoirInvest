@@ -122,6 +122,14 @@ class User(Base, TimestampMixin):
     #: 2026, or by a console that sends only a role, were never told. Guessing would state
     #: something nobody said.
     account_kind: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    #: 🔴 THE LOOK OF THE LETTERS THIS ACCOUNT SENDS, a key of Alice's catalogue of e-mail
+    #: looks (`services.email_themes`). Read on the MANAGEMENT COMPANY's row, the one
+    #: `firm_of` points at: the letters go out on the company's behalf, whoever clicked.
+    #:
+    #: ⚠️ NULL IS « THE PRODUCT'S LOOK », the default the console sets for this product, and
+    #: it follows that default when the console changes it. Copying the default here would
+    #: freeze it at the day of the copy.
+    email_theme: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
     @property
     def sees_whole_fund(self) -> bool:

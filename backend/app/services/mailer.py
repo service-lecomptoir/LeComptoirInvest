@@ -60,13 +60,17 @@ async def is_configured() -> bool:
     return (await get_effective_comm()).can_send
 
 
-async def send(*, to: str, subject: str, body: str) -> None:
-    """Hand one plain-text message to the relay, or raise saying why not.
+async def send(*, to: str, subject: str, body: str, html: str) -> None:
+    """Hand one message to the relay, in plain text AND in its look, or raise saying why not.
 
-    ⚠️ PLAIN TEXT, ON PURPOSE. A capital call notice is a legal demand whose whole content
-    is a figure, a date and a reference the investor retypes. HTML adds a way for the
-    reference to be reflowed, hidden behind a link, or eaten by a client's stripping - and
-    the reference is the only thing tying their transfer to the call.
+    🔴 THE PLAIN TEXT COMES FIRST AND STAYS COMPLETE. A capital call notice is a legal
+    demand whose whole content is a figure, a date and a reference the investor retypes; a
+    client that strips HTML shows `body`, which carries all three. The HTML part is the same
+    letter in the look Alice's catalogue gives it (`core.email_envelope`), never a letter
+    with less in it.
+
+    ⚠️ `html` IS REQUIRED, so no caller can send a naked mail by forgetting it: the look of
+    last resort exists precisely so there is always one to pass.
     """
     settings = await get_effective_comm()
     if not settings.can_send:
@@ -95,6 +99,7 @@ async def send(*, to: str, subject: str, body: str) -> None:
     message["To"] = to
     message["Subject"] = subject
     message.set_content(body)
+    message.add_alternative(html, subtype="html")
 
     try:
         await aiosmtplib.send(

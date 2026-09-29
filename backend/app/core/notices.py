@@ -97,20 +97,20 @@ def _account_lines(facts: CallFacts) -> str:
     """
     lines = [
         pick(
-            f"Référence à reporter dans le libellé du virement : {facts.reference}",
+            f"Référence à reporter dans le libellé du virement : {facts.reference}",
             f"Reference to quote in the transfer label: {facts.reference}",
         )
     ]
     if facts.iban:
         lines.append(
             pick(
-                f"Compte à créditer : {facts.iban}",
+                f"Compte à créditer : {facts.iban}",
                 f"Account to credit: {facts.iban}",
             )
         )
     lines.append(
         pick(
-            "Cette référence est le seul lien entre votre virement et cet appel : sans "
+            "Cette référence est le seul lien entre votre virement et cet appel : sans "
             "elle, le versement ne peut pas être imputé.",
             "That reference is the only link between your transfer and this call: without "
             "it, the payment cannot be attributed.",
@@ -217,7 +217,7 @@ def reminder(facts: CallFacts) -> Notice:
     if facts.received > 0:
         parts.append(
             pick(
-                f"Déjà reçu sur cet appel : {_amount(facts.received, facts.currency)}.",
+                f"Déjà reçu sur cet appel : {_amount(facts.received, facts.currency)}.",
                 f"Already received against this call: "
                 f"{_amount(facts.received, facts.currency)}.",
             )
@@ -233,7 +233,7 @@ def reminder(facts: CallFacts) -> Notice:
         )
         parts.append(
             pick(
-                f"Intérêt de retard arrêté au {facts.as_of.isoformat()} : "
+                f"Intérêt de retard arrêté au {facts.as_of.isoformat()} : "
                 f"{_amount(facts.late_interest, facts.currency)}{rate}.",
                 f"Late interest to {facts.as_of.isoformat()}: "
                 f"{_amount(facts.late_interest, facts.currency)}{rate}.",

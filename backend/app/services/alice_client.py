@@ -270,6 +270,46 @@ async def file_lead(payload: dict) -> dict:
     return said if isinstance(said, dict) else {}
 
 
+_EMAIL_THEMES_PATH = "/api/v1/internal/email-themes"
+
+
+async def email_themes(etag: str | None) -> tuple[int, Any, str | None] | None:
+    """The console's catalogue of e-mail looks: `(status, body, etag)`, or None when silent.
+
+    ⚠️ ITS OWN REQUEST RATHER THAN `_call`, because the answer's HEADERS matter: the console
+    tags its catalogue, and a copy revalidated with `If-None-Match` comes back as a bare 304
+    while nothing changed. `_call` would read that empty answer as « nothing to say ».
+
+    `(304, None, etag)` means « keep your copy »; `(200, body, etag)` carries a new one; None
+    covers an unconfigured console, an unreachable one and any refusal, and the caller keeps
+    whatever copy it has. The key is the OUTBOUND one, as for every call in this file.
+    """
+    target = _target()
+    if target is None:
+        return None
+    base, headers = target
+    if etag:
+        headers = {**headers, "If-None-Match": etag}
+    try:
+        async with httpx.AsyncClient(timeout=_READ_TIMEOUT) as client:
+            resp = await client.get(
+                f"{base}{_EMAIL_THEMES_PATH}", headers=headers, params={"app": PRODUCT}
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Alice GET %s unreachable: %s", _EMAIL_THEMES_PATH, exc)
+        return None
+    if resp.status_code == 304:
+        return 304, None, resp.headers.get("etag") or etag
+    if resp.status_code != 200:
+        logger.warning("Alice GET %s -> %s", _EMAIL_THEMES_PATH, resp.status_code)
+        return None
+    try:
+        body = resp.json()
+    except ValueError:
+        return None
+    return 200, body, resp.headers.get("etag")
+
+
 async def invoices(user_id: UUID) -> list[dict]:
     data = await _call("GET", f"/api/v1/internal/invoices/{user_id}")
     return data if isinstance(data, list) else []

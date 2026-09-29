@@ -4,7 +4,7 @@ import type {
   Statement, SubscriptionRequest, Waterfall,
   BillingSubscription, PaymentMethods, BillingPlan, BillingInvoice, BillingStatus,
   PerformanceBlock, CapitalAccountLine, ProjectValuation, LateCall, InvestorCategory,
-  CamtImport, Fund, FundNetAssetValue, CallNotice, InvestorQuota,
+  CamtImport, Fund, FundNetAssetValue, CallNotice, InvestorQuota, EmailLook,
 } from '@/types'
 
 export const authApi = {
@@ -19,6 +19,15 @@ export const authApi = {
     apiClient.post('/auth/change-password',
       { current_password: currentPassword, new_password: newPassword },
       { skipErrorToast: true }),
+}
+
+// The settings of the account that sends the letters. The look is the management
+// company's: a member's choice lands on the company's row, on the server.
+export const accountApi = {
+  emailTheme: () => apiClient.get<EmailLook>('/account/email-theme'),
+  // `null` goes back to the product's own look. The refusal is shown in place.
+  setEmailTheme: (key: string | null) =>
+    apiClient.put<EmailLook>('/account/email-theme', { email_theme: key }, { skipErrorToast: true }),
 }
 
 export const investorsApi = {

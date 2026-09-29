@@ -25,6 +25,38 @@ export interface Me {
   account_kind_label: string | null
 }
 
+/** One family of e-mail looks, as Alice's catalogue names it (French display text). */
+export interface EmailFamily {
+  key: string
+  name: string
+  hint: string
+}
+
+export type EmailLayout = 'center' | 'band' | 'rule' | 'crest' | 'none'
+
+/** One e-mail look of Alice's catalogue: a layout and three `#rrggbb` colours. */
+export interface EmailTheme {
+  key: string
+  name: string
+  description: string
+  family: string
+  layout: EmailLayout
+  ink: string
+  accent: string
+  soft: string
+}
+
+/** The management company's look, and what it may choose from. */
+export interface EmailLook {
+  /** Null: the product's own look, the console's default. */
+  email_theme: string | null
+  default: string | null
+  families: EmailFamily[]
+  themes: EmailTheme[]
+  /** False when the console never answered and no copy is kept. */
+  catalogue_available: boolean
+}
+
 export interface Investor {
   id: string
   kind: string
