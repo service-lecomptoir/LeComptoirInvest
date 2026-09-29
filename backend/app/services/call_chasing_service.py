@@ -25,7 +25,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import accrual, money
+from app.core import accrual, display, money
 from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.treasury import CapitalCall, Contribution
@@ -171,10 +171,10 @@ def due_for_reminder(
         next_allowed = late.last_reminded_on + timedelta(days=every_days)
         if as_of < next_allowed:
             return False, pick(
-                f"Dernière relance le {late.last_reminded_on.isoformat()} : la suivante "
-                f"n'est pas due avant le {next_allowed.isoformat()}.",
-                f"Last reminded on {late.last_reminded_on.isoformat()}: the next one is not "
-                f"due before {next_allowed.isoformat()}.",
+                f"Dernière relance le {display.day(late.last_reminded_on)} : la suivante "
+                f"n'est pas due avant le {display.day(next_allowed)}.",
+                f"Last reminded on {display.day(late.last_reminded_on)}: the next one is not "
+                f"due before {display.day(next_allowed)}.",
             )
     return True, None
 

@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_manager, current_user, investor_scope
-from app.core import eligibility, instruments, kyc
+from app.core import display, eligibility, instruments, kyc
 from app.core import fund_time
 from app.database import get_db
 from app.models.investor import Investor
@@ -330,10 +330,10 @@ async def decide(
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             pick(
-                f"Ce montant dépasse le seuil de {threshold.amount} {request.currency} "
+                f"Ce montant dépasse le seuil de {display.amount(threshold.amount, request.currency)} "
                 f"applicable à cet investisseur : l'avertissement sur les risques doit "
                 f"avoir été reconnu avant tout engagement.",
-                f"This amount is over the {threshold.amount} {request.currency} threshold "
+                f"This amount is over the {display.amount(threshold.amount, request.currency)} threshold "
                 f"that applies to this investor: the risk warning has to have been "
                 f"acknowledged before any commitment.",
             ),

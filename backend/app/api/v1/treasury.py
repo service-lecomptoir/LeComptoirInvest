@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_manager, investor_scope
-from app.core import camt
+from app.core import camt, display
 from app.core import fund_time
 from app.database import get_db
 from app.models.fund import Fund
@@ -356,15 +356,16 @@ async def open_call(
         Decimal("0"),
     )
     if already + data.amount > subscription.amount:
+        cur = subscription.currency
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             pick(
-                f"L'engagement est de {subscription.amount} {subscription.currency} et "
-                f"{already} ont déjà été appelés : il ne reste que "
-                f"{subscription.amount - already} à appeler.",
-                f"The commitment is {subscription.amount} {subscription.currency} and "
-                f"{already} has already been called: only "
-                f"{subscription.amount - already} is left to call.",
+                f"L'engagement est de {display.amount(subscription.amount, cur)} et "
+                f"{display.amount(already, cur)} ont déjà été appelés : il ne reste que "
+                f"{display.amount(subscription.amount - already, cur)} à appeler.",
+                f"The commitment is {display.amount(subscription.amount, cur)} and "
+                f"{display.amount(already, cur)} has already been called: only "
+                f"{display.amount(subscription.amount - already, cur)} is left to call.",
             ),
         )
 

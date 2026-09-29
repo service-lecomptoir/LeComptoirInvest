@@ -33,7 +33,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import accrual, instruments, money
+from app.core import accrual, display, instruments, matching, money
 from app.core.instruments import EquityTerms, LoanTerms
 from app.models.fund import Fund
 from app.models.investor import Investor
@@ -422,9 +422,11 @@ async def propose(
         # come second »: subscribers come after the debt is COVERED, because paying them out
         # of the cash owed on the next instalment is what causes the default.
         blocked = pick(
-            f"Les prêteurs restent dus de {debt_remaining} {currency} : aucune somme ne "
+            f"Les prêteurs restent dus de {display.amount(debt_remaining, currency)} : "
+            f"aucune somme ne "
             f"peut aller aux souscripteurs tant que cette dette n'est pas couverte.",
-            f"The lenders are still owed {debt_remaining} {currency}: nothing can go to the "
+            f"The lenders are still owed {display.amount(debt_remaining, currency)}: "
+            f"nothing can go to the "
             f"subscribers while that debt stands.",
         )
     elif remaining > 0 and equity:
@@ -640,11 +642,8 @@ async def pay(
     used = sum((c + i for c, i in already), Decimal("0"))
     if distribution.net_paid > movement.amount - used:
         raise ValueError(
-            pick(
-                f"Ce virement ne porte plus que {movement.amount - used} "
-                f"{movement.currency} à imputer, et {distribution.net_paid} sont demandés.",
-                f"This transfer has only {movement.amount - used} {movement.currency} left "
-                f"to attribute, and {distribution.net_paid} is being asked for.",
+            matching.too_little_left(
+                movement.amount - used, distribution.net_paid, movement.currency
             )
         )
 

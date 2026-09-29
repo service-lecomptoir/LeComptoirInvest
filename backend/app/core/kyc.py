@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+from app.core import display
 from app.core.i18n import pick
 
 #: Never reviewed. The state every investor starts in.
@@ -135,7 +136,7 @@ def refusal_reason(
         )
     if is_stale(status, accepted_on, risk_level, today):
         due = review_due_on(accepted_on, risk_level)
-        when = due.isoformat() if due else "?"
+        when = display.day(due) if due else "?"
         return pick(
             f"L'acceptation de cet investisseur devait être revue le {when} : elle n'est "
             f"plus à jour, et aucun mouvement ne peut lui être imputé avant une nouvelle "

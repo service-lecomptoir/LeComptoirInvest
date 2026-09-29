@@ -28,7 +28,7 @@ from decimal import Decimal
 
 from jinja2 import Environment, select_autoescape
 
-from app.core import i18n
+from app.core import display, i18n, money
 
 from app.services.statement_service import Statement
 
@@ -57,8 +57,8 @@ _TEMPLATE = """
   <body>
     <h1>{{ labels.title }}</h1>
     <div class="meta">
-      <strong>{{ labels.for_investor }} :</strong> {{ statement.investor_name }}<br />
-      {% if issuer %}<strong>{{ labels.issued_by }} :</strong> {{ issuer }}{% endif %}
+      <strong>{{ labels.for_investor }}{{ colon }}</strong> {{ statement.investor_name }}<br />
+      {% if issuer %}<strong>{{ labels.issued_by }}{{ colon }}</strong> {{ issuer }}{% endif %}
     </div>
 
     {% if not statement.lines %}
@@ -81,22 +81,22 @@ _TEMPLATE = """
         <tr>
           <td>{{ line.instrument }}</td>
           <td>{{ line.currency }}</td>
-          <td class="n">{{ money(line.income_gross) }}</td>
-          <td class="n">{{ money(line.withholding) }}</td>
-          <td class="n">{{ money(line.income_net) }}</td>
-          <td class="n">{{ money(line.capital_repaid) }}</td>
-          <td class="n">{{ money(line.received) }}</td>
+          <td class="n">{{ money(line.income_gross, line.currency) }}</td>
+          <td class="n">{{ money(line.withholding, line.currency) }}</td>
+          <td class="n">{{ money(line.income_net, line.currency) }}</td>
+          <td class="n">{{ money(line.capital_repaid, line.currency) }}</td>
+          <td class="n">{{ money(line.received, line.currency) }}</td>
         </tr>
         {% endfor %}
         {% for currency, block in totals.items() %}
         <tr class="total">
           <td>{{ labels.totals }}</td>
           <td>{{ currency }}</td>
-          <td class="n">{{ money(block.income_gross) }}</td>
-          <td class="n">{{ money(block.withholding) }}</td>
-          <td class="n">{{ money(block.income_gross - block.withholding) }}</td>
-          <td class="n">{{ money(block.capital_repaid) }}</td>
-          <td class="n">{{ money(block.received) }}</td>
+          <td class="n">{{ money(block.income_gross, currency) }}</td>
+          <td class="n">{{ money(block.withholding, currency) }}</td>
+          <td class="n">{{ money(block.income_gross - block.withholding, currency) }}</td>
+          <td class="n">{{ money(block.capital_repaid, currency) }}</td>
+          <td class="n">{{ money(block.received, currency) }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -108,7 +108,7 @@ _TEMPLATE = """
     <table>
       <tbody>
         {% for currency, amount in statement.capital_at_work.items() %}
-        <tr><td>{{ currency }}</td><td class="n">{{ money(amount) }}</td></tr>
+        <tr><td>{{ currency }}</td><td class="n">{{ money(amount, currency) }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -122,7 +122,7 @@ _TEMPLATE = """
     <table>
       <tbody>
         {% for currency, amount in statement.decided_not_paid.items() %}
-        <tr><td>{{ currency }}</td><td class="n">{{ money(amount) }}</td></tr>
+        <tr><td>{{ currency }}</td><td class="n">{{ money(amount, currency) }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -133,23 +133,19 @@ _TEMPLATE = """
 """
 
 
-def _money(value: Decimal) -> str:
-    """Two decimals, grouped, and no currency sign.
+def _money(value: Decimal, currency: str) -> str:
+    """Grouped, to the currency's own minor unit, and no currency sign.
 
     ⚠️ THE CURRENCY HAS ITS OWN COLUMN, on purpose. A statement can carry euros and dollars
     on the same page, and gluing a sign onto every figure is how a reader adds two of them
     together. Here the amount is a number and the currency is a heading.
 
-    🔴 AND THE SEPARATORS FOLLOW THE READER, like every other choice in this document.
-    « 1 234,56 » and « 1,234.56 » are the same amount; read under the wrong convention,
-    « 1,234 » is either a thousand or one and a bit. On a document somebody files with a
-    tax authority that is not a cosmetic difference, and getting it wrong looks like
-    nothing at all.
+    🔴 AND THE SEPARATORS FOLLOW THE READER, through `display.number` like every figure the
+    product writes. « 1 234,56 » and « 1,234.56 » are the same amount; read under the wrong
+    convention, « 1,234 » is either a thousand or one and a bit. On a document somebody
+    files with a tax authority that is not a cosmetic difference.
     """
-    text = f"{Decimal(value):,.2f}"
-    if i18n.current_lang() == "en":
-        return text
-    return text.replace(",", " ").replace(".", ",")
+    return display.number(value, money.minor_units(currency))
 
 
 def render_html(statement: Statement, labels: dict, *, issuer: str = "") -> str:
@@ -173,6 +169,8 @@ def render_html(statement: Statement, labels: dict, *, issuer: str = "") -> str:
         totals=statement.totals_by_currency(),
         issuer=issuer,
         money=_money,
+        # French puts a no-break space before a colon, English none.
+        colon=" :" if i18n.current_lang() == "fr" else ":",
     )
 
 

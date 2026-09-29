@@ -81,8 +81,10 @@ export function day(value: string | null | undefined): string {
   return new Intl.DateTimeFormat(activeLocale(), { day: '2-digit', month: 'short', year: 'numeric' }).format(d)
 }
 
-/** A percentage from a fraction (0.08 -> « 8 % »). */
+/** A percentage from a fraction: « 8,00 % » in French (no-break space), « 8.00% » in English,
+ *  as the server writes it in the letters (`app/core/display.py`). */
 export function percent(fraction: number | null | undefined, digits = 2): string {
   if (fraction === null || fraction === undefined || !Number.isFinite(fraction)) return '-'
-  return `${number(fraction * 100, digits)} %`
+  const figure = number(fraction * 100, digits)
+  return activeLocale() === 'fr-FR' ? `${figure}\u00a0%` : `${figure}%`
 }

@@ -14,7 +14,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import kyc
+from app.core import kyc, matching
 from app.core.matching import Candidate, Proposal, propose
 from app.models.investor import Investor
 from app.models.subscription import Subscription
@@ -158,14 +158,7 @@ async def attribute(
     )
     remaining = movement.amount - sum(already, Decimal("0"))
     if amount > remaining:
-        raise ValueError(
-            pick(
-                f"Ce virement ne porte plus que {remaining} {movement.currency} à imputer, "
-                f"et {amount} sont demandés.",
-                f"This transfer has only {remaining} {movement.currency} left to attribute, "
-                f"and {amount} is being asked for.",
-            )
-        )
+        raise ValueError(matching.too_little_left(remaining, amount, movement.currency))
 
     # A payer who is not the investor is recorded as such rather than blocked: it is often
     # legitimate, and it is exactly what identification rules exist to surface.

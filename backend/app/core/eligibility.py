@@ -25,6 +25,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
+from app.core import display
 from app.core.i18n import pick
 
 #: An individual investing their own savings. The category the protections exist for.
@@ -156,9 +157,9 @@ def may_bind(
     if ends is None or on > ends:
         return True, None
     return False, pick(
-        f"Le délai de réflexion de cet investisseur court jusqu'au {ends.isoformat()} : "
+        f"Le délai de réflexion de cet investisseur court jusqu'au {display.day(ends)} : "
         f"aucun engagement ne peut être signé avant, et il peut se rétracter d'ici là.",
-        f"This investor's reflection period runs until {ends.isoformat()}: no commitment may "
+        f"This investor's reflection period runs until {display.day(ends)}: no commitment may "
         f"be signed before then, and they may step back until it ends.",
     )
 

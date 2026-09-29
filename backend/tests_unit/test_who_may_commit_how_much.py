@@ -124,7 +124,8 @@ class TestTheReflectionPeriod:
             requested_on=date(2026, 3, 1), category=e.RETAIL, on=date(2026, 3, 3)
         )
         assert allowed is False
-        assert "2026-03-05" in why
+        # The day as the reader writes it, never the database's ISO order.
+        assert "5 mars 2026" in why
 
     def test_binding_after_it_is_allowed(self):
         allowed, why = e.may_bind(

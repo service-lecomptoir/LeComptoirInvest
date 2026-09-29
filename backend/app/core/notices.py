@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
-from app.core import money, references
+from app.core import display, money, references
 from app.core.i18n import pick
 
 
@@ -75,16 +75,18 @@ class CallFacts:
 
 
 def _amount(value: Decimal, currency: str) -> str:
-    """The figure, quantised to the currency's own minor units.
+    """The figure as the reader writes it, to the currency's own minor units.
 
     ⚠️ NEVER `str(value)` STRAIGHT FROM THE COLUMN. `Numeric(18, 4)` renders « 1000.0000 »,
     and an investor reading four decimals on a euro amount wonders which two are the cents.
+    `display.amount` also groups the thousands and writes the currency's sign, in the
+    language this letter is being written in.
     """
-    return f"{money.quantize(value, currency)} {currency}"
+    return display.amount(value, currency)
 
 
 def _rate(fraction: float) -> str:
-    return f"{fraction * 100:.2f} %"
+    return display.percent(fraction)
 
 
 def _account_lines(facts: CallFacts) -> str:
@@ -149,7 +151,7 @@ def first_notice(facts: CallFacts) -> Notice:
         f"Appel de fonds {facts.reference} - {facts.fund_name}",
         f"Capital call {facts.reference} - {facts.fund_name}",
     )
-    due = facts.due_on.isoformat()
+    due = display.day(facts.due_on)
     parts = [
         # A name is a name in both languages; wrapping it in `pick` would only invite
         # somebody to translate one side of it.
@@ -202,7 +204,7 @@ def reminder(facts: CallFacts) -> Notice:
         f"Rappel - appel de fonds {facts.reference}",
         f"Reminder - capital call {facts.reference}",
     )
-    due = facts.due_on.isoformat()
+    due = display.day(facts.due_on)
     parts = [
         f"{facts.investor_name},",
         pick(
@@ -233,9 +235,9 @@ def reminder(facts: CallFacts) -> Notice:
         )
         parts.append(
             pick(
-                f"Intérêt de retard arrêté au {facts.as_of.isoformat()} : "
+                f"Intérêt de retard arrêté au {display.day(facts.as_of)} : "
                 f"{_amount(facts.late_interest, facts.currency)}{rate}.",
-                f"Late interest to {facts.as_of.isoformat()}: "
+                f"Late interest to {display.day(facts.as_of)}: "
                 f"{_amount(facts.late_interest, facts.currency)}{rate}.",
             )
         )

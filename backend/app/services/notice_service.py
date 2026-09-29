@@ -31,7 +31,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import email_envelope, i18n, notices
+from app.core import display, email_envelope, i18n, notices
 from app.core.i18n import pick
 from app.models.fund import Fund
 from app.models.investor import Investor
@@ -290,7 +290,7 @@ async def _late_call_for(
     # manager told « not late » about a call they can see is overdue would go looking for a
     # bug, when the answer is that the investor paid.
     facts, _ = await _facts(db, call, as_of=as_of)
-    when = as_of.isoformat()
+    when = display.day(as_of)
     if facts.outstanding <= 0:
         raise ValueError(
             pick(

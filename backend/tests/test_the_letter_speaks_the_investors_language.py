@@ -185,9 +185,9 @@ async def test_a_reminder_asks_for_what_is_still_missing_not_the_whole_call(db):
         db, call=call, as_of=LATE_ON, kind=notice_service.REMINDER
     )
 
-    assert "2000.00 EUR" in prepared.notice.body
-    assert "10000.00 EUR" not in prepared.notice.body
-    assert "8000.00 EUR" in prepared.notice.body  # what did arrive is acknowledged
+    assert "2 000,00 €" in prepared.notice.body
+    assert "10 000,00 €" not in prepared.notice.body
+    assert "8 000,00 €" in prepared.notice.body  # what did arrive is acknowledged
 
 
 async def test_a_reminder_is_refused_on_a_call_that_was_never_notified(db):
@@ -224,7 +224,7 @@ async def test_the_rate_stated_is_the_one_the_call_carries(db):
 
     prepared = await notice_service.prepare(db, call=call, as_of=CALLED_ON)
 
-    assert "5.00 %" in prepared.notice.body
+    assert "5,00 %" in prepared.notice.body
 
 
 async def test_no_rate_means_the_letter_says_nothing_about_interest(db):

@@ -167,7 +167,8 @@ async def test_a_reminder_sent_recently_holds_the_next_one_back(db):
     due, why = call_chasing_service.due_for_reminder(late, as_of=TODAY)
 
     assert due is False
-    assert "2026-05-10" in why
+    # The day as the reader writes it, never the database's ISO order.
+    assert "10 mai 2026" in why
 
 
 async def test_a_reminder_is_due_once_the_interval_has_passed(db):

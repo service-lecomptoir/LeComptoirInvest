@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.project import Deployment, Project, ProjectReturn
 from app.models.treasury import IN, OUT, BankMovement
+from app.core import matching
 from app.core.i18n import pick
 
 
@@ -159,14 +160,7 @@ async def deploy(
     )
     remaining = movement.amount - sum(already, Decimal("0"))
     if amount > remaining:
-        raise ValueError(
-            pick(
-                f"Ce virement ne porte plus que {remaining} {movement.currency} à imputer, "
-                f"et {amount} sont demandés.",
-                f"This transfer has only {remaining} {movement.currency} left to attribute, "
-                f"and {amount} is being asked for.",
-            )
-        )
+        raise ValueError(matching.too_little_left(remaining, amount, movement.currency))
 
     deployment = Deployment(
         project_id=project.id,
@@ -234,12 +228,7 @@ async def record_return(
     used = sum((c + i for c, i in already), Decimal("0"))
     if total > movement.amount - used:
         raise ValueError(
-            pick(
-                f"Ce virement ne porte plus que {movement.amount - used} "
-                f"{movement.currency} à imputer, et {total} sont demandés.",
-                f"This transfer has only {movement.amount - used} {movement.currency} left "
-                f"to attribute, and {total} is being asked for.",
-            )
+            matching.too_little_left(movement.amount - used, total, movement.currency)
         )
 
     returned = ProjectReturn(

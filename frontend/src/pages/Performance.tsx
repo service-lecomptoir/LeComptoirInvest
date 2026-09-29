@@ -6,7 +6,7 @@ import { Select } from '@/components/ui'
 import {
   Card, EmptyState, Kpi, KpiRow, Loading, Notice, PageHeader,
 } from '@/components/common/Primitives'
-import { money, percent } from '@/lib/format'
+import { money, number, percent } from '@/lib/format'
 import type { PerformanceBlock } from '@/types'
 
 /**
@@ -40,7 +40,7 @@ export default function Performance() {
    *  The API sends decimals as strings, so exactness survives the wire: they are turned
    *  into numbers here, at the only place where the value is being displayed. */
   const ratio = (value: string | null | undefined) =>
-    value == null ? '-' : `${Number(value).toFixed(2)}x`
+    value == null ? '-' : `${number(value)}x`
 
   const years = Array.from({ length: 6 }, (_, i) => thisYear - i)
 

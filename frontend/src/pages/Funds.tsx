@@ -7,7 +7,7 @@ import { Button, Input, Select } from '@/components/ui'
 import {
   Card, EmptyState, Kpi, KpiRow, Loading, Notice, PageHeader, Pill, TableWrap, Td, Th,
 } from '@/components/common/Primitives'
-import { money, day } from '@/lib/format'
+import { money, day, percent } from '@/lib/format'
 import { toast } from '@/store/toast'
 import type { Fund, FundNetAssetValue, FundStatus } from '@/types'
 
@@ -106,8 +106,7 @@ export default function Funds() {
     }
   }
 
-  const pct = (value: number | undefined) =>
-    value == null ? '-' : `${(value * 100).toFixed(2)} %`
+  const pct = (value: number | undefined) => (value == null ? '-' : percent(value))
 
   return (
     <>

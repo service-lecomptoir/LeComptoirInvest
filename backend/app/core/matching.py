@@ -32,6 +32,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import Decimal
+
+from app.core import display
 from app.core.i18n import pick
 
 #: The account it landed on belongs to exactly one investor.
@@ -234,4 +236,20 @@ def propose(
             else pick("aucun indice exploitable", "no usable clue")
         )
         + ".",
+    )
+
+
+def too_little_left(left: Decimal, asked: Decimal, currency: str) -> str:
+    """The refusal when a transfer holds less than what is being attributed to it.
+
+    🔴 ONE SENTENCE FOR FOUR PLACES: an incoming contribution, a deployment, a project
+    return and a distribution all attribute part of a bank line, and all four refused with
+    their own copy of this sentence, each writing the amounts by hand. Both amounts are in
+    the transfer's currency, written for the reader.
+    """
+    return pick(
+        f"Ce virement ne porte plus que {display.amount(left, currency)} à imputer, et "
+        f"{display.amount(asked, currency)} sont demandés.",
+        f"This transfer has only {display.amount(left, currency)} left to attribute, and "
+        f"{display.amount(asked, currency)} is being asked for.",
     )
