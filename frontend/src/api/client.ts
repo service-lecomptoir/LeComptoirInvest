@@ -1,6 +1,7 @@
 import axios from 'axios'
 import i18n from '@/i18n'
 import { toast } from '@/store/toast'
+import { loginFor } from '@/lib/nextPath'
 
 declare module 'axios' {
   export interface AxiosRequestConfig {
@@ -65,7 +66,8 @@ apiClient.interceptors.response.use(
       // ⚠️ NOT FROM A PUBLIC DOOR: a visitor on the pricing page holding a stale token
       // would be thrown to the sign-in while reading the prices.
       if (!PUBLIC_DOORS.some((door) => window.location.pathname.startsWith(door))) {
-        window.location.href = '/login'
+        const { pathname, search, hash } = window.location
+        window.location.href = loginFor(`${pathname}${search}${hash}`)
       }
       return Promise.reject(error)
     }

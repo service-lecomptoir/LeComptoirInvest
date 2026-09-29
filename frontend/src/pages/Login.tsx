@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button, Input } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
@@ -7,6 +7,7 @@ import { errorMessage } from '@/api/client'
 import { useAuthStore } from '@/store/authStore'
 import { LogoMark } from '@/components/common/Logo'
 import { SignupForm } from '@/components/signup/SignupForm'
+import { safeNext } from '@/lib/nextPath'
 
 export default function Login() {
   const { t, i18n } = useTranslation()
@@ -19,6 +20,9 @@ export default function Login() {
   }, [t, i18n.language])
   const { login, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
+  // Where the reader was sent away from, if it is a path of this site (`lib/nextPath`).
+  const [params] = useSearchParams()
+  const next = safeNext(params.get('next')) ?? '/'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -27,7 +31,7 @@ export default function Login() {
   // prospect chooses a catalogue plan, Alice confirms the e-mail and opens the account.
   const [signingUp, setSigningUp] = useState(false)
 
-  if (isAuthenticated) return <Navigate to="/" replace />
+  if (isAuthenticated) return <Navigate to={next} replace />
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,7 +39,7 @@ export default function Login() {
     setBusy(true)
     try {
       await login(email.trim(), password)
-      navigate('/', { replace: true })
+      navigate(next, { replace: true })
     } catch (err) {
       // Shown in place rather than as a toast: the user is looking at this form, and a
       // message that fades while they retype is a message they will miss.

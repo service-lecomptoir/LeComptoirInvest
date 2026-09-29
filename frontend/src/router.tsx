@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Shell } from '@/components/layout/Shell'
 import { useAuthStore } from '@/store/authStore'
+import { loginFor } from '@/lib/nextPath'
 import Login from '@/pages/Login'
 import Pricing from '@/pages/Pricing'
 import MyProfile from '@/pages/profile/MyProfile'
@@ -37,7 +38,11 @@ function RequireAuth() {
   const mustChangePassword = useAuthStore((s) => s.mustChangePassword)
   const location = useLocation()
 
-  if (!isAuthenticated) return <Navigate to="/login" replace />
+  // ⚠️ THE WAY BACK TRAVELS WITH THE READER (`?next=`): the « Mon abonnement » link the
+  // console e-mails lands here without a session, and must reach `/billing` once signed in.
+  if (!isAuthenticated) {
+    return <Navigate to={loginFor(`${location.pathname}${location.search}${location.hash}`)} replace />
+  }
 
   // 🔴 THE FORCED CHANGE BLOCKS EVERYTHING ELSE, and this is the only place to apply it.
   // Putting it on every screen would leave the one we forget serve as a back door, and it
