@@ -403,11 +403,19 @@ class TestTheProductRefusesWhatItCannotHonour:
         )
         assert r.status_code == 422
 
-    async def test_an_account_without_a_credential_is_refused(self, client):
+    async def test_an_account_without_a_credential_is_born_unusable(self, client, db):
+        """No password is the console's normal case since `password_link`: the account is
+        born with a secret nobody saw, and the holder chooses theirs through the link
+        (`test_a_forgotten_password_comes_back_through_a_link.py`)."""
         r = await client.post(
             "/internal/managers", headers=auth(), json={"email": "x@fonds.fr"}
         )
-        assert r.status_code == 422
+        assert r.status_code == 201
+        user = (
+            await db.execute(select(User).where(User.email == "x@fonds.fr"))
+        ).scalar_one()
+        assert user.must_change_password is False
+        assert not verify_password("", user.hashed_password)
 
     async def test_a_duplicate_e_mail_is_a_conflict(self, client, db):
         await _manager(db, "deja@fonds.fr")

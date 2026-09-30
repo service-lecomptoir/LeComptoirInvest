@@ -158,7 +158,7 @@ export default function StatementPage() {
             </Notice>
             {Object.keys(data.capital_at_work).length > 0 && (
               <Card className="px-4 py-3">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500">
+                <p className="text-[11px] font-medium text-gray-500">
                   {t('statement.atWorkAtYearEnd')}
                 </p>
                 <div className="mt-1.5 space-y-0.5">

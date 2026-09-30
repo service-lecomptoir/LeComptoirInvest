@@ -20,11 +20,11 @@ silence is worse than a refusal: the prospect believes they have been heard.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr, Field
 
 from app.core import account_kind
-from app.core.i18n import current_lang, pick
+from app.core.i18n import current_lang, french_colons, pick
 from app.core.landlord_kind_values import COMPANY, PERSON
 from app.core.visitor_window import VisitorWindow
 from app.services import alice_client
@@ -77,8 +77,15 @@ class AccessRequest(BaseModel):
     country: str = Field(default="FR", max_length=60)
 
 
+#: The request left and the console did not answer in time: it may well be filed. Not
+#: Alice's word: this product's, said when it gave up waiting.
+NOT_ANSWERED = "not_answered"
+
+
 class Outcome(BaseModel):
-    #: Alice's word: `confirmation_sent`, `account_exists`, `account_created`, `received`.
+    #: Alice's word: `confirmation_sent`, `confirmation_not_sent` (filed, but the
+    #: confirmation e-mail could not leave), `account_exists`, `account_created`,
+    #: `received`; or `not_answered`, this product's own.
     status: str = "received"
     message: str
     login_url: str | None = None
@@ -195,9 +202,25 @@ def _own_sentence(word: str) -> str:
     if word == "confirmation_sent":
         return pick(
             "Un e-mail de confirmation vient de partir : cliquez sur le lien qu'il contient "
-            "pour activer votre compte. Vos identifiants vous seront envoyés ensuite.",
+            "pour activer votre compte. Vos accès vous seront envoyés ensuite.",
             "A confirmation e-mail is on its way: click the link it contains to activate "
-            "your account. Your credentials will be sent to you next.",
+            "your account. Your access will be sent to you next.",
+        )
+    if word == "confirmation_not_sent":
+        return pick(
+            "Votre demande est enregistrée, mais l'e-mail de confirmation n'a pas pu partir. "
+            "Réessayez dans quelques minutes, ou écrivez-nous à contact@lecomptoir.services.",
+            "Your request is recorded, but the confirmation e-mail could not be sent. Try "
+            "again in a few minutes, or write to us at contact@lecomptoir.services.",
+        )
+    if word == NOT_ANSWERED:
+        return pick(
+            "Votre demande est partie, mais la réponse a tardé : si un e-mail de confirmation "
+            "vous parvient dans quelques minutes, elle est bien enregistrée. Sinon, réessayez "
+            "ou écrivez-nous à contact@lecomptoir.services.",
+            "Your request was sent, but the answer was late: if a confirmation e-mail reaches "
+            "you within a few minutes, it is recorded. Otherwise, try again or write to us at "
+            "contact@lecomptoir.services.",
         )
     if word == "account_exists":
         return pick(
@@ -215,14 +238,20 @@ def _own_sentence(word: str) -> str:
     )
 
 
-_KNOWN_ANSWERS = ("confirmation_sent", "account_exists", "account_created", "received")
+_KNOWN_ANSWERS = (
+    "confirmation_sent",
+    "confirmation_not_sent",
+    "account_exists",
+    "account_created",
+    "received",
+)
 
 
 @router.post(
     "/access-request", response_model=Outcome, status_code=status.HTTP_201_CREATED
 )
 async def access_request(
-    data: AccessRequest, _: None = Depends(rate_limited)
+    data: AccessRequest, response: Response, _: None = Depends(rate_limited)
 ) -> Outcome:
     """Files a sign-up with the console: with a catalogue plan, Alice sends the
     confirmation e-mail and creates the account; without one, an operator answers."""
@@ -250,6 +279,11 @@ async def access_request(
         # The console's own sentence (« Indiquez votre prénom et votre nom. »): it is what
         # the person must correct, said once, for every product.
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(refused)) from None
+    except alice_client.SignupNotAnswered:
+        # ⚠️ NOT A REFUSAL: said as an outcome (202, « accepted, not confirmed »), in the
+        # warning tone of the screen, never in its red error box.
+        response.status_code = status.HTTP_202_ACCEPTED
+        return Outcome(status=NOT_ANSWERED, message=_own_sentence(NOT_ANSWERED))
     except alice_client.AliceUnavailable as failed:
         # ⚠️ WE DO NOT PRETEND: the request exists nowhere if the call failed.
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(failed)) from None
@@ -263,7 +297,7 @@ async def access_request(
         and theirs.strip()
         and (current_lang() == "fr" or word not in _KNOWN_ANSWERS)
     ):
-        message = theirs.strip()
+        message = french_colons(theirs.strip())
     else:
         message = _own_sentence(word)
     return Outcome(

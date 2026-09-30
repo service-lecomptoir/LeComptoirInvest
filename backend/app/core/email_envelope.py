@@ -98,10 +98,16 @@ class Letter:
     footer: str
     #: The `lang` of the document, so a reader's screen reader speaks the right language.
     lang: str
+    #: One thing to do, as (label, http(s) address): a button under the body in the HTML
+    #: part, the bare address in the plain text. A two-hundred-character link written out
+    #: in the body fills eight lines of a phone; a button is one tap.
+    action: tuple[str, str] | None = None
 
     def text(self) -> str:
-        """The plain-text part: the body and the same signature as the HTML one."""
-        return self.body + "\n\n" + "\n".join(self.signature)
+        """The plain-text part: the body, the action's address, and the same signature as
+        the HTML one."""
+        parts = [self.body] if self.action is None else [self.body, self.action[1]]
+        return "\n\n".join(parts) + "\n\n" + "\n".join(self.signature)
 
 
 def _escape(value: str) -> str:
@@ -116,6 +122,28 @@ def _paragraphs(body: str) -> str:
         + "<br>".join(_escape(line) for line in block.split("\n"))
         + "</p>"
         for block in blocks
+    )
+
+
+def _action(look: Look, letter: Letter) -> str:
+    """The letter's one action as a button, its address in small print underneath.
+
+    ⚠️ ONLY AN http(s) ADDRESS BECOMES A LINK: anything else (`javascript:`, a typo) is left
+    out rather than rendered clickable.
+    """
+    if letter.action is None:
+        return ""
+    label, url = letter.action
+    if not url.lower().startswith(("https://", "http://")):
+        return ""
+    href = _escape(url)
+    return (
+        '<div style="text-align:center;margin:6px 0 18px">'
+        f'<a href="{href}" style="display:inline-block;background:{look.ink};'
+        "color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;"
+        f'font-weight:bold;font-size:14px">{_escape(label)}</a></div>'
+        f'<p style="margin:0 0 14px;font-size:12px;color:#94a3b8;{_BREAK_LONG_WORDS}">'
+        f"{href}</p>"
     )
 
 
@@ -198,7 +226,7 @@ def render(look: Look, letter: Letter) -> str:
     on 980 pixels and shrinks it), the letter is at most 600 pixels wide and never wider
     than the screen, and a long word breaks instead of pushing the edge.
     """
-    content = _paragraphs(letter.body) + _signature(letter)
+    content = _paragraphs(letter.body) + _action(look, letter) + _signature(letter)
     body_cell = (
         '<tr><td style="padding:24px;color:#334155;font-size:14px;line-height:1.7;'
         f'{_BREAK_LONG_WORDS}">{content}</td></tr>'

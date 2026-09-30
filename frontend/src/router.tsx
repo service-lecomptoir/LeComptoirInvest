@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/authStore'
 import { loginFor } from '@/lib/nextPath'
 import Login from '@/pages/Login'
 import Pricing from '@/pages/Pricing'
+import SetPassword from '@/pages/SetPassword'
 import MyProfile from '@/pages/profile/MyProfile'
 import Dashboard from '@/pages/Dashboard'
 import Treasury from '@/pages/Treasury'
@@ -47,8 +48,14 @@ function RequireAuth() {
   // 🔴 THE FORCED CHANGE BLOCKS EVERYTHING ELSE, and this is the only place to apply it.
   // Putting it on every screen would leave the one we forget serve as a back door, and it
   // is always the twelfth screen added under pressure that gets forgotten.
+  //
+  // ⚠️ AND THE WAY BACK SURVIVES IT: a holder sent to `/billing` by the console's e-mail,
+  // forced to change a handed-over password first, lands on `/billing` once it is done
+  // (customer recipe, 30 Sept 2026: they were left on the home page).
   if (mustChangePassword && location.pathname !== PROFILE_ROUTE) {
-    return <Navigate to={PROFILE_ROUTE} replace />
+    const back = `${location.pathname}${location.search}${location.hash}`
+    const query = back === '/' ? '' : `?next=${encodeURIComponent(back)}`
+    return <Navigate to={`${PROFILE_ROUTE}${query}`} replace />
   }
   return <Outlet />
 }
@@ -91,6 +98,8 @@ export const router = createBrowserRouter([
   // 🔴 PUBLIC, as on Le Comptoir Immo and RH: the catalogue plans and the sign-up, no
   // account needed. Outside `RequireAuth`, so a visitor is never sent to the sign-in first.
   { path: '/pricing', element: <Pricing /> },
+  // The page a password link opens (a first password, or a forgotten one): no session yet.
+  { path: '/set-password/:token', element: <SetPassword /> },
   {
     element: <RequireAuth />,
     children: [

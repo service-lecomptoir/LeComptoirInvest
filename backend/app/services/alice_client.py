@@ -16,9 +16,12 @@ they paid and did not is a support case, an error message is a retry.
 from __future__ import annotations
 
 import logging
+import ssl
+from functools import cache
 from typing import Any
 from uuid import UUID
 
+import certifi
 import httpx
 
 from app.config import get_settings
@@ -33,6 +36,26 @@ _ACTION_TIMEOUT = 15.0
 #: A lookup waits on a register the console itself asks (the national company search is
 #: the slow one): longer than a read, and still short enough for a form being typed.
 _LOOKUP_TIMEOUT = 8.0
+#: 🔴 A SIGN-UP WAITS LONGER THAN ANY OTHER CALL, because the console does real work before
+#: it answers: it asks THIS product whether the address already has an account
+#: (`GET /internal/managers`), files the request and sends the confirmation e-mail. On a
+#: loaded host that took more than 15 s in the customer recipe of 30 Sept 2026, and the
+#: prospect was told « not recorded » of a request the console went on to answer.
+_SIGNUP_TIMEOUT = 30.0
+
+
+@cache
+def _tls() -> ssl.SSLContext:
+    """The trust store, read ONCE for the life of the process.
+
+    🔴 `httpx.AsyncClient()` without `verify` builds a new SSL context each time, and that
+    reads and parses the whole CA bundle SYNCHRONOUSLY, inside the event loop, even for a
+    plain `http://` call. Measured in the customer recipe of 30 Sept 2026: 3.5 s per call to
+    the console on a loaded machine (0.1 s for the console itself), during which the worker
+    answered nobody. One context serves every client; the bundle does not change while the
+    process lives. Guard: `tests_unit/test_the_event_loop_is_never_held.py`.
+    """
+    return ssl.create_default_context(cafile=certifi.where())
 
 
 def _target() -> tuple[str, dict[str, str]] | None:
@@ -73,7 +96,7 @@ async def _call(
         return None
     base, headers = target
     try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        async with httpx.AsyncClient(timeout=timeout, verify=_tls()) as client:
             resp = await client.request(
                 method, f"{base}{path}", headers=headers, json=json, params=params
             )
@@ -211,6 +234,15 @@ class SignupRefused(ValueError):
     """The console refused a sign-up and said why, in one sentence the person can act on."""
 
 
+class SignupNotAnswered(RuntimeError):
+    """The sign-up LEFT, and the console did not answer in time: it may well be filed.
+
+    ⚠️ NOT A REFUSAL AND NOT A LOSS. The console may have filed it and sent the
+    confirmation e-mail; « not recorded » would then be a lie, and the prospect who tries
+    again is told the account already exists.
+    """
+
+
 async def public_plans() -> list[dict]:
     """The plans the console sells for THIS product, as its catalogue lists them.
 
@@ -239,17 +271,23 @@ async def file_lead(payload: dict) -> dict:
     🔴 NEVER FAIL-SOFT, and that is the one difference with every read above: a request
     swallowed in silence sends the prospect waiting for an answer that will never come.
     Raises `SignupRefused` with the console's sentence on a 422 (« Indiquez votre prénom
-    et votre nom. »), `AliceUnavailable` on any other failure.
+    et votre nom. »), `SignupNotAnswered` when the request left but no answer came in
+    time, `AliceUnavailable` on any other failure.
     """
     target = _target()
     if target is None:
         raise AliceUnavailable(_lead_unavailable())
     base, headers = target
     try:
-        async with httpx.AsyncClient(timeout=_ACTION_TIMEOUT) as client:
+        async with httpx.AsyncClient(timeout=_SIGNUP_TIMEOUT, verify=_tls()) as client:
             resp = await client.post(
                 f"{base}{_LEADS_PATH}", headers=headers, json=payload
             )
+    except (httpx.ReadTimeout, httpx.WriteTimeout):
+        # The request reached the console (or was being written to it): only its answer
+        # is missing. A connection refused or a connect timeout never left, and stays below.
+        logger.warning("Alice POST %s: sent, no answer in time", _LEADS_PATH)
+        raise SignupNotAnswered() from None
     except Exception as exc:  # noqa: BLE001
         logger.warning("Alice POST %s injoignable : %s", _LEADS_PATH, exc)
         raise AliceUnavailable(_lead_unavailable()) from None
@@ -291,7 +329,7 @@ async def email_themes(etag: str | None) -> tuple[int, Any, str | None] | None:
     if etag:
         headers = {**headers, "If-None-Match": etag}
     try:
-        async with httpx.AsyncClient(timeout=_READ_TIMEOUT) as client:
+        async with httpx.AsyncClient(timeout=_READ_TIMEOUT, verify=_tls()) as client:
             resp = await client.get(
                 f"{base}{_EMAIL_THEMES_PATH}", headers=headers, params={"app": PRODUCT}
             )
@@ -322,7 +360,7 @@ async def invoice_pdf(user_id: UUID, invoice_id: str) -> tuple[bytes, str] | Non
         return None
     base, headers = target
     try:
-        async with httpx.AsyncClient(timeout=_ACTION_TIMEOUT) as client:
+        async with httpx.AsyncClient(timeout=_ACTION_TIMEOUT, verify=_tls()) as client:
             resp = await client.get(
                 f"{base}/api/v1/internal/invoices/{user_id}/{invoice_id}/pdf",
                 headers=headers,

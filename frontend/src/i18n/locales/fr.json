@@ -62,8 +62,17 @@
     "pitchBody": "Le vôtre tient vos véhicules d'investissement pays par pays : chacun garde sa monnaie, son numéro d'entreprise et son droit local. Quatre mouvements, et ils se recoupent toujours : ce que l'investisseur a promis, ce qu'on lui a demandé, ce qui est arrivé sur le compte, et ce qu'on lui a reversé. Pensé pour l'investisseur globetrotteur.",
     "noAccount": "Pas encore de compte ?",
     "askAccess": "Créer un compte",
-    "askAccessHelp": "Choisissez votre formule : un e-mail de confirmation vous est envoyé, puis votre compte s'ouvre avec vos identifiants. Une société de gestion qui gère plusieurs véhicules reçoit un devis.",
-    "seePricing": "Voir les tarifs"
+    "askAccessHelp": "Choisissez votre formule : un e-mail de confirmation vous est envoyé, puis votre compte s'ouvre et vos accès vous parviennent. Une société de gestion qui gère plusieurs véhicules reçoit un devis.",
+    "seePricing": "Voir les tarifs",
+    "forgot": "Mot de passe oublié ?",
+    "forgotTitle": "Mot de passe oublié",
+    "forgotHelp": "Indiquez l'adresse de votre compte : un lien pour choisir un nouveau mot de passe vous y sera envoyé.",
+    "forgotEmailHint": "Celle avec laquelle vous vous connectez.",
+    "forgotSubmit": "Recevoir un lien",
+    "forgotSentTitle": "Regardez votre boîte e-mail",
+    "backToSignIn": "Revenir à la connexion",
+    "missing": "Indiquez votre adresse e-mail et votre mot de passe.",
+    "forgotMissing": "Indiquez l'adresse e-mail de votre compte."
   },
   "errors": {
     "expired": "Session expirée. Reconnectez-vous.",
@@ -353,7 +362,10 @@
     "mustTitle": "Un mot de passe à remplacer",
     "optionalTitle": "Votre mot de passe",
     "reveal": "Afficher le mot de passe",
-    "hide": "Masquer le mot de passe"
+    "hide": "Masquer le mot de passe",
+    "newHint": "Dix caractères au moins. Une phrase courte se retient mieux qu'un mot compliqué.",
+    "confirmHint": "Le même, une seconde fois, pour écarter une faute de frappe.",
+    "currentMissing": "Indiquez votre mot de passe actuel."
   },
   "kyc": {
     "decide": "Rendre un verdict",
@@ -442,7 +454,7 @@
     "investorLimit_other": "{{count}} investisseurs inclus",
     "unlimitedInvestors": "Nombre d'investisseurs illimité",
     "active": "Actif",
-    "notSubscribed": "Non souscrit",
+    "notSubscribed": "Paiement à mettre en place",
     "renewsOn": "Prochain prélèvement le {{date}}.",
     "endsOn": "Se termine le {{date}}, sans renouvellement.",
     "accessUntil": "Accès ouvert jusqu'au {{date}}.",
@@ -597,7 +609,7 @@
     "title": "Mon profil",
     "subtitle": "Votre compte et vos réglages.",
     "identity": "Identité du compte",
-    "company": "Société de gestion",
+    "company": "Nom du compte",
     "email": "Adresse e-mail",
     "role": "Rôle",
     "accountKind": "Type de compte",
@@ -607,7 +619,7 @@
   },
   "emailTheme": {
     "title": "Apparence des e-mails",
-    "lead": "Les lettres envoyées à vos investisseurs (appels de fonds, relances) portent l'apparence choisie ici, pour toute votre société de gestion.",
+    "lead": "Les lettres envoyées au nom de votre société de gestion (appels de fonds, relances, liens pour choisir un mot de passe) portent l'apparence choisie ici.",
     "productDefault": "Celle du produit (par défaut)",
     "productDefaultNamed": "Aujourd'hui : {{name}}. Elle suit le réglage de la console.",
     "productDefaultUnnamed": "L'apparence que la console donne à ce produit.",
@@ -750,7 +762,7 @@
     "lastName": "Nom",
     "lastNameHint": "Votre nom de famille.",
     "email": "Adresse e-mail",
-    "emailHint": "Le lien de confirmation et vos identifiants y seront envoyés.",
+    "emailHint": "Le lien de confirmation, puis vos accès, y seront envoyés.",
     "phone": "Téléphone",
     "phoneHint": "Pour vous joindre au sujet de votre compte.",
     "address": "Adresse",
@@ -761,9 +773,8 @@
     "cityHint": "Complétée par le choix d'une adresse.",
     "need": "Votre besoin",
     "needHint": "Le nombre de véhicules et d'investisseurs, pour une offre juste.",
-    "needNumber": "Indiquez le {{label}} de la société.",
     "badNumber": "Ce SIREN ou SIRET n'est pas valide : vérifiez les chiffres.",
-    "next": "Après l'envoi : un e-mail de confirmation ; votre clic ouvre le compte et vos identifiants arrivent par e-mail.",
+    "next": "Après l'envoi : un e-mail de confirmation ; votre clic ouvre le compte, puis vos accès arrivent par e-mail.",
     "quoteNext": "Notre équipe vous répond avec une offre adaptée au nombre de véhicules que vous gérez.",
     "create": "Créer mon compte",
     "askQuote": "Demander un devis",
@@ -774,9 +785,14 @@
       "confirmation_sent": "Vérifiez votre boîte e-mail",
       "account_created": "Compte créé",
       "account_exists": "Vous avez déjà un compte",
-      "received": "Demande enregistrée"
+      "received": "Demande enregistrée",
+      "confirmation_not_sent": "E-mail non envoyé",
+      "not_answered": "Réponse en attente"
     },
-    "badEmail": "Cette adresse e-mail n'est pas valide : vérifiez-la."
+    "badEmail": "Cette adresse e-mail n'est pas valide : vérifiez-la.",
+    "retry": "Réessayer",
+    "emailHintQuote": "Notre réponse et notre offre vous y seront envoyées.",
+    "missing": "Renseignez : {{fields}}."
   },
   "siretInput": {
     "invalid": "Numéro invalide : la clé ne correspond pas (9 chiffres pour un SIREN, 14 pour un SIRET).",
@@ -787,5 +803,20 @@
     "verifiedAs": "Vérifié au registre : {{name}}",
     "notFound": "Numéro introuvable au registre national : vérifiez-le, l'enregistrement reste possible.",
     "unreachable": "Le registre ne répond pas : le numéro sera vérifié plus tard."
+  },
+  "roles": {
+    "manager": "Gestionnaire",
+    "admin": "Administrateur",
+    "investor": "Investisseur"
+  },
+  "setPassword": {
+    "welcomeTitle": "Choisissez votre mot de passe",
+    "resetTitle": "Choisissez un nouveau mot de passe",
+    "for": "Pour le compte {{email}}.",
+    "checking": "Vérification du lien",
+    "deadTitle": "Ce lien ne peut plus servir",
+    "askNew": "Demander un nouveau lien",
+    "submit": "Enregistrer et me connecter",
+    "done": "Mot de passe enregistré."
   }
 }

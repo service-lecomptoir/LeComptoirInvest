@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { BookMarked, ChevronDown, CreditCard, LogOut, UserRound } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
+import { roleKey } from '@/lib/roleLabel'
 import { confirmDialog } from '@/store/confirm'
 
 /**
@@ -69,14 +70,17 @@ export function ProfileMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t('profile.open')}
-        className="flex items-center gap-1.5 px-1.5 py-1 rounded-xl hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-1.5 px-1.5 py-1 rounded-xl hover:bg-white/10 lg:hover:bg-gray-100 transition-colors"
       >
-        <span className="w-8 h-8 rounded-full bg-brand-navy/10 text-brand-navy text-sm font-semibold grid place-items-center">
+        {/* ⚠️ ON A TELEPHONE THE BAR IS NAVY: the navy initial on a pale navy disc was
+            invisible there, and the account menu looked like a lone chevron (customer
+            recipe, 30 Sept 2026). Light on the navy bar, navy on the white one. */}
+        <span className="w-8 h-8 rounded-full bg-white/15 text-white lg:bg-brand-navy/10 lg:text-brand-navy text-sm font-semibold grid place-items-center">
           {initial}
         </span>
         <ChevronDown
           size={14}
-          className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`text-white/70 lg:text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -89,7 +93,7 @@ export function ProfileMenu() {
               first, and the only one the avatar cannot say. */}
           <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
             <p className="text-sm font-medium text-gray-900 truncate">{email ?? '-'}</p>
-            <p className="text-xs text-gray-500 capitalize">{role ?? ''}</p>
+            <p className="text-xs text-gray-500">{t(roleKey(role))}</p>
           </div>
 
           <div className="py-1">

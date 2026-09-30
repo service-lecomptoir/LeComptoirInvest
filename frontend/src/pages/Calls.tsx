@@ -37,7 +37,7 @@ export default function Calls() {
             <Card key={c.id} className="p-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500">
+                  <p className="text-[11px] font-medium text-gray-500">
                     {t('common.dueDate')}
                   </p>
                   <p className="mt-0.5 text-sm text-gray-900">{day(c.due_on)}</p>
@@ -48,7 +48,7 @@ export default function Calls() {
               </div>
 
               <div className="mt-4 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500">
+                <p className="text-[11px] font-medium text-gray-500">
                   {t('common.reference')}
                 </p>
                 <p className="mt-0.5 font-mono text-base font-semibold tracking-wide text-brand-navy">

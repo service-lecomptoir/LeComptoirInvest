@@ -139,3 +139,65 @@ describe("aucune boîte du navigateur ne pose de question à l'utilisateur", () 
     expect(fautifs, `Utiliser confirmDialog() : ${fautifs.join(' | ')}`).toEqual([])
   })
 })
+
+describe('aucun mot en capitales à l’écran', () => {
+  /**
+   * 🔴 THE HOUSE RULE: no word in capitals in the interface. A `uppercase` class turned
+   * « Offre en cours », the table headers and the side bar's sections into shouting
+   * (customer recipe, 30 Sept 2026, twelve places). The one exception is a CODE that is
+   * written in capitals anyway: a language code (`FR`, `EN`) on the same line.
+   */
+  it('pas de classe uppercase, sauf pour un code de langue', () => {
+    const fautifs: string[] = []
+    for (const file of walk(SRC, /\.tsx$/)) {
+      withoutComments(readFileSync(file, 'utf8'))
+        .split(EOL)
+        .forEach((line, i) => {
+          if (!/\buppercase\b/.test(line)) return
+          if (/\{(l\.code|notice\.language)\}/.test(line)) return
+          fautifs.push(`${file.slice(SRC.length + 1)}:${i + 1} ${line.trim()}`)
+        })
+    }
+    expect(fautifs, `Texte en capitales : ${fautifs.join(' | ')}`).toEqual([])
+  })
+})
+
+describe('aucune bulle du navigateur sur un formulaire', () => {
+  /**
+   * 🔴 THE BROWSER'S VALIDATION BUBBLE IS A NATIVE DIALOG, in the browser's language rather
+   * than the page's: « Veuillez allonger ce texte » on the page where a new customer chooses
+   * their password (customer recipe, 30 Sept 2026). A form says what is missing in its own
+   * words, so it carries `noValidate`.
+   *
+   * ⚠️ A RATCHET: the screens below still lean on the browser. The list only shrinks; a
+   * new form that forgets `noValidate` fails here.
+   */
+  const NOT_YET = new Set([
+    'pages/Distributions.tsx',
+    'pages/Investors.tsx',
+    'pages/Portfolio.tsx',
+    'pages/Projects.tsx',
+    'pages/Subscriptions.tsx',
+    'pages/Treasury.tsx',
+  ])
+
+  it('chaque formulaire porte noValidate', () => {
+    const fautifs: string[] = []
+    for (const file of walk(SRC, /\.tsx$/)) {
+      const name = file.slice(SRC.length + 1).split(String.fromCharCode(92)).join('/')
+      if (NOT_YET.has(name)) continue
+      const source = withoutComments(readFileSync(file, 'utf8'))
+      for (const match of source.matchAll(/<form\b[^>]*>/g)) {
+        if (!/\bnoValidate\b/.test(match[0])) fautifs.push(`${name}: ${match[0].slice(0, 60)}`)
+      }
+    }
+    expect(fautifs, `Formulaire sans noValidate : ${fautifs.join(' | ')}`).toEqual([])
+  })
+
+  it('la liste des écrans en attente ne nomme que des fichiers qui en ont encore besoin', () => {
+    for (const name of NOT_YET) {
+      const source = withoutComments(readFileSync(join(SRC, name), 'utf8'))
+      expect(/<form\b(?![^>]*noValidate)[^>]*>/.test(source), name).toBe(true)
+    }
+  })
+})

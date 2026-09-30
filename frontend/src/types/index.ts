@@ -292,6 +292,8 @@ export interface BillingStatus {
   cancel_at_period_end?: boolean
   payment_method?: string | null
   transfer_pending?: boolean
+  /** The plan's price as the console bills it: the licence does not carry it. */
+  monthly_price?: number | null
 }
 
 // ── Performance ─────────────────────────────────────────────────────────────────────

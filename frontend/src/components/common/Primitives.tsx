@@ -48,7 +48,7 @@ export function Kpi({
   }[tone]
   return (
     <Card className="px-4 py-3.5">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500">{label}</p>
+      <p className="text-[11px] font-medium text-gray-500">{label}</p>
       <p className={clsx('mt-1.5 text-xl font-semibold tabular-nums tracking-tight', toneCls)}>{value}</p>
       {hint && <p className="mt-1 text-xs text-gray-500 leading-snug">{hint}</p>}
     </Card>
@@ -76,7 +76,7 @@ export function Th({
   return (
     <th
       className={clsx(
-        'px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border-b border-gray-200 whitespace-nowrap',
+        'px-4 py-2.5 text-[11px] font-semibold text-gray-500 bg-gray-50 border-b border-gray-200 whitespace-nowrap',
         right ? 'text-right' : 'text-left',
         className,
       )}

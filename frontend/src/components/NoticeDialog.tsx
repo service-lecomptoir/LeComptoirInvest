@@ -101,9 +101,7 @@ export function NoticeDialog({
                 </p>
                 <p className="text-gray-600">
                   {t('notice.language')}{' '}
-                  <span className="font-medium text-gray-900 uppercase">
-                    {notice.language}
-                  </span>
+                  <span className="font-medium text-gray-900 uppercase">{notice.language}</span>
                 </p>
                 <p className="text-gray-600">
                   {t('notice.kind')}{' '}

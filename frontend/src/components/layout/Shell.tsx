@@ -106,7 +106,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
     <nav className="sidebar-scroll flex-1 overflow-y-auto px-2 py-2 space-y-5">
       {groups.map((group) => (
         <div key={group.section}>
-          <p className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/40">
+          <p className="px-2 mb-1.5 text-[11px] font-semibold text-white/50">
             {t(group.section)}
           </p>
           <ul className="space-y-0.5">

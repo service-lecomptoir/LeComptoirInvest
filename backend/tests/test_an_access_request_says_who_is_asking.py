@@ -305,3 +305,55 @@ async def test_the_limit_counts_each_visitor_not_the_gateway(client, no_console)
         headers={"X-Forwarded-For": "198.51.100.9"},
     )
     assert neighbour.status_code == 503, "another visitor behind the same proxy"
+
+
+@pytest.mark.parametrize(
+    "late", [httpx.ReadTimeout("slow"), httpx.WriteTimeout("slow")]
+)
+async def test_a_late_answer_is_not_a_lost_request(client, console, late):
+    """🔴 The request LEFT; only the console's answer is late (customer recipe, 30 Sept
+    2026: 15 s on a loaded host, and « not recorded » said of a sign-up the console went on
+    to file). Never the red refusal: an outcome, in the warning tone, that says how to
+    know."""
+    _seen, answers = console
+    answers[LEADS] = late
+    out = await client.post("/api/v1/public/access-request", json=_body())
+    assert out.status_code == 202
+    said = out.json()
+    assert said["status"] == "not_answered"
+    assert said["message"].startswith(
+        "Votre demande est partie, mais la réponse a tardé"
+    )
+    assert "n'avons pas pu enregistrer" not in said["message"]
+
+
+async def test_a_confirmation_that_could_not_leave_is_said_as_the_console_says_it(
+    client, console
+):
+    """Alice files the sign-up but its e-mail did not leave: her sentence, as it is, for a
+    French reader; this product's own for an English one."""
+    _seen, answers = console
+    alice = (
+        "Votre inscription est enregistrée, mais l’e-mail de confirmation n’a pas pu "
+        "partir. Réessayez dans quelques minutes."
+    )
+    answers[LEADS] = httpx.Response(
+        201, json={"status": "confirmation_not_sent", "message": alice}
+    )
+    said = (await client.post("/api/v1/public/access-request", json=_body())).json()
+    assert said == {
+        "status": "confirmation_not_sent",
+        "message": alice,
+        "login_url": None,
+        "subscription_url": None,
+    }
+    english = (
+        await client.post(
+            "/api/v1/public/access-request",
+            json=_body(),
+            headers={"Accept-Language": "en"},
+        )
+    ).json()
+    assert english["message"].startswith(
+        "Your request is recorded, but the confirmation"
+    )

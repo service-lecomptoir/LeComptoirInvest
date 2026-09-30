@@ -172,7 +172,7 @@ export default function Distributions() {
               [t('distributions.keptByFund'), waterfall.undistributed],
             ].map(([label, value]) => (
               <Card key={label as string} className="px-4 py-3">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500">{label}</p>
+                <p className="text-[11px] font-medium text-gray-500">{label}</p>
                 <p className="mt-1 text-lg font-semibold tabular-nums">
                   {money(value as string, waterfall.currency)}
                 </p>

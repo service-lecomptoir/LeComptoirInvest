@@ -107,7 +107,7 @@ export default function Portfolio() {
                 francs is holding two portfolios, and adding them up gives a number that is
                 an asset nowhere. That is also how the bank presents it. */}
             {currencies.length > 1 && (
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              <p className="mb-2 text-[11px] font-semibold text-gray-500">
                 {t('dashboard.positionIn', { currency })}
               </p>
             )}

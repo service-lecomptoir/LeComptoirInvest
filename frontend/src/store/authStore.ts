@@ -33,6 +33,8 @@ interface AuthState {
   mustChangePassword: boolean
 
   login: (email: string, password: string) => Promise<void>
+  /** Open the session a password link just earned (the token the server answered). */
+  adopt: (token: string) => Promise<void>
   logout: () => void
   initialize: () => Promise<void>
   refreshMe: () => Promise<void>
@@ -97,6 +99,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.setItem(TOKEN_KEY, data.access_token)
     // We re-read `/auth/me` rather than settling for the sign-in response: a single
     // source decides what the application draws.
+    await useAuthStore.getState().refreshMe()
+  },
+
+  adopt: async (token) => {
+    localStorage.setItem(TOKEN_KEY, token)
     await useAuthStore.getState().refreshMe()
   },
 

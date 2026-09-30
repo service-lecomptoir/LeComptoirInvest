@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Building2, Landmark, Mail, ShieldCheck } from 'lucide-react'
 
 import { Card, PageHeader } from '@/components/common/Primitives'
+import { roleKey } from '@/lib/roleLabel'
 import { useAuthStore } from '@/store/authStore'
 
 import { EmailThemeSection } from './EmailThemeSection'
@@ -35,6 +36,7 @@ export default function MyProfile() {
   const accountName = useAuthStore((state) => state.accountName)
   const accountKindLabel = useAuthStore((state) => state.accountKindLabel)
   const seesWholeFund = useAuthStore((state) => state.seesWholeFund)
+  const mustChangePassword = useAuthStore((state) => state.mustChangePassword)
 
   const rows: { icon: typeof Mail; label: string; value: string | null; help?: string }[] = [
     { icon: Building2, label: t('profile.company'), value: accountName },
@@ -52,7 +54,7 @@ export default function MyProfile() {
         ]
       : []),
     { icon: Mail, label: t('profile.email'), value: email },
-    { icon: ShieldCheck, label: t('profile.role'), value: role },
+    { icon: ShieldCheck, label: t('profile.role'), value: t(roleKey(role)) },
   ]
 
   return (
@@ -60,6 +62,12 @@ export default function MyProfile() {
       <PageHeader title={t('profile.title')} subtitle={t('profile.subtitle')} />
 
       <div className="max-w-xl space-y-8">
+        {/* 🔴 A PASSWORD TO REPLACE COMES FIRST. Every other screen sends the holder here
+            until it is done; at the bottom of a page three screens long on a telephone,
+            under the identity and eighteen looks of e-mail, nothing said why they were
+            kept here (customer recipe, 30 Sept 2026). */}
+        {mustChangePassword && <PasswordSection />}
+
         <section>
           <h2 className="mb-3 text-sm font-semibold text-gray-900">
             {t('profile.identity')}
@@ -88,7 +96,7 @@ export default function MyProfile() {
 
         {seesWholeFund && <EmailThemeSection />}
 
-        <PasswordSection />
+        {!mustChangePassword && <PasswordSection />}
       </div>
     </>
   )

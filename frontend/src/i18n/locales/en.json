@@ -62,8 +62,17 @@
     "pitchBody": "Yours holds your investment vehicles country by country: each keeps its own currency, company number and local law. Four movements, and they always reconcile: what the investor pledged, what was called, what reached the account, and what was paid back. Built for the globetrotting investor.",
     "noAccount": "No account yet?",
     "askAccess": "Create an account",
-    "askAccessHelp": "Choose your plan: a confirmation e-mail is sent to you, then your account opens with your credentials. A management company running several vehicles receives a quotation.",
-    "seePricing": "See pricing"
+    "askAccessHelp": "Choose your plan: a confirmation e-mail is sent to you, then your account opens and your access reaches you. A management company running several vehicles receives a quote.",
+    "seePricing": "See pricing",
+    "forgot": "Forgot your password?",
+    "forgotTitle": "Forgot your password",
+    "forgotHelp": "Give your account's address: a link to choose a new password will be sent there.",
+    "forgotEmailHint": "The one you sign in with.",
+    "forgotSubmit": "Get a link",
+    "forgotSentTitle": "Check your mailbox",
+    "backToSignIn": "Back to sign-in",
+    "missing": "Give your e-mail address and your password.",
+    "forgotMissing": "Give your account's e-mail address."
   },
   "errors": {
     "expired": "Your session has expired. Please sign in again.",
@@ -353,7 +362,10 @@
     "mustTitle": "A password to replace",
     "optionalTitle": "Your password",
     "reveal": "Show the password",
-    "hide": "Hide the password"
+    "hide": "Hide the password",
+    "newHint": "At least ten characters. A short sentence is easier to remember than a complicated word.",
+    "confirmHint": "The same one again, to rule out a typo.",
+    "currentMissing": "Give your current password."
   },
   "kyc": {
     "decide": "Record a verdict",
@@ -442,7 +454,7 @@
     "investorLimit_other": "{{count}} investors included",
     "unlimitedInvestors": "Unlimited investors",
     "active": "Active",
-    "notSubscribed": "Not subscribed",
+    "notSubscribed": "Payment to set up",
     "renewsOn": "Next charge on {{date}}.",
     "endsOn": "Ends on {{date}}, with no renewal.",
     "accessUntil": "Access open until {{date}}.",
@@ -597,7 +609,7 @@
     "title": "My profile",
     "subtitle": "Your account and your settings.",
     "identity": "Account identity",
-    "company": "Management company",
+    "company": "Account name",
     "email": "E-mail address",
     "role": "Role",
     "accountKind": "Account type",
@@ -607,7 +619,7 @@
   },
   "emailTheme": {
     "title": "E-mail look",
-    "lead": "The letters sent to your investors (capital calls, reminders) wear the look chosen here, for your whole management company.",
+    "lead": "The letters sent on behalf of your management company (capital calls, reminders, links to choose a password) wear the look chosen here.",
     "productDefault": "The product's own (default)",
     "productDefaultNamed": "Today: {{name}}. It follows the console's setting.",
     "productDefaultUnnamed": "The look the console gives this product.",
@@ -750,7 +762,7 @@
     "lastName": "Last name",
     "lastNameHint": "Your family name.",
     "email": "E-mail address",
-    "emailHint": "The confirmation link and your credentials will be sent there.",
+    "emailHint": "The confirmation link, then your access, will be sent there.",
     "phone": "Phone",
     "phoneHint": "To reach you about your account.",
     "address": "Address",
@@ -761,9 +773,8 @@
     "cityHint": "Filled in when you pick an address.",
     "need": "Your needs",
     "needHint": "How many vehicles and investors, for a fair offer.",
-    "needNumber": "Enter the company's {{label}}.",
     "badNumber": "This SIREN or SIRET is not valid: check the digits.",
-    "next": "After sending: a confirmation e-mail; your click opens the account and your credentials arrive by e-mail.",
+    "next": "After sending: a confirmation e-mail; your click opens the account, then your access arrives by e-mail.",
     "quoteNext": "Our team will reply with an offer suited to the number of vehicles you run.",
     "create": "Create my account",
     "askQuote": "Ask for a quotation",
@@ -774,9 +785,14 @@
       "confirmation_sent": "Check your inbox",
       "account_created": "Account created",
       "account_exists": "You already have an account",
-      "received": "Request recorded"
+      "received": "Request recorded",
+      "confirmation_not_sent": "E-mail not sent",
+      "not_answered": "Answer pending"
     },
-    "badEmail": "This e-mail address is not valid: check it."
+    "badEmail": "This e-mail address is not valid: check it.",
+    "retry": "Try again",
+    "emailHintQuote": "Our answer and our offer will be sent there.",
+    "missing": "Fill in: {{fields}}."
   },
   "siretInput": {
     "invalid": "Invalid number: the check digit does not match (9 digits for a SIREN, 14 for a SIRET).",
@@ -787,5 +803,20 @@
     "verifiedAs": "Verified in the register: {{name}}",
     "notFound": "Number not found in the national register: check it, you can still go ahead.",
     "unreachable": "The register is not answering: the number will be checked later."
+  },
+  "roles": {
+    "manager": "Manager",
+    "admin": "Administrator",
+    "investor": "Investor"
+  },
+  "setPassword": {
+    "welcomeTitle": "Choose your password",
+    "resetTitle": "Choose a new password",
+    "for": "For the account {{email}}.",
+    "checking": "Checking the link",
+    "deadTitle": "This link can no longer be used",
+    "askNew": "Ask for a new link",
+    "submit": "Save and sign in",
+    "done": "Password saved."
   }
 }

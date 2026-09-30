@@ -92,13 +92,31 @@ def pick(fr: str, en: str) -> str:
     rewords the French refusal, the English one keeps the old wording and nobody notices,
     because nobody reads the language they do not speak.
     """
-    return en if current_lang() == "en" else fr
+    return en if current_lang() == "en" else french_colons(fr)
+
+
+#: The no-break space French typography puts before a colon.
+NBSP = " "
+
+
+def french_colons(text: str) -> str:
+    """A French sentence with a no-break space before each colon, never a plain one.
+
+        🔴 THE HOUSE RULE, APPLIED WHERE EVERY SENTENCE PASSES. A plain space lets the colon
+        wrap alone to the start of the next line on a phone (« Trop de demandes d'un coup
+    :
+        réessayez »). The server's refusals were written with a plain one, seventy of them;
+        they all reach the reader through `pick`, so the rule lives here once rather than in
+        every literal. The screens' own texts obey a guard of their own (`noBreakBeforeColon`).
+    """
+    return text.replace(" :", NBSP + ":")
 
 
 __all__ = [
     "DEFAULT",
     "SUPPORTED",
     "current_lang",
+    "french_colons",
     "lang_from_accept_language",
     "normalise",
     "pick",

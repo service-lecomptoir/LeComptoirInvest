@@ -15,6 +15,17 @@ export const authApi = {
   // than trusting a role copied into local storage, which a user can edit and which
   // stays frozen after a change decided elsewhere.
   me: () => apiClient.get<Me>('/auth/me'),
+  // « Mot de passe oublié » and the link it sends. The answer is the same whether the
+  // address holds an account or not; the link's page asks whose it is before anything.
+  forgotPassword: (email: string) =>
+    apiClient.post<{ message: string }>('/auth/forgot-password', { email }, { skipErrorToast: true }),
+  passwordLink: (token: string) =>
+    apiClient.get<{ email: string; purpose: 'welcome' | 'reset' }>(
+      `/auth/password-link/${encodeURIComponent(token)}`, { skipErrorToast: true }),
+  setPasswordThroughLink: (token: string, newPassword: string) =>
+    apiClient.post<{ access_token: string; role: string; must_change_password: boolean }>(
+      `/auth/password-link/${encodeURIComponent(token)}`, { new_password: newPassword },
+      { skipErrorToast: true }),
   changePassword: (currentPassword: string, newPassword: string) =>
     apiClient.post('/auth/change-password',
       { current_password: currentPassword, new_password: newPassword },
@@ -261,7 +272,8 @@ export interface CompanyRow {
 
 /** The console's answer to a sign-up. */
 export interface SignupOutcome {
-  /** `confirmation_sent`, `account_exists`, `account_created`, `received`. */
+  /** Alice's `confirmation_sent`, `confirmation_not_sent`, `account_exists`,
+   *  `account_created`, `received`; or `not_answered`, when the answer came too late. */
   status: string
   message: string
   login_url: string | null

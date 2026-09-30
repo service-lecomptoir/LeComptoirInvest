@@ -109,6 +109,11 @@ APPROVED: dict[str, str] = {
     # column here: it names the product on the internal contract (the catalogue it reads,
     # the sign-up it files), and Alice's registry spells it so for every product at once.
     "PRODUCT": "invest",
+    # ⚠️ PUBLISHED WORDS, NOT COLUMNS. The sign-up's own outcome when the console's answer
+    # came too late (read by the screen, beside Alice's words), and the type a password
+    # link's signed token carries (read back when the link is followed).
+    "NOT_ANSWERED": "not_answered",
+    "TOKEN_TYPE": "password_link",
     # ⚠️ THE TWO DELIBERATE EXCEPTIONS, and they are not an oversight. Le Comptoir Immo
     # stores exactly these two words on its landlords, and an investor is very often a
     # landlord. A second vocabulary would have to be translated wherever the two products

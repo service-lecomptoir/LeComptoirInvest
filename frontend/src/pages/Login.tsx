@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button, Input } from '@/components/ui'
+import { Notice } from '@/components/common/Primitives'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
+import { authApi } from '@/api'
 import { errorMessage } from '@/api/client'
 import { useAuthStore } from '@/store/authStore'
 import { LogoMark } from '@/components/common/Logo'
@@ -30,12 +32,19 @@ export default function Login() {
   // 🔴 THE SIGN-UP GOES THROUGH THE CONSOLE (`SignupForm`), as on Le Comptoir RH: the
   // prospect chooses a catalogue plan, Alice confirms the e-mail and opens the account.
   const [signingUp, setSigningUp] = useState(false)
+  // 🔴 A FORGOTTEN PASSWORD HAS A WAY BACK (customer recipe, 30 Sept 2026: there was none,
+  // and the only exit was writing to support). A link by e-mail, never a password.
+  const [forgetting, setForgetting] = useState(false)
 
   if (isAuthenticated) return <Navigate to={next} replace />
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    if (!email.trim() || !password) {
+      setError(t('login.missing'))
+      return
+    }
     setBusy(true)
     try {
       await login(email.trim(), password)
@@ -83,7 +92,9 @@ export default function Login() {
             </div>
           </div>
 
-          {signingUp ? (
+          {forgetting ? (
+            <ForgotPassword email={email} onBack={() => setForgetting(false)} />
+          ) : signingUp ? (
             <div>
               <h1 className="text-xl font-semibold text-gray-900 tracking-tight">{t('login.askAccess')}</h1>
               <p className="mt-1 text-sm text-gray-500">{t('login.askAccessHelp')}</p>
@@ -93,7 +104,7 @@ export default function Login() {
               <SignupForm onBack={() => setSigningUp(false)} />
             </div>
           ) : (
-            <form onSubmit={submit}>
+            <form onSubmit={submit} noValidate>
               <h1 className="text-xl font-semibold text-gray-900 tracking-tight">{t('login.title')}</h1>
               <p className="mt-1 mb-6 text-sm text-gray-500">{t('login.subtitle')}</p>
 
@@ -106,15 +117,24 @@ export default function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
-                <Input
-                  label={t('login.password')}
-                  type="password"
-                  revealable
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div>
+                  <Input
+                    label={t('login.password')}
+                    type="password"
+                    revealable
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setForgetting(true)}
+                    className="mt-2 text-sm text-brand-navy underline"
+                  >
+                    {t('login.forgot')}
+                  </button>
+                </div>
               </div>
 
               {error && (
@@ -146,6 +166,74 @@ export default function Login() {
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+/**
+ * « Mot de passe oublié »: an address in, a link out by e-mail.
+ *
+ * ⚠️ THE SAME ANSWER WHETHER THE ADDRESS HOLDS AN ACCOUNT OR NOT: the server words it, and
+ * this screen shows it as it is. Telling « unknown address » apart would tell anybody which
+ * addresses hold an account on a fund.
+ */
+function ForgotPassword({ email: typed, onBack }: { email: string; onBack: () => void }) {
+  const { t } = useTranslation()
+  const [email, setEmail] = useState(typed)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [sent, setSent] = useState<string | null>(null)
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    if (!email.trim()) {
+      setError(t('login.forgotMissing'))
+      return
+    }
+    setBusy(true)
+    try {
+      const { data } = await authApi.forgotPassword(email.trim())
+      setSent(data.message)
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div>
+      <h1 className="text-xl font-semibold text-gray-900 tracking-tight">{t('login.forgotTitle')}</h1>
+      <p className="mt-1 mb-6 text-sm text-gray-500">{t('login.forgotHelp')}</p>
+      {sent ? (
+        <Notice tone="info" title={t('login.forgotSentTitle')}>
+          {sent}
+        </Notice>
+      ) : (
+        <form onSubmit={submit} noValidate className="space-y-4">
+          <Input
+            label={t('login.email')}
+            hint={t('login.forgotEmailHint')}
+            type="email"
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          {error && (
+            <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {error}
+            </p>
+          )}
+          <Button type="submit" fullWidth isLoading={busy}>
+            {t('login.forgotSubmit')}
+          </Button>
+        </form>
+      )}
+      <button type="button" onClick={onBack} className="mt-6 text-sm text-brand-navy underline">
+        {t('login.backToSignIn')}
+      </button>
     </div>
   )
 }

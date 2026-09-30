@@ -1,10 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckCircle2, Mail } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Mail } from 'lucide-react'
 import { publicApi, type Country, type PublicPlan, type SignupOutcome } from '@/api'
 import { errorMessage } from '@/api/client'
 import { usePlanPrice } from '@/lib/planPrice'
 import { checkSirenSiret } from '@/lib/siret'
+import { offersRetry, outcomeTitleKey, outcomeTone } from '@/lib/signupOutcome'
 import { AddressAutocomplete } from '@/components/common/AddressAutocomplete'
 import { SiretInput } from '@/components/common/SiretInput'
 import { Button, Field, Input, Select, inputBaseClass } from '@/components/ui'
@@ -61,6 +62,7 @@ export function SignupForm({
   const [countries, setCountries] = useState<Country[]>([FRANCE])
   const [problem, setProblem] = useState<string | null>(null)
   const problemBox = useRef<HTMLParagraphElement | null>(null)
+  const outcomeBox = useRef<HTMLDivElement | null>(null)
   const [busy, setBusy] = useState(false)
   const [outcome, setOutcome] = useState<SignupOutcome | null>(null)
   const set = (patch: Partial<typeof draft>) => setDraft((d) => ({ ...d, ...patch }))
@@ -87,6 +89,12 @@ export function SignupForm({
     if (problem) problemBox.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [problem])
 
+  // ⚠️ AND THE ANSWER REPLACES A FORM TWO SCREENS LONG: on a telephone it lands below the
+  // fold, and the reader is left looking at the plans with no idea it was sent.
+  useEffect(() => {
+    if (outcome) outcomeBox.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [outcome])
+
   const country = countries.find((c) => c.code === draft.country) ?? FRANCE
   const inFrance = country.code === 'FR'
   // 🔴 ONLY THE CATALOGUE: a quoted offer is made for one customer, never picked here.
@@ -101,11 +109,30 @@ export function SignupForm({
       setProblem(t('signup.choosePlan'))
       return
     }
-    // The console's rule, said before the round trip.
-    if (isCompany && !draft.company_number.trim()) {
-      setProblem(t('signup.needNumber', { label: country.number_label }))
+    // Every field the form asks for, said at once and in the page's language.
+    const required: [string, string][] = [
+      ...(isCompany
+        ? ([
+            [draft.company_number, country.number_label],
+            [draft.company, t('signup.companyName')],
+          ] as [string, string][])
+        : ([
+            [draft.first_name, t('signup.firstName')],
+            [draft.last_name, t('signup.lastName')],
+          ] as [string, string][])),
+      [draft.email, t('signup.email')],
+      [draft.phone, t('signup.phone')],
+      [draft.street, t('signup.address')],
+      [draft.zip_code, t('signup.zip')],
+      [draft.city, t('signup.city')],
+      ...(quoted ? ([[draft.message, t('signup.need')]] as [string, string][]) : []),
+    ]
+    const missing = required.filter(([value]) => !value.trim()).map(([, label]) => label)
+    if (missing.length) {
+      setProblem(t('signup.missing', { fields: missing.join(', ') }))
       return
     }
+    // The console's rule, said before the round trip.
     if (isCompany && inFrance && !checkSirenSiret(draft.company_number).ok) {
       setProblem(t('signup.badNumber'))
       return
@@ -133,24 +160,26 @@ export function SignupForm({
 
   if (outcome) {
     const exists = outcome.status === 'account_exists'
-    const known = ['confirmation_sent', 'account_created', 'account_exists', 'received']
+    const warning = outcomeTone(outcome.status) === 'warning'
+    const Icon = warning ? AlertTriangle : outcome.status === 'confirmation_sent' ? Mail : CheckCircle2
     return (
-      <div className="space-y-3">
+      <div ref={outcomeBox} className="space-y-3">
         <div
-          className={`flex items-start gap-3 rounded-lg p-4 text-sm ${exists ? 'bg-amber-50 text-amber-900' : 'bg-emerald-50 text-emerald-900'}`}
+          className={`flex items-start gap-3 rounded-lg p-4 text-sm ${warning ? 'bg-amber-50 text-amber-900' : 'bg-emerald-50 text-emerald-900'}`}
         >
-          {outcome.status === 'confirmation_sent' ? (
-            <Mail size={18} className="mt-0.5 shrink-0" />
-          ) : (
-            <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
-          )}
+          <Icon size={18} className="mt-0.5 shrink-0" />
           <div className="space-y-1 min-w-0">
-            <p className="font-medium">
-              {t(`signup.outcomes.${known.includes(outcome.status) ? outcome.status : 'received'}`)}
-            </p>
+            <p className="font-medium">{t(outcomeTitleKey(outcome.status))}</p>
             <p className="break-words">{outcome.message}</p>
           </div>
         </div>
+        {/* The way forward after an e-mail that did not leave or an answer that did not
+            come: the same form, filled as it was, one tap away. */}
+        {offersRetry(outcome.status) && (
+          <Button type="button" onClick={() => setOutcome(null)}>
+            {t('signup.retry')}
+          </Button>
+        )}
         {exists && (
           <div className="flex flex-wrap gap-3 text-sm">
             <a href={outcome.login_url || '/login'} className="text-brand-navy underline">
@@ -175,7 +204,9 @@ export function SignupForm({
   const id = (name: string) => `${uid}-${name}`
 
   return (
-    <form onSubmit={send} className="space-y-4">
+    // ⚠️ `noValidate`: the browser's own bubble is a native dialog, in the browser's
+    // language rather than the page's; the missing fields are said in the red box above.
+    <form onSubmit={send} noValidate className="space-y-4">
       {problem && (
         <p ref={problemBox} className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{problem}</p>
       )}
@@ -301,7 +332,7 @@ export function SignupForm({
       )}
       <Input
         label={t('signup.email')}
-        hint={t('signup.emailHint')}
+        hint={quoted ? t('signup.emailHintQuote') : t('signup.emailHint')}
         type="email"
         required
         value={draft.email}

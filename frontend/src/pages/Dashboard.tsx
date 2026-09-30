@@ -93,7 +93,7 @@ export default function Dashboard() {
           const free = cash - owed
           return (
             <div key={block.currency} className="mb-6">
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              <p className="mb-2 text-[11px] font-semibold text-gray-500">
                 {t('dashboard.positionIn', { currency: block.currency })}
               </p>
               <KpiRow>

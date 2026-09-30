@@ -29,6 +29,7 @@ from app.config import get_settings
 from app.core import account_kind, audit, firm_scope
 from app.core.security import create_access_token, hash_password
 from app.database import SESSION
+from app.services import password_link_service
 from app.models.audit_log import AuditLog
 from app.models.investor import Investor
 from app.models.subscription import Subscription
@@ -400,9 +401,10 @@ async def create_manager(
 ):
     """Alice provisions the account. This is the ONLY way a manager is born here.
 
-    ⚠️ A password is required. Alice generates a temporary one and mails it; minting an
-    account with no credential would leave a role nobody can use and nobody can see is
-    unusable.
+    🔴 NO PASSWORD IS THE NORMAL CASE (`password_link`): the account is born unusable and
+    Alice then asks `POST /managers/{id}/password-link`, whose letter lets the holder CHOOSE
+    their password. A password still given (an older console) keeps the handed-over path,
+    with the change forced at first sign-in.
     """
     role = MANAGER if data.role in _LEGACY_MANAGER_ROLES else data.role
     if role not in _MANAGED_ROLES:
@@ -414,11 +416,6 @@ async def create_manager(
             ),
         )
     kind = _kind_from(data.acts_for) if data.acts_for is not None else None
-    if not data.password:
-        raise HTTPException(
-            status_code=422,
-            detail=pick("Un mot de passe est requis.", "A password is required."),
-        )
 
     email = data.email.lower().strip()
     already = (
@@ -435,12 +432,15 @@ async def create_manager(
 
     user = User(
         email=email,
-        hashed_password=hash_password(data.password),
+        hashed_password=hash_password(data.password)
+        if data.password
+        else password_link_service.unusable_password(),
         account_name=(data.full_name or "").strip() or None,
         role=role,
         account_kind=kind,
-        # The credential was handed over by Alice, so it is not the holder's yet.
-        must_change_password=True,
+        # A credential handed over by Alice is not the holder's yet; with none, the
+        # holder chooses theirs through the link and nothing is left to change.
+        must_change_password=bool(data.password),
         **{f: getattr(data, f) for f in _STORED},
     )
     db.add(user)
@@ -591,6 +591,30 @@ async def reset_password(
     user.hashed_password = hash_password(data.new_password)
     user.must_change_password = True
     await db.commit()
+
+
+@router.post("/managers/{manager_id}/password-link")
+async def password_link(
+    manager_id: uuid.UUID,
+    _: None = Depends(require_internal_key),
+    db: AsyncSession = SESSION,
+):
+    """Alice asks this product to e-mail the holder a link to choose their password: a week
+    for somebody who never signed in, two hours otherwise. The letter is this product's own,
+    in the holder's language and the look of their company; Alice sets nothing and mails
+    nothing itself."""
+    user = await _managed(db, manager_id)
+    if not user.is_active:
+        raise HTTPException(
+            status_code=409,
+            detail=pick(
+                "Ce compte est bloqué : un lien de mot de passe contournerait le blocage.",
+                "This account is blocked: a password link would work around the block.",
+            ),
+        )
+    purpose = password_link_service.purpose_for(user)
+    sent = await password_link_service.send_link(db, user, purpose)
+    return {"email_sent": sent, "to": user.email, "purpose": purpose}
 
 
 @router.post("/managers/{manager_id}/login-link")

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { KeyRound } from 'lucide-react'
 import { authApi } from '@/api'
@@ -8,6 +8,7 @@ import { Button, Input } from '@/components/ui'
 import { Card, Notice } from '@/components/common/Primitives'
 import { useAuthStore } from '@/store/authStore'
 import { toast } from '@/store/toast'
+import { safeNext } from '@/lib/nextPath'
 
 /**
  * Changing one's password. A SECTION of the profile, no longer a screen apart.
@@ -30,6 +31,7 @@ import { toast } from '@/store/toast'
 export function PasswordSection() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
   const mustChange = useAuthStore((s) => s.mustChangePassword)
   const refreshMe = useAuthStore((s) => s.refreshMe)
 
@@ -42,6 +44,10 @@ export function PasswordSection() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    if (!current) {
+      setError(t('password.currentMissing'))
+      return
+    }
     if (next !== confirm) {
       setError(t('password.mismatch'))
       return
@@ -55,7 +61,8 @@ export function PasswordSection() {
       await authApi.changePassword(current, next)
       toast.success(t('password.done'))
       await refreshMe()
-      navigate('/', { replace: true })
+      // Where the forced change interrupted the holder, if anywhere (`router.tsx`).
+      navigate(safeNext(params.get('next')) ?? '/', { replace: true })
     } catch (err) {
       // In place, not in a toast: the user is looking at this form, and a message that
       // fades away while they type it again is a message they will not read.
@@ -81,7 +88,7 @@ export function PasswordSection() {
         </div>
 
         <Card className="p-5">
-          <form onSubmit={submit} className="space-y-4">
+          <form onSubmit={submit} noValidate className="space-y-4">
             <Input
               label={t('password.current')}
               type="password"
@@ -100,7 +107,7 @@ export function PasswordSection() {
               value={next}
               onChange={(e) => setNext(e.target.value)}
               required
-              minLength={10}
+              hint={t('password.newHint')}
             />
             <Input
               label={t('password.confirm')}
@@ -110,6 +117,7 @@ export function PasswordSection() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               required
+              hint={t('password.confirmHint')}
             />
 
             {error && (

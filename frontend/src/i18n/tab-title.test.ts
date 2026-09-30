@@ -38,7 +38,11 @@ function titled(): string[] {
   const menu = [...shell.matchAll(/to:\s*'([^']+)'/g)].map((match) => match[1])
   const offMenu = [...shell.matchAll(/^\s*'(\/[^']*)':\s*'[a-z]/gm)].map((m) => m[1])
   // The public doors, rendered outside the shell: each one names its own tab.
-  const doors = { '/login': 'Login.tsx', '/pricing': 'Pricing.tsx' }
+  const doors = {
+    '/login': 'Login.tsx',
+    '/pricing': 'Pricing.tsx',
+    '/set-password/:token': 'SetPassword.tsx',
+  }
   const selfTitled = Object.entries(doors)
     .filter(([, file]) => readFileSync(join(SRC, 'pages', file), 'utf8').includes('document.title'))
     .map(([path]) => path)

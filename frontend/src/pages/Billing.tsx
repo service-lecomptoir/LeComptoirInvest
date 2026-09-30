@@ -224,15 +224,18 @@ export default function Billing() {
             <div className="p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-500">
+                  <p className="text-xs text-gray-500">
                     {t('billing.currentPlan')}
                   </p>
                   <p className="mt-1 text-xl font-semibold text-gray-900">
                     {current?.plan_name || t('billing.noPlan')}
                   </p>
-                  {current?.monthly_price != null && (
+                  {/* ⚠️ The licence does not carry the price; the billing status does. */}
+                  {(current?.monthly_price ?? status?.monthly_price) != null && (
                     <p className="mt-0.5 text-sm text-gray-600">
-                      {t('billing.perMonth', { price: money(current.monthly_price, currency) })}
+                      {t('billing.perMonth', {
+                        price: money((current?.monthly_price ?? status?.monthly_price) as number, currency),
+                      })}
                     </p>
                   )}
                 </div>
@@ -339,8 +342,12 @@ export default function Billing() {
                   )}
                 </div>
               )}
-              {/* The hint lives UNDER the row, never in a cell aligned at the bottom. */}
-              <p className="mt-4 text-xs text-gray-500">{t('billing.methodsHint')}</p>
+              {/* The hint lives UNDER the row, never in a cell aligned at the bottom, and
+                  only when a card payment is on offer: under « aucun moyen de paiement »
+                  it spoke of a payment nobody could make. */}
+              {methods?.card_enabled && (
+                <p className="mt-4 text-xs text-gray-500">{t('billing.methodsHint')}</p>
+              )}
             </div>
           </Card>
 
