@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import current_manager
 from app.core.firm_scope import firm_of
 from app.core.i18n import pick
-from app.database import get_db
+from app.database import SESSION
 from app.models.user import User
 from app.services import email_themes
 
@@ -91,7 +91,7 @@ async def _out(firm: User) -> EmailLookOut:
 
 @router.get("/email-theme", response_model=EmailLookOut)
 async def read_email_look(
-    user: User = Depends(current_manager), db: AsyncSession = Depends(get_db)
+    user: User = Depends(current_manager), db: AsyncSession = SESSION
 ):
     return await _out(await _firm_account(db, user))
 
@@ -100,7 +100,7 @@ async def read_email_look(
 async def choose_email_look(
     data: EmailLookIn,
     user: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Store the company's look, once the console's catalogue lists it.
 

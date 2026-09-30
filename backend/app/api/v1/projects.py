@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_manager, current_user
-from app.database import get_db
+from app.database import SESSION
 from app.models.project import PROJECT_STATUSES, STUDY, Project, ProjectValuation
 from app.models.treasury import BankMovement
 from app.models.user import User
@@ -54,7 +54,7 @@ class ProjectOut(BaseModel):
 async def create(
     data: ProjectIn,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     if data.status not in PROJECT_STATUSES:
         raise HTTPException(
@@ -85,9 +85,7 @@ async def create(
 
 
 @router.get("", response_model=list[ProjectOut])
-async def list_projects(
-    _: User = Depends(current_user), db: AsyncSession = Depends(get_db)
-):
+async def list_projects(_: User = Depends(current_user), db: AsyncSession = SESSION):
     """Every project with what actually moved.
 
     ⚠️ READABLE BY AN INVESTOR, and deliberately so: they are told where their money went,
@@ -124,7 +122,7 @@ async def deploy(
     project_id: uuid.UUID,
     data: DeployIn,
     user: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Money leaves for a project, against the outgoing transfer that carried it."""
     project = await db.get(Project, project_id)
@@ -166,7 +164,7 @@ async def record_return(
     project_id: uuid.UUID,
     data: ReturnIn,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Money comes back, split between the fund's own capital and what was earned."""
     project = await db.get(Project, project_id)
@@ -204,7 +202,7 @@ async def set_status(
     project_id: uuid.UUID,
     data: StatusIn,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Change where a project stands.
 
@@ -277,7 +275,7 @@ async def record_valuation(
     project_id: uuid.UUID,
     data: ValuationIn,
     user: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Record what this project is judged to be worth, and who judged it.
 
@@ -323,7 +321,7 @@ async def record_valuation(
 async def list_valuations(
     project_id: uuid.UUID,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Every judgement made on this project, most recent first. The history IS the record."""
     rows = (

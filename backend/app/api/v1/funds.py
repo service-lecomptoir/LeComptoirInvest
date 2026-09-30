@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_manager, current_user
 from app.core.instruments import EquityTerms
-from app.database import get_db
+from app.database import SESSION
 from app.models.fund import FUND_STATUSES, RAISING, Fund
 from app.models.user import User
 from app.services import valuation_service
@@ -74,9 +74,7 @@ def _out(fund: Fund, *, cash_is_separable: bool = True) -> FundOut:
 
 
 @router.get("", response_model=list[FundOut])
-async def list_funds(
-    _: User = Depends(current_user), db: AsyncSession = Depends(get_db)
-):
+async def list_funds(_: User = Depends(current_user), db: AsyncSession = SESSION):
     """Every vehicle, and whether each one's cash can be told apart from the others'."""
     funds = (await db.execute(select(Fund).order_by(Fund.name))).scalars().all()
     several = len(funds) > 1
@@ -87,7 +85,7 @@ async def list_funds(
 
 @router.post("", response_model=FundOut, status_code=status.HTTP_201_CREATED)
 async def create_fund(
-    data: FundIn, _: User = Depends(current_manager), db: AsyncSession = Depends(get_db)
+    data: FundIn, _: User = Depends(current_manager), db: AsyncSession = SESSION
 ):
     """Open a vehicle.
 
@@ -124,7 +122,7 @@ async def set_status(
     fund_id: uuid.UUID,
     data: FundStatusIn,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Move the vehicle through its life: raising, investing, harvesting, closed.
 
@@ -178,7 +176,7 @@ async def fund_net_asset_value(
     currency: str,
     fund_id: uuid.UUID | None = None,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """The headline figure a fund is judged on, which had no route at all until now.
 

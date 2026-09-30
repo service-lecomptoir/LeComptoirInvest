@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import investor_scope
-from app.database import get_db
+from app.database import SESSION
 from app.core import firm_scope, i18n
 from app.models.investor import Investor
 from app.services import notice_service, statement_pdf, statement_service
@@ -107,7 +107,7 @@ async def statement(
     year: int,
     investor_id: uuid.UUID | None = None,
     scope: uuid.UUID | None = Depends(investor_scope),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """One investor, one year, as the screen reads it."""
     ready = await _prepared(db, year=year, scope=scope, investor_id=investor_id)
@@ -150,7 +150,7 @@ async def statement_as_pdf(
     year: int,
     investor_id: uuid.UUID | None = None,
     scope: uuid.UUID | None = Depends(investor_scope),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ) -> Response:
     """The same statement, as the document an investor files.
 

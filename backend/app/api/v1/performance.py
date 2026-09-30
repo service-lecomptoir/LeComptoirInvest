@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_user, investor_scope
-from app.database import get_db
+from app.database import SESSION
 from app.models.user import User
 from app.services import performance_service, portfolio_service
 from app.core.i18n import pick
@@ -48,7 +48,7 @@ async def performance(
     fund_id: uuid.UUID | None = None,
     scope: uuid.UUID | None = Depends(investor_scope),
     user: User = Depends(current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """One block per currency. An investor's own, or the fund's when a manager asks.
 
@@ -109,7 +109,7 @@ async def capital_account(
     until: date,
     investor_id: uuid.UUID | None = None,
     scope: uuid.UUID | None = Depends(investor_scope),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """The capital account of one investor over a period, one line per currency.
 

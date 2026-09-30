@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import current_manager, current_user, investor_scope
 from app.core import display, eligibility, instruments, kyc
 from app.core import fund_time
-from app.database import get_db
+from app.database import SESSION
 from app.models.investor import Investor
 from app.models.subscription import (
     REQUEST_ACCEPTED,
@@ -67,7 +67,7 @@ async def request_subscription(
     data: RequestIn,
     user: User = Depends(current_user),
     scope: uuid.UUID | None = Depends(investor_scope),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """An investor expresses an intent from the portal. It binds nobody.
 
@@ -135,7 +135,7 @@ async def request_subscription(
 async def acknowledge_risk(
     request_id: uuid.UUID,
     scope: uuid.UUID | None = Depends(investor_scope),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """The investor states they have read the risk warning for a commitment above their cap.
 
@@ -183,7 +183,7 @@ async def acknowledge_risk(
 async def withdraw(
     request_id: uuid.UUID,
     scope: uuid.UUID | None = Depends(investor_scope),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """The investor steps back, which is what the reflection period is FOR.
 
@@ -221,7 +221,7 @@ async def withdraw(
 @router.get("/subscription-requests", response_model=list[RequestOut])
 async def list_requests(
     scope: uuid.UUID | None = Depends(investor_scope),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     query = select(SubscriptionRequest).order_by(
         SubscriptionRequest.requested_on.desc()
@@ -247,7 +247,7 @@ async def decide(
     request_id: uuid.UUID,
     data: DecisionIn,
     user: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """The fund accepts or refuses. Acceptance, and only acceptance, creates the engagement.
 
@@ -374,7 +374,7 @@ async def convert(
     subscription_id: uuid.UUID,
     data: ConversionIn,
     user: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """A loan becomes a subscription. An EVENT: one holding closes, another opens.
 
@@ -449,7 +449,7 @@ class _Terms:
 async def portfolio(
     scope: uuid.UUID | None = Depends(investor_scope),
     investor_id: uuid.UUID | None = None,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """An investor's position, computed from what happened. Nothing is stored.
 

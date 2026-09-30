@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import current_manager, current_user, investor_scope
 from app.core import eligibility, kyc, landlord_kind_values
 from app.core import fund_time
-from app.database import get_db
+from app.database import SESSION
 from app.models.investor import Investor
 from app.models.user import User
 from app.services import license_service
@@ -123,7 +123,7 @@ def _out(investor: Investor, *, today: date | None = None) -> InvestorOut:
 @router.get("", response_model=list[InvestorOut])
 async def list_investors(
     scope: uuid.UUID | None = Depends(investor_scope),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Every investor for the fund; only themselves for an investor.
 
@@ -140,7 +140,7 @@ async def list_investors(
 @router.get("/quota")
 async def quota(
     user: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Where the register stands against the plan, deciding nothing.
 
@@ -162,7 +162,7 @@ async def create_investor(
     data: InvestorIn,
     accept_overage: bool = False,
     user: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Register an investor. THE FIRST OF THE TWO DOORS THE ALLOWANCE IS COUNTED THROUGH.
 
@@ -206,7 +206,7 @@ async def record_verdict(
     data: VerdictIn,
     accept_overage: bool = False,
     user: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Decide whether the fund may do business with this investor.
 
@@ -283,7 +283,7 @@ async def set_eligibility(
     investor_id: uuid.UUID,
     data: EligibilityIn,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Record which protections apply to this investor, and on what basis.
 
@@ -329,7 +329,7 @@ async def set_eligibility(
 async def bank_details(
     investor_id: uuid.UUID,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """The account details, decrypted, one investor at a time and for a manager only.
 
@@ -352,7 +352,7 @@ async def bank_details(
 async def me(
     user: User = Depends(current_user),
     scope: uuid.UUID | None = Depends(investor_scope),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """The investor behind the signed-in account."""
     if scope is None:

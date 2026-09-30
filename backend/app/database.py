@@ -1,5 +1,6 @@
 """Engine and session. Async everywhere, as the sister products are."""
 
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.config import get_settings
@@ -35,3 +36,14 @@ async def get_db():
             raise
         finally:
             await session.close()
+
+
+#: 🔴 THE ONE WAY A ROUTE TAKES ITS SESSION, and its scope is the point: « function » makes
+#: FastAPI run the code after the `yield` above (the commit) BEFORE the answer leaves. With
+#: the default scope of a dependency with `yield` (« request »), that code runs once the
+#: response is SENT: a screen that saved and read back at once was answered from before the
+#: save (customer recipe, 30 Sept 2026: 13 reads out of 15 missed the fund just created),
+#: and a commit failing after a 201 was a success the database never kept. One alias for
+#: every route, so one scope: it is part of FastAPI's cache key, and two would open two
+#: sessions in one request. Guard: `tests_unit/test_a_saved_answer_is_committed_before_it_leaves.py`.
+SESSION = Depends(get_db, scope="function")

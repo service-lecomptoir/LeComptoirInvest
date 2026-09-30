@@ -14,7 +14,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.database import get_db
+from app.database import SESSION
 from app.models.user import User
 from app.core.i18n import pick
 
@@ -34,7 +34,7 @@ class LoginOut(BaseModel):
 
 
 @router.post("/login", response_model=LoginOut)
-async def login(data: LoginIn, db: AsyncSession = Depends(get_db)):
+async def login(data: LoginIn, db: AsyncSession = SESSION):
     user = (
         await db.execute(select(User).where(User.email == data.email.lower()))
     ).scalar_one_or_none()
@@ -96,7 +96,7 @@ class ChangePasswordIn(BaseModel):
 async def change_password(
     data: ChangePasswordIn,
     user: User = Depends(current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """The holder replaces the credential somebody else handed them.
 

@@ -16,7 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_manager, investor_scope
-from app.database import get_db
+from app.database import SESSION
 from app.models.subscription import Subscription
 from app.models.treasury import BankMovement, Distribution
 from app.models.user import User
@@ -98,7 +98,7 @@ class ProposeIn(BaseModel):
 async def propose(
     data: ProposeIn,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """What the rule says, shown before anything is written.
 
@@ -134,7 +134,7 @@ class DecideIn(ProposeIn):
 async def decide(
     data: DecideIn,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Record the distribution the fund decided. Recomputed here, never trusted from the UI.
 
@@ -184,7 +184,7 @@ class DistributionOut(BaseModel):
 @router.get("/distributions", response_model=list[DistributionOut])
 async def list_distributions(
     scope: uuid.UUID | None = Depends(investor_scope),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Every distribution, or only this investor's. The scope decides, not a parameter."""
     query = select(Distribution).order_by(Distribution.decided_on.desc())
@@ -209,7 +209,7 @@ async def pay(
     distribution_id: uuid.UUID,
     data: PayIn,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """The transfer left. Attach it, and only then is the investor paid."""
     distribution = await db.get(Distribution, distribution_id)
@@ -238,7 +238,7 @@ async def debt(
     currency: str,
     as_of: date,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """What the fund owes its lenders today, beside the cash it holds.
 

@@ -15,14 +15,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core import audit
 from app.core.firm_scope import firm_of, set_current_firm
 from app.core.security import read_access_token
-from app.database import get_db
+from app.database import SESSION
 from app.models.investor import Investor
 from app.models.user import User
 from app.core.i18n import pick
 
 
 async def current_user(
-    authorization: str | None = Header(default=None), db: AsyncSession = Depends(get_db)
+    authorization: str | None = Header(default=None), db: AsyncSession = SESSION
 ) -> User:
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(
@@ -72,7 +72,7 @@ async def current_manager(user: User = Depends(current_user)) -> User:
 
 
 async def investor_scope(
-    user: User = Depends(current_user), db: AsyncSession = Depends(get_db)
+    user: User = Depends(current_user), db: AsyncSession = SESSION
 ) -> uuid.UUID | None:
     """The investor this caller is confined to, or None for « the whole fund ».
 

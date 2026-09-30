@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import current_manager, investor_scope
 from app.core import camt, display
 from app.core import fund_time
-from app.database import get_db
+from app.database import SESSION
 from app.models.fund import Fund
 from app.models.subscription import Subscription
 from app.models.treasury import IN, BankMovement, CapitalCall
@@ -64,7 +64,7 @@ class MovementOut(BaseModel):
 async def import_movements(
     lines: list[MovementIn],
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Record statement lines, and say what each one probably is.
 
@@ -125,7 +125,7 @@ class CamtImportOut(BaseModel):
 async def import_camt(
     file: UploadFile = File(...),
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Import a CAMT.053 statement from the bank, and say what each line probably is.
 
@@ -203,7 +203,7 @@ async def import_camt(
 
 @router.get("/unattributed", response_model=list[MovementOut])
 async def list_unattributed(
-    _: User = Depends(current_manager), db: AsyncSession = Depends(get_db)
+    _: User = Depends(current_manager), db: AsyncSession = SESSION
 ):
     """Money the fund holds and cannot name. The pile that must stay short."""
     out = []
@@ -235,7 +235,7 @@ async def attribute(
     movement_id: uuid.UUID,
     data: AttributionIn,
     user: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """A human says whose money this is. The proposal never does it on its own."""
     movement = await db.get(BankMovement, movement_id)
@@ -274,9 +274,7 @@ async def attribute(
 
 
 @router.get("/balance")
-async def balance(
-    _: User = Depends(current_manager), db: AsyncSession = Depends(get_db)
-):
+async def balance(_: User = Depends(current_manager), db: AsyncSession = SESSION):
     """One balance per currency. Never a single total: a figure mixing euros and CFA francs
     is a balance nowhere, and it looks plausible because it sums real amounts."""
     return {
@@ -308,7 +306,7 @@ class CallOut(BaseModel):
 async def open_call(
     data: CallIn,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Ask an investor for part of what they committed.
 
@@ -458,7 +456,7 @@ class LateCallOut(BaseModel):
 async def late_calls(
     as_of: date | None = None,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Calls past their due date and still short, oldest first.
 
@@ -502,7 +500,7 @@ async def late_calls(
 @router.get("/calls", response_model=list[CallOut])
 async def list_calls(
     scope: uuid.UUID | None = Depends(investor_scope),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """The calls an investor has to pay, or all of them for the fund.
 
@@ -559,7 +557,7 @@ async def preview_notice(
     as_of: date,
     kind: str | None = None,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Read the letter before it goes out. Writes nothing.
 
@@ -590,7 +588,7 @@ async def send_notice(
     as_of: date,
     kind: str | None = None,
     _: User = Depends(current_manager),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Send the letter, and only then record that it went out.
 

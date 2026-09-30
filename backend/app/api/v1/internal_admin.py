@@ -28,7 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.core import account_kind, audit, firm_scope
 from app.core.security import create_access_token, hash_password
-from app.database import get_db
+from app.database import SESSION
 from app.models.audit_log import AuditLog
 from app.models.investor import Investor
 from app.models.subscription import Subscription
@@ -338,7 +338,7 @@ async def _refuse_if_last_administrator(db: AsyncSession, target: User) -> None:
 # ── Managers ─────────────────────────────────────────────────────────────────────
 @router.get("/managers", response_model=list[ManagerOut])
 async def list_managers(
-    _: None = Depends(require_internal_key), db: AsyncSession = Depends(get_db)
+    _: None = Depends(require_internal_key), db: AsyncSession = SESSION
 ):
     rows = (
         (
@@ -360,7 +360,7 @@ async def list_managers(
 async def get_manager(
     manager_id: uuid.UUID,
     _: None = Depends(require_internal_key),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     # 🔴 THE SAME NUMBER AS THE LISTING, and it used to be zero here.
     # `ManagerOut.managed_count` defaults to 0, so this route answered « manages nothing »
@@ -376,7 +376,7 @@ async def get_manager(
 async def billing_identity(
     user_id: uuid.UUID,
     _: None = Depends(require_internal_key),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Name and e-mail of an account, WHATEVER its role, for an accounting document.
 
@@ -396,7 +396,7 @@ async def billing_identity(
 async def create_manager(
     data: ManagerIn,
     _: None = Depends(require_internal_key),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Alice provisions the account. This is the ONLY way a manager is born here.
 
@@ -454,7 +454,7 @@ async def update_manager(
     manager_id: uuid.UUID,
     data: ManagerIn,
     _: None = Depends(require_internal_key),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Alice pushes an identity change down.
 
@@ -512,7 +512,7 @@ async def update_manager(
 async def delete_manager(
     manager_id: uuid.UUID,
     _: None = Depends(require_internal_key),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Remove the account. The fund's history does not move.
 
@@ -531,7 +531,7 @@ async def delete_manager(
 async def block(
     manager_id: uuid.UUID,
     _: None = Depends(require_internal_key),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Suspend the account — non-payment, usually.
 
@@ -555,7 +555,7 @@ async def unblock(
     manager_id: uuid.UUID,
     data: UnblockIn,
     _: None = Depends(require_internal_key),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Reactivate EXACTLY what the matching block deactivated.
 
@@ -581,7 +581,7 @@ async def reset_password(
     manager_id: uuid.UUID,
     data: ResetPasswordIn,
     _: None = Depends(require_internal_key),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """Alice hands over a new credential.
 
@@ -597,7 +597,7 @@ async def reset_password(
 async def login_link(
     manager_id: uuid.UUID,
     _: None = Depends(require_internal_key),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """A one-shot sign-in URL, so support can see what the customer sees.
 
@@ -618,9 +618,7 @@ async def login_link(
 
 
 @router.get("/stats", response_model=Stats)
-async def stats(
-    _: None = Depends(require_internal_key), db: AsyncSession = Depends(get_db)
-):
+async def stats(_: None = Depends(require_internal_key), db: AsyncSession = SESSION):
     """What Alice's dashboard shows for this product.
 
     ⚠️ The customer counts AND the fund-side figures. A console that shows « 1 gestionnaire »
@@ -664,7 +662,7 @@ async def audit_journal(
     user_email: str | None = None,
     entity_type: str | None = None,
     _: None = Depends(require_internal_key),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = SESSION,
 ):
     """The audit journal, for the supervision (Portail360).
 
