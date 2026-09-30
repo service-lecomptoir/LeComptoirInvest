@@ -9,6 +9,7 @@ import { Card, Notice } from '@/components/common/Primitives'
 import { useAuthStore } from '@/store/authStore'
 import { toast } from '@/store/toast'
 import { safeNext } from '@/lib/nextPath'
+import { useFieldCheck } from '@/lib/formCheck'
 
 /**
  * Changing one's password. A SECTION of the profile, no longer a screen apart.
@@ -40,20 +41,19 @@ export function PasswordSection() {
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const { errors, check, flag } = useFieldCheck()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (!current) {
-      setError(t('password.currentMissing'))
-      return
-    }
+    const fine = check([
+      { name: 'current', value: current, required: true },
+      { name: 'next', value: next, required: true, minLength: 10 },
+      { name: 'confirm', value: confirm, required: true },
+    ])
+    if (!fine) return
     if (next !== confirm) {
-      setError(t('password.mismatch'))
-      return
-    }
-    if (next.length < 10) {
-      setError(t('password.tooShort'))
+      flag('confirm', t('password.mismatch'))
       return
     }
     setBusy(true)
@@ -97,6 +97,7 @@ export function PasswordSection() {
               value={current}
               onChange={(e) => setCurrent(e.target.value)}
               required
+              error={errors.current}
               hint={t('password.whyCurrent')}
             />
             <Input
@@ -107,6 +108,7 @@ export function PasswordSection() {
               value={next}
               onChange={(e) => setNext(e.target.value)}
               required
+              error={errors.next}
               hint={t('password.newHint')}
             />
             <Input
@@ -117,6 +119,7 @@ export function PasswordSection() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               required
+              error={errors.confirm}
               hint={t('password.confirmHint')}
             />
 

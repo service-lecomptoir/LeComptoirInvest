@@ -13,7 +13,10 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 const SRC = join(__dirname, '..')
-const EOL = String.fromCharCode(10)
+// ⚠️ A LINE ENDS WITH OR WITHOUT A CARRIAGE RETURN: git checks the sources out in CRLF on
+// Windows (`core.autocrlf`), and a closing tag compared with its trailing CR never
+// matched, so a block ran to the end of the file and blamed the help of another form.
+const EOL = /\r?\n/
 
 function walk(dir: string, ext: RegExp): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -166,38 +169,56 @@ describe('aucune bulle du navigateur sur un formulaire', () => {
   /**
    * 🔴 THE BROWSER'S VALIDATION BUBBLE IS A NATIVE DIALOG, in the browser's language rather
    * than the page's: « Veuillez allonger ce texte » on the page where a new customer chooses
-   * their password (customer recipe, 30 Sept 2026). A form says what is missing in its own
-   * words, so it carries `noValidate`.
+   * their password (customer recipe, 30 Sept 2026), gone as soon as one taps elsewhere.
    *
-   * ⚠️ A RATCHET: the screens below still lean on the browser. The list only shrinks; a
-   * new form that forgets `noValidate` fails here.
+   * No exception: every form carries `noValidate` AND says what is wrong itself, under the
+   * field (`lib/formCheck`). A form with `noValidate` and no check of its own would send
+   * empty fields to the server, which is worse than the bubble.
    */
-  const NOT_YET = new Set([
-    'pages/Distributions.tsx',
-    'pages/Investors.tsx',
-    'pages/Portfolio.tsx',
-    'pages/Projects.tsx',
-    'pages/Subscriptions.tsx',
-    'pages/Treasury.tsx',
-  ])
+  const forms = () =>
+    walk(SRC, /\.tsx$/)
+      .map((file) => ({
+        name: file.slice(SRC.length + 1).split(String.fromCharCode(92)).join('/'),
+        source: withoutComments(readFileSync(file, 'utf8')),
+      }))
+      .filter(({ source }) => /<form\b/.test(source))
 
-  it('chaque formulaire porte noValidate', () => {
-    const fautifs: string[] = []
-    for (const file of walk(SRC, /\.tsx$/)) {
-      const name = file.slice(SRC.length + 1).split(String.fromCharCode(92)).join('/')
-      if (NOT_YET.has(name)) continue
-      const source = withoutComments(readFileSync(file, 'utf8'))
-      for (const match of source.matchAll(/<form\b[^>]*>/g)) {
-        if (!/\bnoValidate\b/.test(match[0])) fautifs.push(`${name}: ${match[0].slice(0, 60)}`)
+  /** What the rule refuses in one source: the offences, named. */
+  function offences(name: string, source: string): string[] {
+    const found: string[] = []
+    for (const match of source.matchAll(/<form\b[^>]*>/g)) {
+      if (!/\bnoValidate\b/.test(match[0])) found.push(`${name}: <form> sans noValidate`)
+    }
+    if (!/\buseFieldCheck\(/.test(source)) found.push(`${name}: aucun useFieldCheck()`)
+    // A field marked required carries the place its message is shown.
+    // An <Input> ends at its « /> » (an arrow `=>` inside it is no end); a <Field> opening
+    // ends at the « > » that closes its line.
+    for (const match of source.matchAll(/<(Input)\b[\s\S]*?\/>|<(Field)\b[\s\S]*?>[ \t]*\r?$/gm)) {
+      const tag = match[0]
+      if (/\brequired\b/.test(tag) && !/\berror=\{/.test(tag)) {
+        found.push(`${name}: <${match[1] ?? match[2]}> requis sans error= (${tag.slice(0, 50)})`)
       }
     }
-    expect(fautifs, `Formulaire sans noValidate : ${fautifs.join(' | ')}`).toEqual([])
+    return found
+  }
+
+  it('chaque formulaire porte noValidate et dit lui-même ce qui manque, sous le champ', () => {
+    const all = forms()
+    // The guard sees what it guards: the product has forms on a dozen screens.
+    expect(all.length).toBeGreaterThan(8)
+    const found = all.flatMap(({ name, source }) => offences(name, source))
+    expect(found, found.join(' | ')).toEqual([])
   })
 
-  it('la liste des écrans en attente ne nomme que des fichiers qui en ont encore besoin', () => {
-    for (const name of NOT_YET) {
-      const source = withoutComments(readFileSync(join(SRC, name), 'utf8'))
-      expect(/<form\b(?![^>]*noValidate)[^>]*>/.test(source), name).toBe(true)
-    }
+  it('la garde voit ce qu’elle interdit', () => {
+    const bare = `<form onSubmit={go}><Input label="Nom" required /></form>`
+    expect(offences('exemple.tsx', bare)).toEqual([
+      'exemple.tsx: <form> sans noValidate',
+      'exemple.tsx: aucun useFieldCheck()',
+      'exemple.tsx: <Input> requis sans error= (<Input label="Nom" required />)',
+    ])
+    const right = `const { errors } = useFieldCheck()
+<form noValidate onSubmit={go}><Input label="Nom" required error={errors.name} /></form>`
+    expect(offences('exemple.tsx', right)).toEqual([])
   })
 })

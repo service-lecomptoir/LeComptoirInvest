@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/authStore'
 import { LogoMark } from '@/components/common/Logo'
 import { SignupForm } from '@/components/signup/SignupForm'
 import { safeNext } from '@/lib/nextPath'
+import { useFieldCheck } from '@/lib/formCheck'
 
 export default function Login() {
   const { t, i18n } = useTranslation()
@@ -29,6 +30,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const { errors, check } = useFieldCheck()
   // 🔴 THE SIGN-UP GOES THROUGH THE CONSOLE (`SignupForm`), as on Le Comptoir RH: the
   // prospect chooses a catalogue plan, Alice confirms the e-mail and opens the account.
   const [signingUp, setSigningUp] = useState(false)
@@ -41,10 +43,11 @@ export default function Login() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (!email.trim() || !password) {
-      setError(t('login.missing'))
-      return
-    }
+    const fine = check([
+      { name: 'email', value: email, required: true, email: true },
+      { name: 'password', value: password, required: true },
+    ])
+    if (!fine) return
     setBusy(true)
     try {
       await login(email.trim(), password)
@@ -116,6 +119,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  error={errors.email}
                 />
                 <div>
                   <Input
@@ -126,6 +130,7 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    error={errors.password}
                   />
                   <button
                     type="button"
@@ -183,14 +188,12 @@ function ForgotPassword({ email: typed, onBack }: { email: string; onBack: () =>
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState<string | null>(null)
+  const { errors, check } = useFieldCheck()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (!email.trim()) {
-      setError(t('login.forgotMissing'))
-      return
-    }
+    if (!check([{ name: 'email', value: email, required: true, email: true }])) return
     setBusy(true)
     try {
       const { data } = await authApi.forgotPassword(email.trim())
@@ -220,6 +223,7 @@ function ForgotPassword({ email: typed, onBack }: { email: string; onBack: () =>
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            error={errors.email}
           />
           {error && (
             <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">

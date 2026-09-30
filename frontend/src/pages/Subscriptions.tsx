@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useFieldCheck } from '@/lib/formCheck'
 import { todayIso } from '@/lib/day'
 import { useTranslation } from 'react-i18next'
 import { Check, Receipt, X } from 'lucide-react'
@@ -30,6 +31,7 @@ export default function Subscriptions() {
   const [converting, setConverting] = useState<SubscriptionRequest | null>(null)
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
+  const { errors, check } = useFieldCheck()
 
   const load = () =>
     subscriptionsApi.requests().then((r) => setRows(r.data)).catch(() => setRows([]))
@@ -51,12 +53,10 @@ export default function Subscriptions() {
   }
 
   const refuse = async (id: string) => {
-    if (!reason.trim()) {
-      // 🔴 REFUSED HERE TOO, NOT ONLY BY THE SERVER. An investor told « no » with no reason
-      // can neither correct anything nor ask for it to be looked at again.
-      toast.error(t('subscriptions.reasonRequired'))
-      return
-    }
+    // 🔴 REFUSED HERE TOO, NOT ONLY BY THE SERVER. An investor told « no » with no reason
+    // can neither correct anything nor ask for it to be looked at again. Said under the
+    // field, not in a toast that fades while one types it.
+    if (!check([{ name: 'reason', value: reason, required: true }])) return
     setBusy(true)
     try {
       await subscriptionsApi.decide(id, { accept: false, reason: reason.trim() })
@@ -157,6 +157,7 @@ export default function Subscriptions() {
           {refusing && (
             <Card className="mt-3 p-4 border-red-200">
               <form
+                noValidate
                 onSubmit={(e) => {
                   e.preventDefault()
                   refuse(refusing)
@@ -168,6 +169,7 @@ export default function Subscriptions() {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   required
+                  error={errors.reason}
                 />
                 <div className="flex gap-2">
                   <Button type="submit" variant="danger" isLoading={busy}>
@@ -210,9 +212,17 @@ function ConvertLoan({
   const [interest, setInterest] = useState('')
   const [interestCash, setInterestCash] = useState('')
   const [busy, setBusy] = useState(false)
+  const { errors, check } = useFieldCheck()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const fine = check([
+      { name: 'convertedOn', value: convertedOn, required: true },
+      { name: 'principal', value: principal, required: true, amount: true },
+      { name: 'interest', value: interest, amount: true },
+      { name: 'interestCash', value: interestCash, amount: true },
+    ])
+    if (!fine) return
     setBusy(true)
     try {
       // 🔴 THE COMMITMENT, NOT THE REQUEST. Sending the id of the request gives a 404
@@ -237,13 +247,14 @@ function ConvertLoan({
       <p className="text-sm font-semibold text-gray-900">{t('convert.title')}</p>
       <p className="mt-0.5 text-xs text-gray-500 max-w-2xl">{t('convert.explain')}</p>
       <p className="mt-1 mb-3 text-xs text-amber-800 max-w-2xl">{t('convert.interestWarning')}</p>
-      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-5 items-end">
+      <form onSubmit={submit} noValidate className="grid gap-3 sm:grid-cols-5 items-end">
         <Input
           label={t('convert.date')}
           type="date"
           value={convertedOn}
           onChange={(e) => setConvertedOn(e.target.value)}
           required
+          error={errors.convertedOn}
         />
         <Input
           label={t('convert.principal')}
@@ -253,6 +264,7 @@ function ConvertLoan({
           value={principal}
           onChange={(e) => setPrincipal(e.target.value)}
           required
+          error={errors.principal}
         />
         <Input
           label={t('convert.interest')}
@@ -261,6 +273,7 @@ function ConvertLoan({
           step="0.01"
           value={interest}
           onChange={(e) => setInterest(e.target.value)}
+          error={errors.interest}
         />
         <Input
           label={t('convert.interestCash')}
@@ -269,6 +282,7 @@ function ConvertLoan({
           step="0.01"
           value={interestCash}
           onChange={(e) => setInterestCash(e.target.value)}
+          error={errors.interestCash}
         />
         <div className="flex gap-2">
           <Button type="submit" isLoading={busy}>{t('common.confirm')}</Button>

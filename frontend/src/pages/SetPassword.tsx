@@ -5,6 +5,7 @@ import { KeyRound } from 'lucide-react'
 
 import { authApi } from '@/api'
 import { errorMessage } from '@/api/client'
+import { useFieldCheck } from '@/lib/formCheck'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { LogoMark } from '@/components/common/Logo'
 import { Notice } from '@/components/common/Primitives'
@@ -33,6 +34,7 @@ export default function SetPassword() {
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const { errors, check, flag } = useFieldCheck()
 
   const title = link?.purpose === 'welcome' ? t('setPassword.welcomeTitle') : t('setPassword.resetTitle')
 
@@ -50,12 +52,13 @@ export default function SetPassword() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    const fine = check([
+      { name: 'password', value: password, required: true, minLength: 10 },
+      { name: 'confirm', value: confirm, required: true },
+    ])
+    if (!fine) return
     if (password !== confirm) {
-      setError(t('password.mismatch'))
-      return
-    }
-    if (password.length < 10) {
-      setError(t('password.tooShort'))
+      flag('confirm', t('password.mismatch'))
       return
     }
     setBusy(true)
@@ -113,6 +116,7 @@ export default function SetPassword() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                error={errors.password}
               />
               <Input
                 label={t('password.confirm')}
@@ -123,6 +127,7 @@ export default function SetPassword() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 required
+                error={errors.confirm}
               />
             </div>
             {error && (

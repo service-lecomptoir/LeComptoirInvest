@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useFieldCheck } from '@/lib/formCheck'
 import { todayIso } from '@/lib/day'
 import { useTranslation } from 'react-i18next'
 import { ArrowDown, Ban, Check, Landmark, Users } from 'lucide-react'
@@ -330,9 +331,11 @@ function PayDistribution({
   const [movementId, setMovementId] = useState('')
   const [paidOn, setPaidOn] = useState('')
   const [busy, setBusy] = useState(false)
+  const { errors, check } = useFieldCheck()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!check([{ name: 'movement', value: movementId, required: true }])) return
     setBusy(true)
     try {
       await distributionsApi.pay(distribution.id, {
@@ -352,12 +355,13 @@ function PayDistribution({
     <Card className="p-4 border-brand-navy/30">
       <p className="text-sm font-semibold text-gray-900">{t('pay.title')}</p>
       <p className="mt-0.5 mb-3 text-xs text-gray-500 max-w-2xl">{t('pay.explain')}</p>
-      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-3 items-end">
+      <form onSubmit={submit} noValidate className="grid gap-3 sm:grid-cols-3 items-end">
         <Input
           label={t('pay.movement')}
           value={movementId}
           onChange={(e) => setMovementId(e.target.value)}
           required
+          error={errors.movement}
         />
         <Input
           label={t('pay.paidOn')}

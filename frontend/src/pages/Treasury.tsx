@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useFieldCheck } from '@/lib/formCheck'
 import { todayIso } from '@/lib/day'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Upload } from 'lucide-react'
@@ -269,9 +270,16 @@ function NewCall({ onDone }: { onDone: () => void }) {
   const [dueOn, setDueOn] = useState('')
   const [busy, setBusy] = useState(false)
   const today = todayIso()
+  const { errors, check } = useFieldCheck()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const fine = check([
+      { name: 'subscription', value: subscriptionId, required: true },
+      { name: 'amount', value: amount, required: true, amount: true },
+      { name: 'dueOn', value: dueOn, required: true },
+    ])
+    if (!fine) return
     setBusy(true)
     try {
       await treasuryApi.openCall({
@@ -303,12 +311,13 @@ function NewCall({ onDone }: { onDone: () => void }) {
 
   return (
     <Card className="p-4 w-full">
-      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-4 items-end">
+      <form onSubmit={submit} noValidate className="grid gap-3 sm:grid-cols-4 items-end">
         <Input
           label={t('treasury.subscription')}
           value={subscriptionId}
           onChange={(e) => setSubscriptionId(e.target.value)}
           required
+          error={errors.subscription}
         />
         <Input
           label={t('common.amount')}
@@ -318,6 +327,7 @@ function NewCall({ onDone }: { onDone: () => void }) {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           required
+          error={errors.amount}
         />
         <Input
           label={t('common.dueDate')}
@@ -325,6 +335,7 @@ function NewCall({ onDone }: { onDone: () => void }) {
           value={dueOn}
           onChange={(e) => setDueOn(e.target.value)}
           required
+          error={errors.dueOn}
         />
         <div className="flex gap-2">
           <Button type="submit" isLoading={busy}>{t('treasury.issue')}</Button>
@@ -344,9 +355,15 @@ function AttributionForm({
   const [amount, setAmount] = useState(movement.amount)
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
+  const { errors, check } = useFieldCheck()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const fine = check([
+      { name: 'subscription', value: subscriptionId, required: true },
+      { name: 'amount', value: amount, required: true, amount: true },
+    ])
+    if (!fine) return
     setBusy(true)
     try {
       await treasuryApi.attribute(movement.id, {
@@ -375,12 +392,13 @@ function AttributionForm({
         {t('treasury.payerIs', { name: movement.counterparty_name || t('treasury.payerUnknown') })}
         {movement.proposal?.third_party_payer && ` ${t('treasury.thirdPartyWarning')}`}
       </p>
-      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-4 items-end">
+      <form onSubmit={submit} noValidate className="grid gap-3 sm:grid-cols-4 items-end">
         <Input
           label={t('treasury.subscription')}
           value={subscriptionId}
           onChange={(e) => setSubscriptionId(e.target.value)}
           required
+          error={errors.subscription}
         />
         <Input
           label={t('treasury.imputedAmount')}
@@ -390,6 +408,7 @@ function AttributionForm({
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           required
+          error={errors.amount}
         />
         <Input
           label={t('treasury.thirdPartyReason')}

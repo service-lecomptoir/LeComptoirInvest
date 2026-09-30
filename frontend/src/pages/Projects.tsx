@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useFieldCheck } from '@/lib/formCheck'
 import { useTranslation } from 'react-i18next'
 import { Building2, Plus } from 'lucide-react'
 import { projectsApi } from '@/api'
@@ -169,9 +170,15 @@ function NewProject({ onCancel, onDone }: { onCancel: () => void; onDone: () => 
   const [currency, setCurrency] = useState('EUR')
   const [target, setTarget] = useState('')
   const [busy, setBusy] = useState(false)
+  const { errors, check } = useFieldCheck()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const fine = check([
+      { name: 'name', value: name, required: true },
+      { name: 'target', value: target, amount: true },
+    ])
+    if (!fine) return
     setBusy(true)
     try {
       await projectsApi.create({
@@ -190,8 +197,8 @@ function NewProject({ onCancel, onDone }: { onCancel: () => void; onDone: () => 
 
   return (
     <Card className="p-4">
-      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-4 items-end">
-        <Input label={t('projects.name')} value={name} onChange={(e) => setName(e.target.value)} required />
+      <form onSubmit={submit} noValidate className="grid gap-3 sm:grid-cols-4 items-end">
+        <Input label={t('projects.name')} value={name} onChange={(e) => setName(e.target.value)} required error={errors.name} />
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.currency')}</label>
           <Select
@@ -208,6 +215,7 @@ function NewProject({ onCancel, onDone }: { onCancel: () => void; onDone: () => 
           step="0.01"
           value={target}
           onChange={(e) => setTarget(e.target.value)}
+          error={errors.target}
         />
         <div className="flex gap-2">
           <Button type="submit" isLoading={busy}>{t('common.create')}</Button>
@@ -258,9 +266,20 @@ function ProjectAction({
   const [valuation, setValuation] = useState('')
   const [basis, setBasis] = useState('')
   const [busy, setBusy] = useState(false)
+  const { errors, check } = useFieldCheck()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const moved = what === 'deploy' || what === 'return'
+    const fine = check([
+      { name: 'movement', value: movementId, required: moved },
+      { name: 'valuedOn', value: valuedOn, required: what === 'value' },
+      { name: 'valuation', value: valuation, required: what === 'value', amount: true },
+      { name: 'amount', value: amount, required: what === 'deploy', amount: true },
+      { name: 'capital', value: capital, required: what === 'return', amount: true },
+      { name: 'income', value: income, required: what === 'return', amount: true },
+    ])
+    if (!fine) return
     setBusy(true)
     try {
       if (what === 'deploy') {
@@ -318,7 +337,7 @@ function ProjectAction({
       {what === 'return' && (
         <p className="mt-0.5 mb-3 text-xs text-gray-500 max-w-2xl">{t('project.splitRequired')}</p>
       )}
-      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-4 items-end mt-2">
+      <form onSubmit={submit} noValidate className="grid gap-3 sm:grid-cols-4 items-end mt-2">
         {/* ⚠️ A VALUATION IS CHARGED TO NO BANK MOVEMENT. It is a judgement,
             not a flow: demanding a transfer reference here would force one to invent one,
             and the rule « chaque montant vient de la banque » would lose its meaning where
@@ -329,6 +348,7 @@ function ProjectAction({
             value={movementId}
             onChange={(e) => setMovementId(e.target.value)}
             required
+            error={errors.movement}
           />
         )}
 
@@ -340,6 +360,7 @@ function ProjectAction({
               value={valuedOn}
               onChange={(e) => setValuedOn(e.target.value)}
               required
+              error={errors.valuedOn}
             />
             <Input
               label={t('project.valuedAmount')}
@@ -349,6 +370,7 @@ function ProjectAction({
               value={valuation}
               onChange={(e) => setValuation(e.target.value)}
               required
+              error={errors.valuation}
             />
             <Input
               label={t('project.basis')}
@@ -367,6 +389,7 @@ function ProjectAction({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             required
+            error={errors.amount}
           />
         )}
 
@@ -380,6 +403,7 @@ function ProjectAction({
               value={capital}
               onChange={(e) => setCapital(e.target.value)}
               required
+              error={errors.capital}
             />
             <Input
               label={t('project.incomeBack')}
@@ -389,6 +413,7 @@ function ProjectAction({
               value={income}
               onChange={(e) => setIncome(e.target.value)}
               required
+              error={errors.income}
             />
           </>
         )}

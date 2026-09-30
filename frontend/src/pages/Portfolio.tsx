@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useFieldCheck } from '@/lib/formCheck'
 import { useTranslation } from 'react-i18next'
 import { PieChart, Plus, ShieldCheck, ShieldQuestion } from 'lucide-react'
 import { investorsApi, subscriptionsApi } from '@/api'
@@ -195,9 +196,11 @@ function AskToSubscribe({ onCancel, onDone }: { onCancel: () => void; onDone: ()
   const [currency, setCurrency] = useState('EUR')
   const [documentVersion, setDocumentVersion] = useState('')
   const [busy, setBusy] = useState(false)
+  const { errors, check } = useFieldCheck()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!check([{ name: 'amount', value: amount, required: true, amount: true }])) return
     setBusy(true)
     try {
       await subscriptionsApi.request({
@@ -219,7 +222,7 @@ function AskToSubscribe({ onCancel, onDone }: { onCancel: () => void; onDone: ()
     <Card className="p-4 border-brand-navy/30">
       <p className="text-sm font-semibold text-gray-900">{t('invest.title')}</p>
       <p className="mt-0.5 mb-3 text-xs text-gray-500 max-w-2xl">{t('invest.explain')}</p>
-      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-5 items-end">
+      <form onSubmit={submit} noValidate className="grid gap-3 sm:grid-cols-5 items-end">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             {t('invest.instrument')}
@@ -242,6 +245,7 @@ function AskToSubscribe({ onCancel, onDone }: { onCancel: () => void; onDone: ()
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           required
+          error={errors.amount}
         />
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">

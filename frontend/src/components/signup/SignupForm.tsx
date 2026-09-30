@@ -5,6 +5,7 @@ import { publicApi, type Country, type PublicPlan, type SignupOutcome } from '@/
 import { errorMessage } from '@/api/client'
 import { usePlanPrice } from '@/lib/planPrice'
 import { checkSirenSiret } from '@/lib/siret'
+import { fieldErrors, labelsInError, useFieldCheck, type Rule } from '@/lib/formCheck'
 import { offersRetry, outcomeTitleKey, outcomeTone } from '@/lib/signupOutcome'
 import { AddressAutocomplete } from '@/components/common/AddressAutocomplete'
 import { SiretInput } from '@/components/common/SiretInput'
@@ -64,6 +65,7 @@ export function SignupForm({
   const problemBox = useRef<HTMLParagraphElement | null>(null)
   const outcomeBox = useRef<HTMLDivElement | null>(null)
   const [busy, setBusy] = useState(false)
+  const { errors, check, flag } = useFieldCheck()
   const [outcome, setOutcome] = useState<SignupOutcome | null>(null)
   const set = (patch: Partial<typeof draft>) => setDraft((d) => ({ ...d, ...patch }))
 
@@ -105,35 +107,38 @@ export function SignupForm({
   async function send(event: React.FormEvent) {
     event.preventDefault()
     setProblem(null)
-    if (!quoted && catalogue.length > 0 && !draft.plan_id) {
-      setProblem(t('signup.choosePlan'))
-      return
-    }
-    // Every field the form asks for, said at once and in the page's language.
-    const required: [string, string][] = [
+    // Every field the form asks for, said UNDER the field and summed up at the top, where
+    // the reader of a long form on a telephone is taken back.
+    const rules: Rule[] = [
+      {
+        name: 'plan_id',
+        value: draft.plan_id,
+        label: t('signup.plan'),
+        required: !quoted && catalogue.length > 0,
+      },
       ...(isCompany
-        ? ([
-            [draft.company_number, country.number_label],
-            [draft.company, t('signup.companyName')],
-          ] as [string, string][])
-        : ([
-            [draft.first_name, t('signup.firstName')],
-            [draft.last_name, t('signup.lastName')],
-          ] as [string, string][])),
-      [draft.email, t('signup.email')],
-      [draft.phone, t('signup.phone')],
-      [draft.street, t('signup.address')],
-      [draft.zip_code, t('signup.zip')],
-      [draft.city, t('signup.city')],
-      ...(quoted ? ([[draft.message, t('signup.need')]] as [string, string][]) : []),
+        ? [
+            { name: 'company_number', value: draft.company_number, label: country.number_label, required: true },
+            { name: 'company', value: draft.company, label: t('signup.companyName'), required: true },
+          ]
+        : [
+            { name: 'first_name', value: draft.first_name, label: t('signup.firstName'), required: true },
+            { name: 'last_name', value: draft.last_name, label: t('signup.lastName'), required: true },
+          ]),
+      { name: 'email', value: draft.email, label: t('signup.email'), required: true, email: true },
+      { name: 'phone', value: draft.phone, label: t('signup.phone'), required: true, minLength: 6 },
+      { name: 'street', value: draft.street, label: t('signup.address'), required: true },
+      { name: 'zip_code', value: draft.zip_code, label: t('signup.zip'), required: true },
+      { name: 'city', value: draft.city, label: t('signup.city'), required: true },
+      { name: 'message', value: draft.message, label: t('signup.need'), required: quoted },
     ]
-    const missing = required.filter(([value]) => !value.trim()).map(([, label]) => label)
-    if (missing.length) {
-      setProblem(t('signup.missing', { fields: missing.join(', ') }))
+    if (!check(rules)) {
+      setProblem(t('signup.missing', { fields: labelsInError(rules, fieldErrors(rules, t)).join(', ') }))
       return
     }
     // The console's rule, said before the round trip.
     if (isCompany && inFrance && !checkSirenSiret(draft.company_number).ok) {
+      flag('company_number', t('signup.badNumber'))
       setProblem(t('signup.badNumber'))
       return
     }
@@ -226,6 +231,7 @@ export function SignupForm({
         <Field
           label={t('signup.plan')}
           hint={plans !== null && catalogue.length === 0 ? t('signup.noPlan') : t('signup.planHint')}
+          error={errors.plan_id}
         >
           <Select
             aria-label={t('signup.plan')}
@@ -273,6 +279,7 @@ export function SignupForm({
             label={country.number_label}
             htmlFor={id('number')}
             hint={inFrance ? t('signup.siretHint') : t('signup.numberHint')}
+            error={errors.company_number}
             required
           >
             {inFrance ? (
@@ -308,6 +315,7 @@ export function SignupForm({
             value={draft.company}
             onChange={(e) => set({ company: e.target.value })}
             autoComplete="organization"
+            error={errors.company}
           />
         </>
       ) : (
@@ -319,6 +327,7 @@ export function SignupForm({
             value={draft.first_name}
             onChange={(e) => set({ first_name: e.target.value })}
             autoComplete="given-name"
+            error={errors.first_name}
           />
           <Input
             label={t('signup.lastName')}
@@ -327,6 +336,7 @@ export function SignupForm({
             value={draft.last_name}
             onChange={(e) => set({ last_name: e.target.value })}
             autoComplete="family-name"
+            error={errors.last_name}
           />
         </div>
       )}
@@ -338,18 +348,25 @@ export function SignupForm({
         value={draft.email}
         onChange={(e) => set({ email: e.target.value })}
         autoComplete="email"
+        error={errors.email}
       />
       <Input
         label={t('signup.phone')}
         hint={t('signup.phoneHint')}
         type="tel"
         required
-        minLength={6}
         value={draft.phone}
         onChange={(e) => set({ phone: e.target.value })}
         autoComplete="tel"
+        error={errors.phone}
       />
-      <Field label={t('signup.address')} htmlFor={id('street')} hint={t('signup.addressHint')} required>
+      <Field
+        label={t('signup.address')}
+        htmlFor={id('street')}
+        hint={t('signup.addressHint')}
+        error={errors.street}
+        required
+      >
         <AddressAutocomplete
           id={id('street')}
           required
@@ -376,6 +393,7 @@ export function SignupForm({
           value={draft.zip_code}
           onChange={(e) => set({ zip_code: e.target.value })}
           autoComplete="postal-code"
+          error={errors.zip_code}
         />
         <Input
           containerClassName="sm:col-span-2"
@@ -385,10 +403,17 @@ export function SignupForm({
           value={draft.city}
           onChange={(e) => set({ city: e.target.value })}
           autoComplete="address-level2"
+          error={errors.city}
         />
       </div>
       {quoted && (
-        <Field label={t('signup.need')} htmlFor={id('need')} hint={t('signup.needHint')} required>
+        <Field
+          label={t('signup.need')}
+          htmlFor={id('need')}
+          hint={t('signup.needHint')}
+          error={errors.message}
+          required
+        >
           <textarea
             id={id('need')}
             required

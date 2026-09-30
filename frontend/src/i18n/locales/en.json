@@ -70,9 +70,7 @@
     "forgotEmailHint": "The one you sign in with.",
     "forgotSubmit": "Get a link",
     "forgotSentTitle": "Check your mailbox",
-    "backToSignIn": "Back to sign-in",
-    "missing": "Give your e-mail address and your password.",
-    "forgotMissing": "Give your account's e-mail address."
+    "backToSignIn": "Back to sign-in"
   },
   "errors": {
     "expired": "Your session has expired. Please sign in again.",
@@ -355,7 +353,6 @@
     "new": "New password",
     "confirm": "Confirm the new password",
     "mismatch": "The two entries do not match.",
-    "tooShort": "Ten characters minimum.",
     "submit": "Save",
     "done": "Password changed.",
     "whyCurrent": "The current password is asked for even when the change is imposed: without it, a stolen token would be enough to take the account over for good.",
@@ -364,8 +361,7 @@
     "reveal": "Show the password",
     "hide": "Hide the password",
     "newHint": "At least ten characters. A short sentence is easier to remember than a complicated word.",
-    "confirmHint": "The same one again, to rule out a typo.",
-    "currentMissing": "Give your current password."
+    "confirmHint": "The same one again, to rule out a typo."
   },
   "kyc": {
     "decide": "Record a verdict",
@@ -818,5 +814,12 @@
     "askNew": "Ask for a new link",
     "submit": "Save and sign in",
     "done": "Password saved."
+  },
+  "form": {
+    "required": "Required.",
+    "amount": "An amount of zero or more, two decimals at most.",
+    "email": "This e-mail address is not valid.",
+    "minLength_one": "At least {{count}} character.",
+    "minLength_other": "At least {{count}} characters."
   }
 }

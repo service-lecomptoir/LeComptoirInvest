@@ -70,9 +70,7 @@
     "forgotEmailHint": "Celle avec laquelle vous vous connectez.",
     "forgotSubmit": "Recevoir un lien",
     "forgotSentTitle": "Regardez votre boîte e-mail",
-    "backToSignIn": "Revenir à la connexion",
-    "missing": "Indiquez votre adresse e-mail et votre mot de passe.",
-    "forgotMissing": "Indiquez l'adresse e-mail de votre compte."
+    "backToSignIn": "Revenir à la connexion"
   },
   "errors": {
     "expired": "Session expirée. Reconnectez-vous.",
@@ -355,7 +353,6 @@
     "new": "Nouveau mot de passe",
     "confirm": "Confirmez le nouveau mot de passe",
     "mismatch": "Les deux saisies ne correspondent pas.",
-    "tooShort": "Dix caractères au minimum.",
     "submit": "Enregistrer",
     "done": "Mot de passe modifié.",
     "whyCurrent": "Le mot de passe actuel est demandé même lorsque le changement est imposé : sans lui, un jeton dérobé suffirait à s'approprier le compte définitivement.",
@@ -364,8 +361,7 @@
     "reveal": "Afficher le mot de passe",
     "hide": "Masquer le mot de passe",
     "newHint": "Dix caractères au moins. Une phrase courte se retient mieux qu'un mot compliqué.",
-    "confirmHint": "Le même, une seconde fois, pour écarter une faute de frappe.",
-    "currentMissing": "Indiquez votre mot de passe actuel."
+    "confirmHint": "Le même, une seconde fois, pour écarter une faute de frappe."
   },
   "kyc": {
     "decide": "Rendre un verdict",
@@ -818,5 +814,12 @@
     "askNew": "Demander un nouveau lien",
     "submit": "Enregistrer et me connecter",
     "done": "Mot de passe enregistré."
+  },
+  "form": {
+    "required": "À renseigner.",
+    "amount": "Un montant positif ou nul, deux décimales au plus.",
+    "email": "Cette adresse e-mail n'est pas valide.",
+    "minLength_one": "{{count}} caractère au moins.",
+    "minLength_other": "{{count}} caractères au moins."
   }
 }

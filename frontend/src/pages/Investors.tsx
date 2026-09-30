@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useFieldCheck } from '@/lib/formCheck'
 import { useTranslation } from 'react-i18next'
 import { Eye, Plus, ShieldAlert, ShieldCheck, ShieldQuestion, ShieldX, Users } from 'lucide-react'
 import { investorsApi } from '@/api'
@@ -284,13 +285,12 @@ function KycVerdict({
   const [busy, setBusy] = useState(false)
 
   const needsReason = status === 'refused' || status === 'review'
+  const { errors, check } = useFieldCheck()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (needsReason && !reason.trim()) {
-      toast.error(t('kyc.reasonRequired'))
-      return
-    }
+    // The reason is said UNDER its field, not in a toast that fades while one types it.
+    if (!check([{ name: 'reason', value: reason, required: needsReason }])) return
     setBusy(true)
     try {
       // 🔴 THE SECOND DOOR THE ALLOWANCE IS COUNTED THROUGH. A refused file is not billed;
@@ -319,7 +319,7 @@ function KycVerdict({
         {t('kyc.title', { name: investor.display_name })}
       </p>
       <p className="mt-0.5 mb-3 text-xs text-gray-500 max-w-2xl">{t('kyc.blocksMoney')}</p>
-      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-4 items-end">
+      <form onSubmit={submit} noValidate className="grid gap-3 sm:grid-cols-4 items-end">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('kyc.verdict')}</label>
           <Select
@@ -349,6 +349,7 @@ function KycVerdict({
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           required={needsReason}
+          error={errors.reason}
         />
         <div className="flex gap-2">
           <Button type="submit" isLoading={busy}>{t('common.confirm')}</Button>
@@ -372,9 +373,16 @@ function NewInvestor({ onCancel, onDone }: { onCancel: () => void; onDone: () =>
   const [email, setEmail] = useState('')
   const [iban, setIban] = useState('')
   const [busy, setBusy] = useState(false)
+  const { errors, check } = useFieldCheck()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const fine = check([
+      { name: 'lastName', value: lastName, required: kind === 'personne' },
+      { name: 'company', value: company, required: kind === 'societe' },
+      { name: 'email', value: email, email: true },
+    ])
+    if (!fine) return
     setBusy(true)
     try {
       // ⚠️ `null` MEANS THE USER DECLINED THE SUPPLEMENT, which is neither a success nor a
@@ -402,7 +410,7 @@ function NewInvestor({ onCancel, onDone }: { onCancel: () => void; onDone: () =>
 
   return (
     <Card className="p-4">
-      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-3">
+      <form onSubmit={submit} noValidate className="grid gap-3 sm:grid-cols-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('investors.kind')}</label>
           <Select
@@ -418,14 +426,14 @@ function NewInvestor({ onCancel, onDone }: { onCancel: () => void; onDone: () =>
         {kind === 'personne' ? (
           <>
             <Input label={t('investors.firstName')} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-            <Input label={t('investors.lastName')} value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+            <Input label={t('investors.lastName')} value={lastName} onChange={(e) => setLastName(e.target.value)} required error={errors.lastName} />
           </>
         ) : (
           <div className="sm:col-span-2">
-            <Input label={t('investors.companyName')} value={company} onChange={(e) => setCompany(e.target.value)} required />
+            <Input label={t('investors.companyName')} value={company} onChange={(e) => setCompany(e.target.value)} required error={errors.company} />
           </div>
         )}
-        <Input label={t('login.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input label={t('login.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} error={errors.email} />
         <div className="sm:col-span-2">
           <Input
             label={t('investors.iban')}
@@ -463,9 +471,11 @@ function Eligibility({
   const [category, setCategory] = useState<InvestorCategory>(investor.category ?? 'retail')
   const [capacity, setCapacity] = useState(investor.loss_bearing_capacity ?? '')
   const [busy, setBusy] = useState(false)
+  const { errors, check } = useFieldCheck()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!check([{ name: 'capacity', value: capacity, amount: true }])) return
     setBusy(true)
     try {
       await investorsApi.setEligibility(investor.id, {
@@ -486,7 +496,7 @@ function Eligibility({
       <p className="text-sm font-semibold text-gray-900">
         {t('investors.assessTitle', { name: investor.display_name })}
       </p>
-      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-3 items-end mt-3">
+      <form onSubmit={submit} noValidate className="grid gap-3 sm:grid-cols-3 items-end mt-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             {t('investors.category')}
@@ -508,6 +518,7 @@ function Eligibility({
           step="0.01"
           value={capacity}
           onChange={(e) => setCapacity(e.target.value)}
+          error={errors.capacity}
         />
         <div className="flex gap-2">
           <Button type="submit" disabled={busy}>{t('common.confirm')}</Button>
