@@ -7,6 +7,12 @@ from passlib.context import CryptContext
 
 from app.config import get_settings
 
+#: ⚠️ BCRYPT IS A QUARTER OF A SECOND OF CPU BY DESIGN (a second on the loaded machine of
+#: the customer recipe of Le Comptoir BTP, 30 Sept 2026, where the account Alice opened held
+#: the worker that long). An `async def` hands `hash_password`, `verify_password` and
+#: `password_link_service.unusable_password` to the threadpool (`run_in_threadpool`),
+#: never calls them: the library releases the GIL, the loop keeps serving. Guard:
+#: `tests_unit/test_the_event_loop_is_never_held.py`.
 _pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _ALGORITHM = "HS256"
 

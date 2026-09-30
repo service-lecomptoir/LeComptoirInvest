@@ -30,6 +30,7 @@ from typing import Literal
 
 from jose import ExpiredSignatureError, JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.concurrency import run_in_threadpool
 
 from app.config import get_settings
 from app.core import email_envelope
@@ -207,7 +208,7 @@ async def consume(db: AsyncSession, token: str, new_password: str) -> User:
     person's own, whatever door the account came through.
     """
     user, _purpose = await resolve(db, token)
-    user.hashed_password = hash_password(new_password)
+    user.hashed_password = await run_in_threadpool(hash_password, new_password)
     user.must_change_password = False
     user.last_login_at = datetime.now(UTC)
     await db.flush()

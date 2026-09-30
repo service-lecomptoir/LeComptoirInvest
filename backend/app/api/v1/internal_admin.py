@@ -24,6 +24,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import AliasChoices, BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.concurrency import run_in_threadpool
 
 from app.config import get_settings
 from app.core import account_kind, audit, firm_scope
@@ -432,9 +433,9 @@ async def create_manager(
 
     user = User(
         email=email,
-        hashed_password=hash_password(data.password)
+        hashed_password=await run_in_threadpool(hash_password, data.password)
         if data.password
-        else password_link_service.unusable_password(),
+        else await run_in_threadpool(password_link_service.unusable_password),
         account_name=(data.full_name or "").strip() or None,
         role=role,
         account_kind=kind,
@@ -588,7 +589,7 @@ async def reset_password(
     `must_change_password` is set: a password somebody else has seen is not the holder's.
     """
     user = await _managed(db, manager_id)
-    user.hashed_password = hash_password(data.new_password)
+    user.hashed_password = await run_in_threadpool(hash_password, data.new_password)
     user.must_change_password = True
     await db.commit()
 

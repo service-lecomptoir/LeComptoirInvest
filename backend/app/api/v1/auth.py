@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.concurrency import run_in_threadpool
 
 from app.api.deps import current_user
 from app.core import account_kind
@@ -44,7 +45,9 @@ async def login(data: LoginIn, db: AsyncSession = SESSION):
     ).scalar_one_or_none()
     # ⚠️ ONE MESSAGE FOR BOTH FAILURES. Saying « unknown e-mail » tells whoever is asking
     # which addresses hold accounts, and on a fund that list is worth something on its own.
-    if user is None or not verify_password(data.password, user.hashed_password):
+    if user is None or not await run_in_threadpool(
+        verify_password, data.password, user.hashed_password
+    ):
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
             pick("Identifiants incorrects.", "Wrong credentials."),
@@ -234,7 +237,9 @@ async def change_password(
     and the attacker keeps it. A token proves somebody got in, never that they are the
     holder.
     """
-    if not verify_password(data.current_password, user.hashed_password):
+    if not await run_in_threadpool(
+        verify_password, data.current_password, user.hashed_password
+    ):
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             pick(
@@ -242,7 +247,9 @@ async def change_password(
                 "The current password is wrong.",
             ),
         )
-    if verify_password(data.new_password, user.hashed_password):
+    if await run_in_threadpool(
+        verify_password, data.new_password, user.hashed_password
+    ):
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             pick(
@@ -250,6 +257,6 @@ async def change_password(
                 "The new password is the same as the old one: whoever handed it to you still knows it.",
             ),
         )
-    user.hashed_password = hash_password(data.new_password)
+    user.hashed_password = await run_in_threadpool(hash_password, data.new_password)
     user.must_change_password = False
     await db.commit()

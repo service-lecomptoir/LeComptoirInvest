@@ -29,6 +29,7 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.concurrency import run_in_threadpool
 
 from app.core.security import hash_password
 from app.models.user import FUND_WIDE_ROLES, MANAGER, User
@@ -80,7 +81,7 @@ async def ensure_first_manager(db: AsyncSession, *, email: str, password: str) -
             db.add(
                 User(
                     email=email.strip().lower(),
-                    hashed_password=hash_password(password),
+                    hashed_password=await run_in_threadpool(hash_password, password),
                     account_name="Gestion du fonds",
                     role=MANAGER,
                     # The credential was handed over by whoever set the variable, so it is
