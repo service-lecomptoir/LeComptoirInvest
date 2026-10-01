@@ -20,7 +20,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
-from app.api.v1.internal_admin import IGNORED_BY_DESIGN, ManagerIn
+from app.api.v1.internal_admin import IGNORED_BY_DESIGN, ManagerIn, ManagerUpdate
 from app.config import get_settings
 from app.core.security import verify_password
 from app.database import get_db
@@ -238,6 +238,85 @@ class TestNothingIsSwallowedInSilence:
         # The field missing from the payload has not moved.
         assert user.phone == "+2250700000000"
         assert user.account_name == "Gestion"
+
+
+class TestAnUpdateIsNotACreation:
+    """🔴 THE UPDATE HAS ITS OWN SCHEMA. It reused the creation's, whose e-mail is required,
+    and Alice -- which sends only what its screen edited -- got 422 « Field required: email »
+    on every save of a name, a telephone, an address or who the account works for. PDF,
+    Compta, Syndic and BTP met it on 18 September."""
+
+    def test_nothing_is_required_on_an_update(self):
+        required = [n for n, f in ManagerUpdate.model_fields.items() if f.is_required()]
+        assert required == []
+        assert "acts_for" in ManagerUpdate.model_fields
+        for field in IGNORED_BY_DESIGN:
+            assert field in ManagerUpdate.model_fields, (
+                f"{field} undeclared on the update: dropped without a word"
+            )
+
+    async def test_a_partial_update_applies_only_the_fields_sent(self, client, db):
+        """Exactly what Alice's screen sends on « Enregistrer »: the edited fields and no
+        e-mail."""
+        user = await _manager(db, "fiche@fonds.fr")
+        user.city = "Abidjan"
+        user.zip_code = "01 BP 1"
+        user.country = "Côte d'Ivoire"
+        await db.flush()
+
+        r = await client.patch(
+            f"/internal/managers/{user.id}",
+            headers=auth(),
+            json={
+                "full_name": "Meridian Gestion",
+                "phone": "+33600000001",
+                "address": "4 place de la Bourse",
+            },
+        )
+        assert r.status_code == 200, r.text
+        await db.refresh(user)
+        assert user.account_name == "Meridian Gestion"
+        assert user.phone == "+33600000001"
+        assert user.address == "4 place de la Bourse"
+        # What was not sent has not moved.
+        assert user.email == "fiche@fonds.fr"
+        assert user.city == "Abidjan"
+        assert user.zip_code == "01 BP 1"
+        assert user.country == "Côte d'Ivoire"
+        assert user.role == MANAGER
+        assert user.account_kind is None
+
+    async def test_acts_for_alone_changes_the_account_kind(self, client, db):
+        user = await _manager(db, "pour-qui@fonds.fr")
+        user.account_kind = "single_fund"
+        await db.flush()
+
+        r = await client.patch(
+            f"/internal/managers/{user.id}",
+            headers=auth(),
+            json={"acts_for": "clients"},
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["account_kind"] == "management_company"
+        assert r.json()["acts_for"] == "clients"
+        await db.refresh(user)
+        assert user.account_kind == "management_company"
+        assert user.account_name == "Gestion"
+        assert user.email == "pour-qui@fonds.fr"
+
+    async def test_a_refused_update_writes_nothing_it_carried(self, client, db):
+        """Every refusal comes before the first write: a name sent beside an unknown role
+        does not land on the record the role was refused for. The route works on this very
+        object (one session), so a write made before the refusal would show here."""
+        user = await _manager(db, "refus@fonds.fr")
+        r = await client.patch(
+            f"/internal/managers/{user.id}",
+            headers=auth(),
+            json={"full_name": "Autre nom", "city": "Lyon", "role": "syndic"},
+        )
+        assert r.status_code == 422
+        assert user.account_name == "Gestion"
+        assert user.city is None
 
 
 class TestTheGuardProtectsTheOutcomeNotTheRole:

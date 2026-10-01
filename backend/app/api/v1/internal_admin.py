@@ -225,6 +225,44 @@ class ManagerIn(BaseModel):
     )
 
 
+class ManagerUpdate(BaseModel):
+    """What Alice sends when it changes an account: SOME of the fields, never all.
+
+    🔴 EVERY FIELD OPTIONAL, INCLUDING THE E-MAIL. The update route reused the creation
+    schema, whose e-mail is required: Alice sends only what its screen edited (the name, the
+    telephone, the address, who the account works for) and got 422 « Field required: email »
+    on every save. PDF, Compta, Syndic and BTP met the same defect on 18 September; a partial
+    update is a different contract from a creation and gets its own shape.
+
+    The landlord identity is declared here too, and NOT kept, for the reason given on
+    `ManagerIn`: a name this schema does not declare is dropped without a word.
+    """
+
+    email: EmailStr | None = None
+    full_name: str | None = Field(default=None, max_length=200)
+    #: Absent, null, or one of the console's old words: the role does not move.
+    role: str | None = None
+    acts_for: str | None = None
+    phone: str | None = Field(default=None, max_length=30)
+    address: str | None = None
+    zip_code: str | None = Field(default=None, max_length=20)
+    city: str | None = Field(default=None, max_length=120)
+    country: str | None = Field(default=None, max_length=80)
+    company_number: str | None = Field(
+        default=None,
+        max_length=40,
+        validation_alias=AliasChoices("company_number", "national_id"),
+    )
+
+    # ⚠️ Received and NOT kept, as on creation.
+    owner_kind: str | None = None
+    owner_account_name: str | None = None
+    owner_company: str | None = None
+    owner_national_id: str | None = Field(
+        None, validation_alias=AliasChoices("owner_company_number", "owner_national_id")
+    )
+
+
 #: The fields Alice sends that this product does NOT keep. Named here so a guard can hold
 #: the decision still, and so that adding a column one day is a single line.
 IGNORED_BY_DESIGN: tuple[str, ...] = (
@@ -453,7 +491,7 @@ async def create_manager(
 @router.patch("/managers/{manager_id}", response_model=ManagerOut)
 async def update_manager(
     manager_id: uuid.UUID,
-    data: ManagerIn,
+    data: ManagerUpdate,
     _: None = Depends(require_internal_key),
     db: AsyncSession = SESSION,
 ):
@@ -462,14 +500,19 @@ async def update_manager(
     ⚠️ Only the fields actually SENT are written. Alice calls this with
     `exclude_unset=True`, so a payload carrying one field must not blank the others —
     which is exactly what reading every attribute of the model would do.
+
+    🔴 EVERY REFUSAL COMES BEFORE THE FIRST WRITE: an unknown word, an address another
+    account holds, a role this product does not know, the last administrator demoted. A
+    refusal raised halfway would leave the e-mail or the name already changed on the
+    record it refused.
     """
     user = await _managed(db, manager_id)
     sent = data.model_dump(exclude_unset=True)
-    # Refused before anything is written, so a bad word never lands half an update.
+
     kind = _kind_from(sent["acts_for"]) if sent.get("acts_for") is not None else None
 
-    if "email" in sent and sent["email"]:
-        email = str(sent["email"]).lower().strip()
+    email = str(sent["email"]).lower().strip() if sent.get("email") else None
+    if email is not None:
         clash = (
             await db.execute(
                 select(User.id).where(User.email == email, User.id != user.id)
@@ -483,11 +526,11 @@ async def update_manager(
                     "This address already has an account.",
                 ),
             )
-        user.email = email
-    if "full_name" in sent:
-        user.account_name = (sent["full_name"] or "").strip() or None
-    if sent.get("role") and sent["role"] not in _LEGACY_MANAGER_ROLES:
-        if sent["role"] not in _MANAGED_ROLES:
+
+    role = sent.get("role")
+    new_role = role if role and role not in _LEGACY_MANAGER_ROLES else None
+    if new_role is not None:
+        if new_role not in _MANAGED_ROLES:
             raise HTTPException(
                 status_code=422,
                 detail=pick(
@@ -495,9 +538,15 @@ async def update_manager(
                 ),
             )
         # Demoting the last administrator is the same lock-out as deleting them.
-        if user.role in _MANAGED_ROLES and sent["role"] != user.role:
+        if new_role != user.role:
             await _refuse_if_last_administrator(db, user)
-        user.role = sent["role"]
+
+    if email is not None:
+        user.email = email
+    if "full_name" in sent:
+        user.account_name = (sent["full_name"] or "").strip() or None
+    if new_role is not None:
+        user.role = new_role
     for field in _STORED:
         if field in sent:
             setattr(user, field, sent[field])
