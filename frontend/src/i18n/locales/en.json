@@ -345,7 +345,7 @@
   "statement": {
     "title": "Annual statement",
     "subtitle": "What you were paid during the year, in the shape a tax return needs.",
-    "yearHint": "The year is the year of PAYMENT, never the year of the decision.",
+    "yearHint": "The year is the year of payment, never the year of the decision.",
     "none": "Nothing to declare for {{year}}",
     "noneBody": "No payout reached you that year.",
     "grossIncome": "Gross income",
@@ -397,8 +397,8 @@
     "returnTitle": "Return from {{name}}",
     "returned": "Return recorded.",
     "movement": "Bank movement",
-    "movementOut": "The OUTGOING transfer that carried the money.",
-    "movementIn": "The INCOMING transfer that brought it back.",
+    "movementOut": "The outgoing transfer that carried the money.",
+    "movementIn": "The incoming transfer that brought it back.",
     "capitalBack": "Capital returned",
     "incomeBack": "Income",
     "splitRequired": "The two amounts are asked for separately: a return keyed in as one figure lets a project that merely gave the money back be shown as performance.",
@@ -417,7 +417,7 @@
   "convert": {
     "action": "Convert into a subscription",
     "title": "Convert this loan",
-    "explain": "A loan becomes a subscription. It is an EVENT: the loan holding closes, a subscription holding opens, and both survive. The reverse does not exist.",
+    "explain": "A loan becomes a subscription. It is an event: the loan holding closes, a subscription holding opens, and both survive. The reverse does not exist.",
     "date": "Conversion date",
     "principal": "Principal converted",
     "interest": "Interest converted",
@@ -611,7 +611,7 @@
     "cannotWrite": "This notice cannot be written",
     "noQr": "No transfer QR",
     "sendingNotSetUp": "E-mail sending is not configured",
-    "sendingNotSetUpHint": "This product's sending address has not been set. It is entered in Le Comptoir Alice, « Systeme de communication » tab, « Invest » scope. It is never taken from another product: a capital call sent from a property-management tool's domain reads as a phishing attempt. Meanwhile, copy the text above into your own mail client; the call will not be recorded as notified, since the product will not have notified it."
+    "sendingNotSetUpHint": "This product's sending address has not been set. It is entered in Le Comptoir Alice, « Système de communication » tab, « Invest » scope. It is never taken from another product: a capital call sent from a property-management tool's domain reads as a phishing attempt. Meanwhile, copy the text above into your own mail client; the call will not be recorded as notified, since the product will not have notified it."
   },
   "profile": {
     "open": "Open the account menu",

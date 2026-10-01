@@ -345,7 +345,7 @@
   "statement": {
     "title": "Relevé annuel",
     "subtitle": "Ce que vous avez été payé dans l'année, dans la forme dont une déclaration a besoin.",
-    "yearHint": "L'année retenue est celle du PAIEMENT, jamais celle de la décision.",
+    "yearHint": "L'année retenue est celle du paiement, jamais celle de la décision.",
     "none": "Rien à déclarer pour {{year}}",
     "noneBody": "Aucun versement ne vous a été payé cette année-là.",
     "grossIncome": "Produit brut",
@@ -397,8 +397,8 @@
     "returnTitle": "Retour de {{name}}",
     "returned": "Retour enregistré.",
     "movement": "Mouvement bancaire",
-    "movementOut": "Le virement SORTANT qui a porté l'argent.",
-    "movementIn": "Le virement ENTRANT qui a rapporté l'argent.",
+    "movementOut": "Le virement sortant qui a porté l'argent.",
+    "movementIn": "Le virement entrant qui a rapporté l'argent.",
     "capitalBack": "Capital rendu",
     "incomeBack": "Produit",
     "splitRequired": "Les deux montants sont demandés séparément : un retour saisi en un seul chiffre laisse présenter comme une performance un projet qui a seulement rendu l'argent.",
@@ -417,7 +417,7 @@
   "convert": {
     "action": "Convertir en souscription",
     "title": "Convertir ce prêt",
-    "explain": "Un prêt devient une souscription. C'est un ÉVÉNEMENT : la ligne de prêt se ferme, une ligne de souscription s'ouvre, et les deux survivent. L'inverse n'existe pas.",
+    "explain": "Un prêt devient une souscription. C'est un événement : la ligne de prêt se ferme, une ligne de souscription s'ouvre, et les deux survivent. L'inverse n'existe pas.",
     "date": "Date de conversion",
     "principal": "Capital converti",
     "interest": "Intérêts convertis",
@@ -610,8 +610,8 @@
     "writeReminder": "Relancer",
     "cannotWrite": "Cet avis ne peut pas être écrit",
     "noQr": "Pas de QR de virement",
-    "sendingNotSetUp": "L'envoi d'e-mail n'est pas configure",
-    "sendingNotSetUpHint": "L'adresse d'expedition de ce produit n'est pas renseignee. Elle se saisit dans Le Comptoir Alice, onglet « Systeme de communication », portee « Invest ». Elle n'est jamais reprise d'un autre produit : un appel de fonds envoye depuis le domaine d'un logiciel de gestion locative se lit comme une tentative d'hameconnage. En attendant, copiez le texte ci-dessus dans votre propre messagerie ; l'appel ne sera pas enregistre comme notifie, puisqu'il ne l'aura pas ete par le produit."
+    "sendingNotSetUp": "L'envoi d'e-mail n'est pas configuré",
+    "sendingNotSetUpHint": "L'adresse d'expédition de ce produit n'est pas renseignée. Elle se saisit dans Le Comptoir Alice, onglet « Système de communication », portée « Invest ». Elle n'est jamais reprise d'un autre produit : un appel de fonds envoyé depuis le domaine d'un logiciel de gestion locative se lit comme une tentative d'hameçonnage. En attendant, copiez le texte ci-dessus dans votre propre messagerie ; l'appel ne sera pas enregistré comme notifié, puisqu'il ne l'aura pas été par le produit."
   },
   "profile": {
     "open": "Ouvrir le menu du compte",
