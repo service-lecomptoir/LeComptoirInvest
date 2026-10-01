@@ -6,7 +6,7 @@
     "create": "Créer",
     "add": "Ajouter",
     "loading": "Chargement",
-    "signOut": "Se déconnecter",
+    "signOut": "Déconnexion",
     "openMenu": "Ouvrir le menu",
     "closeMenu": "Fermer le menu",
     "none": "Aucune",
@@ -61,7 +61,7 @@
     "pitchTitle": "Un comptoir, c'est l'établissement qu'on ouvre au loin pour y faire affaire.",
     "pitchBody": "Le vôtre tient vos véhicules d'investissement pays par pays : chacun garde sa monnaie, son numéro d'entreprise et son droit local. Quatre mouvements, et ils se recoupent toujours : ce que l'investisseur a promis, ce qu'on lui a demandé, ce qui est arrivé sur le compte, et ce qu'on lui a reversé. Pensé pour l'investisseur globetrotteur.",
     "noAccount": "Pas encore de compte ?",
-    "askAccess": "Créer un compte",
+    "askAccess": "Créer mon compte",
     "askAccessHelp": "Choisissez votre formule : un e-mail de confirmation vous est envoyé, puis votre compte s'ouvre et vos accès vous parviennent. Une société de gestion qui gère plusieurs véhicules reçoit un devis.",
     "seePricing": "Voir les tarifs",
     "forgot": "Mot de passe oublié ?",
@@ -70,7 +70,22 @@
     "forgotEmailHint": "Celle avec laquelle vous vous connectez.",
     "forgotSubmit": "Recevoir un lien",
     "forgotSentTitle": "Regardez votre boîte e-mail",
-    "backToSignIn": "Revenir à la connexion"
+    "backToSignIn": "Revenir à la connexion",
+    "discover": "Découvrir Le Comptoir Invest",
+    "discoverHelp": "Ce que fait le produit, ses formules et les réponses aux questions courantes.",
+    "point1": "Le registre des investisseurs, leur vérification et leur éligibilité",
+    "point2": "Les appels de fonds, le rapprochement des virements et les relances",
+    "point3": "Les distributions en cascade, la performance et les relevés annuels",
+    "secured": "Connexion sécurisée par HTTPS",
+    "errors": {
+      "badCredentials": "Adresse e-mail ou mot de passe incorrect.",
+      "invalidEmail": "Cette adresse e-mail n'est pas valide : vérifiez-la.",
+      "unavailable": "Le service est momentanément indisponible : réessayez dans un instant.",
+      "serverError": "Le serveur a rencontré une erreur : réessayez dans un instant.",
+      "unreachable": "Le serveur ne répond pas : vérifiez votre connexion internet, puis réessayez."
+    },
+    "emailHint": "L'adresse à laquelle votre compte a été ouvert.",
+    "passwordHint": "Les majuscules et les minuscules comptent."
   },
   "errors": {
     "expired": "Session expirée. Reconnectez-vous.",
@@ -435,9 +450,8 @@
     "filePending": "Dossier en cours de vérification."
   },
   "signOut": {
-    "title": "Se déconnecter ?",
-    "message": "Vous devrez saisir à nouveau vos identifiants.",
-    "messageWithAccount": "Vous quitterez la session de {{email}} et devrez saisir à nouveau vos identifiants."
+    "title": "Déconnexion",
+    "message": "Voulez-vous vraiment vous déconnecter de votre espace ?"
   },
   "billing": {
     "title": "Abonnement",
@@ -478,7 +492,7 @@
     "yourPlan": "Votre offre",
     "switchTo": "Passer à cette offre",
     "subscribe": "Souscrire",
-    "changeTitle": "Passer à l'offre {{plan}} ?",
+    "changeTitle": "Passer à l'offre {{plan}} ?",
     "changeMessage": "Votre abonnement passera à {{plan}}, soit {{price}} par mois.",
     "prorationEstimate": "Montant estimé au prorata pour la période en cours : {{amount}}.",
     "changeConfirm": "Changer d'offre",
@@ -665,11 +679,11 @@
       },
       "lateCalls": {
         "what": "Les appels de fonds en retard à une date donnée : ce qui manque, les intérêts de retard et la relance due.",
-        "how": "Écrivez le premier avis ou la relance, relisez-la dans la langue de l'investisseur, puis envoyez-la."
+        "how": "Écrivez le premier avis ou la relance, relisez-le dans la langue de l'investisseur, puis envoyez-le par e-mail. Un appel jamais notifié est signalé à part : c'est le premier avis qui manque, pas une relance."
       },
       "investors": {
         "what": "Le registre des investisseurs : qui a le droit de placer de l'argent ici, sur quelle vérification, et dans quelle catégorie.",
-        "how": "Ajoutez un investisseur, personne physique ou morale, avec ses coordonnées bancaires. Enregistrez la vérification de son dossier et son éligibilité : un dossier qui n'est pas accepté bloque tout engagement."
+        "how": "Ajoutez un investisseur, personne physique ou morale, avec ses coordonnées bancaires. Enregistrez la vérification de son dossier et son éligibilité : un dossier qui n'est pas accepté bloque tout engagement. Le nombre d'investisseurs inclus dans votre offre s'affiche en tête du registre ; au-delà, quand l'offre le permet, le supplément vous est demandé avant l'ajout."
       },
       "subscriptions": {
         "what": "Les demandes de souscription venues du portail des investisseurs, et ce que le fonds en a fait.",
@@ -696,13 +710,26 @@
         "how": "Consultez les projets dans lesquels votre argent est placé."
       },
       "profile": {
-        "what": "Votre compte : l'adresse e-mail, le rôle et l'espace de travail.",
+        "what": "Votre compte : le nom du compte, l'adresse e-mail, le rôle et le type de compte (club ou fonds, ou société de gestion).",
         "how": "Changez votre mot de passe et choisissez l'apparence des e-mails envoyés à vos investisseurs. Le nom et l'adresse se modifient dans la console d'administration."
+      },
+      "myProfile": {
+        "what": "Votre compte : le nom du compte, l'adresse e-mail et le rôle.",
+        "how": "Changez votre mot de passe. Votre identité ne se modifie pas depuis cet écran."
       },
       "billing": {
         "what": "L'abonnement au Comptoir Invest : l'offre en cours, les moyens de paiement et les factures.",
-        "how": "Payez par carte ou par prélèvement, ou déclarez un virement. Changez d'offre et téléchargez vos factures en PDF."
+        "how": "Payez par carte ou par prélèvement SEPA, ou déclarez un virement. Changez d'offre (le montant au prorata est estimé avant de confirmer) et téléchargez vos factures en PDF."
       }
+    },
+    "everywhere": {
+      "title": "Partout dans l'application",
+      "accountMenuFund": "Le menu du compte, en haut à droite, ouvre Mon profil, Abonnement et ce guide.",
+      "accountMenuInvestor": "Le menu du compte, en haut à droite, ouvre Mon profil et ce guide.",
+      "signOut": "Déconnexion, en bas du même menu, ferme votre session après confirmation, sur le serveur et pas seulement dans le navigateur : une copie de votre session cesse aussitôt de fonctionner, et vos autres onglets ouverts reviennent à la page de connexion. Vos autres appareils restent connectés.",
+      "language": "Les drapeaux en haut de l'écran passent l'application en français ou en anglais ; le choix est retenu sur cet appareil.",
+      "update": "Quand une nouvelle version est mise en ligne, un bandeau en bas de l'écran le signale : Recharger l'affiche, sans vous déconnecter.",
+      "password": "Mot de passe oublié ? sur la page de connexion envoie un lien pour en choisir un nouveau, valable deux heures."
     }
   },
   "pricing": {
@@ -717,14 +744,14 @@
     "upTo_other": "Jusqu'à {{count}} investisseurs",
     "unlimited": "Nombre d'investisseurs sans plafond",
     "overage": "Au-delà, {{amount}} par investisseur et par mois",
-    "popular": "Le plus choisi",
     "choose": "Choisir cette formule",
     "forClients": "Vous gérez plusieurs véhicules pour le compte de clients ?",
     "askQuote": "Demandez un devis",
     "none": "Les formules ne peuvent pas être affichées pour le moment. Écrivez-nous à contact@lecomptoir.services.",
     "fact1": "Votre compte s'ouvre après la confirmation de votre adresse e-mail.",
     "fact2": "Vos investisseurs ont leur propre accès, compris dans la formule.",
-    "fact3": "Changez de formule à tout moment depuis l'écran « Abonnement »."
+    "fact3": "Changez de formule à tout moment depuis l'écran « Abonnement ».",
+    "freeDemo": "Démo gratuite incluse"
   },
   "signup": {
     "title": "Créer mon compte",
@@ -821,5 +848,102 @@
     "email": "Cette adresse e-mail n'est pas valide.",
     "minLength_one": "{{count}} caractère au moins.",
     "minLength_other": "{{count}} caractères au moins."
+  },
+  "updateBanner": {
+    "newVersion": "Une nouvelle version de l'application est disponible.",
+    "reload": "Recharger"
+  },
+  "landing": {
+    "seo": {
+      "title": "Le Comptoir Invest | Registre, appels de fonds et distributions de vos véhicules d'investissement",
+      "desc": "Le registre des investisseurs, les appels de fonds, le rapprochement des virements, les distributions et les relevés annuels de vos véhicules d'investissement, chacun dans sa devise. Une formule selon le nombre d'investisseurs."
+    },
+    "nav": {
+      "howItWorks": "Comment ça marche",
+      "features": "Fonctionnalités",
+      "pricing": "Tarification",
+      "faq": "FAQ"
+    },
+    "hero": {
+      "badge": "Pour les clubs, les fonds et les sociétés de gestion",
+      "title": "Le registre, les appels de fonds et les distributions de vos véhicules, au même endroit",
+      "subtitle": "Chaque véhicule garde sa devise, son compte bancaire et ses conditions. Ce que l'investisseur a promis, ce qu'on lui a demandé, ce qui est arrivé sur le compte et ce qu'on lui a reversé se recoupent toujours."
+    },
+    "movements": {
+      "title": "Quatre mouvements qui se recoupent",
+      "committed": "Engagé : ce que l'investisseur a promis",
+      "called": "Appelé : ce que le fonds lui a demandé",
+      "received": "Reçu : ce qui est arrivé sur le compte du fonds",
+      "paid": "Reversé : capital et produits comptés à part"
+    },
+    "how": {
+      "title": "Comment ça marche",
+      "subtitle": "De la formule choisie au premier écran, trois étapes.",
+      "steps": {
+        "1": {
+          "title": "Choisissez votre formule",
+          "text": "Une formule selon le nombre de vos investisseurs, puis le formulaire : pays, personne ou société, téléphone et adresse de facturation. Une société de gestion qui gère plusieurs véhicules demande un devis."
+        },
+        "2": {
+          "title": "Confirmez votre adresse e-mail",
+          "text": "La console d'abonnement vous envoie un e-mail de confirmation. Votre clic ouvre le compte, puis un e-mail vous apporte le lien pour choisir votre mot de passe, valable une semaine."
+        },
+        "3": {
+          "title": "Arrivez sur le tableau de bord",
+          "text": "Vous choisissez votre mot de passe, dix caractères au moins, et la session s'ouvre sur le tableau de bord du fonds. Commencez par importer un relevé bancaire depuis la trésorerie."
+        }
+      }
+    },
+    "features": {
+      "title": "Fonctionnalités",
+      "subtitle": "Les écrans de l'application, tels qu'ils figurent dans son menu.",
+      "fund": "Pour la gestion du fonds",
+      "investor": "Dans l'espace de chaque investisseur"
+    },
+    "faq": {
+      "title": "Questions fréquentes",
+      "subtitle": "Ce que l'on nous demande avant d'ouvrir un compte.",
+      "another": "Une autre question ?",
+      "contact": "Nous écrire",
+      "mailSubject": "Question sur Le Comptoir Invest",
+      "items": {
+        "who": {
+          "q": "À qui s'adresse Le Comptoir Invest ?",
+          "a": "À un club ou à un fonds qui gère son propre argent, qui choisit une formule du catalogue, et à une société de gestion qui gère plusieurs véhicules pour le compte de clients, qui reçoit un devis. Les investisseurs ont leur propre espace dans l'application."
+        },
+        "investors": {
+          "q": "Mes investisseurs ont-ils un accès ?",
+          "a": "Oui, compris dans la formule. Chacun y lit ce qu'il détient, ses appels de fonds avec la référence à citer dans son virement (et un code de virement prérempli pour un appel en euros), ce qui lui a été reversé, capital et produits à part, et son relevé annuel à télécharger. Il peut aussi demander à souscrire : la demande n'engage personne tant que le fonds ne l'a pas acceptée."
+        },
+        "bank": {
+          "q": "Comment l'argent reçu est-il rapproché ?",
+          "a": "Vous importez le relevé de votre banque (CAMT.053). Pour chaque virement reçu, une règle propose la souscription concernée d'après la référence citée ou le compte émetteur, et c'est vous qui imputez. Réimporter le même relevé ne crée aucun doublon."
+        },
+        "currencies": {
+          "q": "Plusieurs véhicules, plusieurs devises ?",
+          "a": "Oui. Chaque véhicule a sa devise, son compte bancaire et ses conditions (rendement préférentiel, intéressement, frais de gestion). Le tableau de bord présente la position du fonds devise par devise."
+        },
+        "security": {
+          "q": "Mes données sont-elles protégées ?",
+          "a": "Chaque société de gestion ne voit que son propre registre : le serveur applique ce filtre à chaque lecture, et une lecture sans société identifiée ne renvoie rien. Les coordonnées bancaires des investisseurs sont chiffrées en base. Aucun mot de passe ne part par e-mail : vous choisissez le vôtre par un lien. Et Déconnexion ferme la session sur le serveur, pas seulement dans le navigateur."
+        },
+        "audit": {
+          "q": "Peut-on savoir qui a fait quoi ?",
+          "a": "Oui. Le produit tient un journal d'audit : qui a modifié quoi, et quand. Aucun numéro de compte bancaire n'y figure en clair. Le journal est conservé quatre-vingt-dix jours, puis purgé chaque jour."
+        },
+        "billing": {
+          "q": "Comment suis-je facturé ?",
+          "a": "Par mois, selon la formule choisie, qui fixe le nombre d'investisseurs inclus. Quand votre formule permet d'aller au-delà, chaque investisseur supplémentaire est facturé au prix indiqué, et la question vous est posée avant chaque ajout. Vous payez par carte ou par prélèvement SEPA chez notre prestataire de paiement, ou par virement, depuis l'écran Abonnement, où vous changez aussi de formule et téléchargez vos factures en PDF."
+        },
+        "demo": {
+          "q": "Y a-t-il une démo gratuite ?",
+          "a": "Oui : chaque formule payante comprend une démo gratuite. Aucun nombre de jours n'est fixé, elle dure jusqu'à la bascule de votre compte sur la formule choisie."
+        },
+        "languages": {
+          "q": "Dans quelles langues ?",
+          "a": "L'application est en français et en anglais : les drapeaux en haut de chaque écran changent de langue. Les avis d'appel de fonds et les relances sont écrits dans la langue de chaque investisseur."
+        }
+      }
+    }
   }
 }

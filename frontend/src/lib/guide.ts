@@ -83,7 +83,10 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   {
     key: 'guide.sections.account',
     cards: [
-      { route: '/profile', id: 'profile', title: 'profile.title', icon: UserRound },
+      // Two cards for one screen: the fund's profile also shows the kind of account and the
+      // look of the e-mails, which an investor's does not (`MyProfile`, `seesWholeFund`).
+      { route: '/profile', id: 'profile', title: 'profile.title', icon: UserRound, audience: 'fund' },
+      { route: '/profile', id: 'myProfile', title: 'profile.title', icon: UserRound, audience: 'investor' },
       { route: '/billing', id: 'billing', title: 'nav.billing', icon: CreditCard, audience: 'fund' },
     ],
   },

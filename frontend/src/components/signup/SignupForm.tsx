@@ -33,11 +33,15 @@ export function SignupForm({
   initialPlanId = '',
   quote = false,
   onBack,
+  onQuotedChange,
 }: {
   initialPlanId?: string
   /** Opened from « Demandez un devis »: the requester manages several vehicles. */
   quote?: boolean
   onBack?: () => void
+  /** The page's title follows what the visitor does (as Le Comptoir Immo): « Créer mon
+   *  compte » for a catalogue plan, « Demander un devis » once the profile asks for one. */
+  onQuotedChange?: (quoted: boolean) => void
 }) {
   const { t } = useTranslation()
   const planPrice = usePlanPrice()
@@ -102,6 +106,16 @@ export function SignupForm({
   // 🔴 ONLY THE CATALOGUE: a quoted offer is made for one customer, never picked here.
   const catalogue = (plans ?? []).filter((p) => !p.sur_devis)
   const quoted = draft.profile === MANAGEMENT_COMPANY
+  useEffect(() => {
+    onQuotedChange?.(quoted)
+  }, [quoted, onQuotedChange])
+  // The demo comes with a priced plan (as Le Comptoir Immo, 7 Sept), never with a free
+  // one; no number of days, none exists: the demo runs until the plan is switched.
+  const chosenPlan = catalogue.find((p) => p.id === draft.plan_id)
+  const planHint =
+    chosenPlan && chosenPlan.monthly_price > 0
+      ? `${t('signup.planHint')} ${t('pricing.freeDemo')}.`
+      : t('signup.planHint')
   const isCompany = draft.requester_kind === COMPANY
 
   async function send(event: React.FormEvent) {
@@ -230,7 +244,7 @@ export function SignupForm({
       {!quoted && (
         <Field
           label={t('signup.plan')}
-          hint={plans !== null && catalogue.length === 0 ? t('signup.noPlan') : t('signup.planHint')}
+          hint={plans !== null && catalogue.length === 0 ? t('signup.noPlan') : planHint}
           error={errors.plan_id}
         >
           <Select

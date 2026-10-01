@@ -4,6 +4,7 @@ import { Shell } from '@/components/layout/Shell'
 import { useAuthStore } from '@/store/authStore'
 import { loginFor } from '@/lib/nextPath'
 import Login from '@/pages/Login'
+import Landing from '@/pages/Landing'
 import Pricing from '@/pages/Pricing'
 import SetPassword from '@/pages/SetPassword'
 import MyProfile from '@/pages/profile/MyProfile'
@@ -42,6 +43,10 @@ function RequireAuth() {
   // ⚠️ THE WAY BACK TRAVELS WITH THE READER (`?next=`): the « Mon abonnement » link the
   // console e-mails lands here without a session, and must reach `/billing` once signed in.
   if (!isAuthenticated) {
+    // 🔴 `/` IS THE PUBLIC HOME PAGE FOR A VISITOR, as on Le Comptoir Immo: what the product
+    // does, its plans and its questions. Signed in, `/` stays the account's home (below).
+    // Every other address still sends the visitor to the sign-in, with the way back.
+    if (location.pathname === '/') return <Landing />
     return <Navigate to={loginFor(`${location.pathname}${location.search}${location.hash}`)} replace />
   }
 

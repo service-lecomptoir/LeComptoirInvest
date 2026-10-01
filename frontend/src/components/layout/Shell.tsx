@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/authStore'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { LogoMark } from '@/components/common/Logo'
 import { ProfileMenu } from '@/components/layout/ProfileMenu'
+import { UpdateBanner } from '@/components/layout/UpdateBanner'
 
 interface Item {
   to: string
@@ -255,6 +256,8 @@ export function Shell() {
           <Outlet />
         </main>
       </div>
+      {/* A newer build is live: one gesture to pick it up, on every signed-in screen. */}
+      <UpdateBanner />
     </div>
   )
 }

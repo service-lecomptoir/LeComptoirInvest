@@ -47,6 +47,14 @@ export default function Guide() {
   const { t } = useTranslation()
   const seesWholeFund = useAuthStore((s) => s.seesWholeFund)
   const audience = seesWholeFund ? 'fund' : 'investor'
+  // The account menu offers « Abonnement » to the fund only, and the guide says so.
+  const everywhere = [
+    seesWholeFund ? 'guide.everywhere.accountMenuFund' : 'guide.everywhere.accountMenuInvestor',
+    'guide.everywhere.signOut',
+    'guide.everywhere.language',
+    'guide.everywhere.update',
+    'guide.everywhere.password',
+  ]
 
   return (
     <div className="space-y-6">
@@ -69,6 +77,20 @@ export default function Guide() {
           </section>
         )
       })}
+
+      {/* What is no screen of its own but is on every one: the account menu and its
+          « Déconnexion », the language, the update banner, the forgotten password. */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-gray-700">{t('guide.everywhere.title')}</h2>
+        <ul className="space-y-2 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
+          {everywhere.map((key) => (
+            <li key={key} className="flex gap-2">
+              <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-navy/40" />
+              <span className="min-w-0">{t(key)}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <p className="text-xs text-gray-500">{t('guide.help')}</p>
     </div>

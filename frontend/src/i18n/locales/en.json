@@ -6,7 +6,7 @@
     "create": "Create",
     "add": "Add",
     "loading": "Loading",
-    "signOut": "Sign out",
+    "signOut": "Log out",
     "openMenu": "Open the menu",
     "closeMenu": "Close the menu",
     "none": "None",
@@ -61,7 +61,7 @@
     "pitchTitle": "A « comptoir » is the trading post one opens far from home to do business there.",
     "pitchBody": "Yours holds your investment vehicles country by country: each keeps its own currency, company number and local law. Four movements, and they always reconcile: what the investor pledged, what was called, what reached the account, and what was paid back. Built for the globetrotting investor.",
     "noAccount": "No account yet?",
-    "askAccess": "Create an account",
+    "askAccess": "Create my account",
     "askAccessHelp": "Choose your plan: a confirmation e-mail is sent to you, then your account opens and your access reaches you. A management company running several vehicles receives a quote.",
     "seePricing": "See pricing",
     "forgot": "Forgot your password?",
@@ -70,7 +70,22 @@
     "forgotEmailHint": "The one you sign in with.",
     "forgotSubmit": "Get a link",
     "forgotSentTitle": "Check your mailbox",
-    "backToSignIn": "Back to sign-in"
+    "backToSignIn": "Back to sign-in",
+    "discover": "Discover Le Comptoir Invest",
+    "discoverHelp": "What the product does, its plans and the answers to common questions.",
+    "point1": "The investor register, its checks and each investor's eligibility",
+    "point2": "Capital calls, matching of incoming transfers and reminders",
+    "point3": "Waterfall distributions, performance and annual statements",
+    "secured": "Secure connection over HTTPS",
+    "errors": {
+      "badCredentials": "Wrong e-mail address or password.",
+      "invalidEmail": "This e-mail address is not valid: please check it.",
+      "unavailable": "The service is briefly unavailable: try again in a moment.",
+      "serverError": "The server ran into an error: try again in a moment.",
+      "unreachable": "The server does not answer: check your internet connection, then try again."
+    },
+    "emailHint": "The address your account was opened with.",
+    "passwordHint": "Upper and lower case count."
   },
   "errors": {
     "expired": "Your session has expired. Please sign in again.",
@@ -435,9 +450,8 @@
     "filePending": "File under verification."
   },
   "signOut": {
-    "title": "Sign out?",
-    "message": "You will have to enter your credentials again.",
-    "messageWithAccount": "You will leave the session of {{email}} and have to enter your credentials again."
+    "title": "Log out",
+    "message": "Are you sure you want to log out?"
   },
   "billing": {
     "title": "Subscription",
@@ -665,11 +679,11 @@
       },
       "lateCalls": {
         "what": "The capital calls overdue on a given date: what is missing, late interest and the reminder due.",
-        "how": "Write the first notice or the reminder, review it in the investor's language, then send it."
+        "how": "Write the first notice or the reminder, review it in the investor's language, then send it by e-mail. A call never notified is flagged apart: it is the first notice that is missing, not a reminder."
       },
       "investors": {
         "what": "The investor register: who may invest here, on what verification, and in which category.",
-        "how": "Add an investor, a person or a company, with their bank details. Record the verification of their file and their eligibility: a file that is not accepted blocks any commitment."
+        "how": "Add an investor, a person or a company, with their bank details. Record the verification of their file and their eligibility: a file that is not accepted blocks any commitment. The number of investors your plan includes shows at the top of the register; beyond it, when the plan allows, the extra charge is put to you before the addition."
       },
       "subscriptions": {
         "what": "The subscription requests from the investors' portal, and what the fund did with them.",
@@ -696,13 +710,26 @@
         "how": "Look at the projects your money is invested in."
       },
       "profile": {
-        "what": "Your account: e-mail address, role and workspace.",
+        "what": "Your account: the account name, the e-mail address, the role and the kind of account (club or fund, or management company).",
         "how": "Change your password and choose the look of the e-mails sent to your investors. The name and the address are changed in the administration console."
+      },
+      "myProfile": {
+        "what": "Your account: the account name, the e-mail address and the role.",
+        "how": "Change your password. Your identity is not changed from this screen."
       },
       "billing": {
         "what": "The subscription to Le Comptoir Invest: the current plan, the payment methods and the invoices.",
-        "how": "Pay by card or direct debit, or declare a bank transfer. Change plan and download your invoices as PDF."
+        "how": "Pay by card or SEPA direct debit, or declare a bank transfer. Change plan (the prorated amount is estimated before you confirm) and download your invoices as PDF."
       }
+    },
+    "everywhere": {
+      "title": "Everywhere in the application",
+      "accountMenuFund": "The account menu, top right, opens My profile, Subscription and this guide.",
+      "accountMenuInvestor": "The account menu, top right, opens My profile and this guide.",
+      "signOut": "Log out, at the bottom of the same menu, closes your session once you confirm, on the server and not only in the browser: a copy of your session stops working at once, and your other open tabs go back to the sign-in page. Your other devices stay signed in.",
+      "language": "The flags at the top of the screen switch the application between French and English; the choice is remembered on this device.",
+      "update": "When a new version goes live, a banner at the bottom of the screen says so: Reload shows it, without signing you out.",
+      "password": "Forgot your password? on the sign-in page sends a link to choose a new one, valid for two hours."
     }
   },
   "pricing": {
@@ -717,14 +744,14 @@
     "upTo_other": "Up to {{count}} investors",
     "unlimited": "No ceiling on investors",
     "overage": "Beyond that, {{amount}} per investor per month",
-    "popular": "Most chosen",
     "choose": "Choose this plan",
     "forClients": "Do you run several vehicles on behalf of clients?",
     "askQuote": "Ask for a quotation",
     "none": "The plans cannot be shown right now. Write to us at contact@lecomptoir.services.",
     "fact1": "Your account opens once your e-mail address is confirmed.",
     "fact2": "Your investors have their own access, included in the plan.",
-    "fact3": "Change plan at any time from the « Subscription » screen."
+    "fact3": "Change plan at any time from the « Subscription » screen.",
+    "freeDemo": "Free demo included"
   },
   "signup": {
     "title": "Create my account",
@@ -821,5 +848,102 @@
     "email": "This e-mail address is not valid.",
     "minLength_one": "At least {{count}} character.",
     "minLength_other": "At least {{count}} characters."
+  },
+  "updateBanner": {
+    "newVersion": "A new version of the application is available.",
+    "reload": "Reload"
+  },
+  "landing": {
+    "seo": {
+      "title": "Le Comptoir Invest | Register, capital calls and distributions for your investment vehicles",
+      "desc": "The investor register, capital calls, matching of incoming transfers, distributions and annual statements for your investment vehicles, each in its own currency. One plan by number of investors."
+    },
+    "nav": {
+      "howItWorks": "How it works",
+      "features": "Features",
+      "pricing": "Pricing",
+      "faq": "FAQ"
+    },
+    "hero": {
+      "badge": "For clubs, funds and management companies",
+      "title": "The register, capital calls and distributions of your vehicles, in one place",
+      "subtitle": "Each vehicle keeps its own currency, bank account and terms. What the investor pledged, what was called, what reached the account and what was paid back always reconcile."
+    },
+    "movements": {
+      "title": "Four movements that reconcile",
+      "committed": "Committed: what the investor pledged",
+      "called": "Called: what the fund asked them for",
+      "received": "Received: what reached the fund's account",
+      "paid": "Paid back: capital and income counted apart"
+    },
+    "how": {
+      "title": "How it works",
+      "subtitle": "From the plan you choose to the first screen, three steps.",
+      "steps": {
+        "1": {
+          "title": "Choose your plan",
+          "text": "A plan by the number of your investors, then the form: country, person or company, telephone and billing address. A management company running several vehicles asks for a quotation."
+        },
+        "2": {
+          "title": "Confirm your e-mail address",
+          "text": "The subscription console sends you a confirmation e-mail. Your click opens the account, then an e-mail brings you the link to choose your password, valid for a week."
+        },
+        "3": {
+          "title": "Land on the dashboard",
+          "text": "You choose your password, ten characters at least, and the session opens on the fund's dashboard. Start by importing a bank statement from the treasury."
+        }
+      }
+    },
+    "features": {
+      "title": "Features",
+      "subtitle": "The screens of the application, as its menu lists them.",
+      "fund": "For running the fund",
+      "investor": "In each investor's own space"
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "subtitle": "What we are asked before an account is opened.",
+      "another": "Another question?",
+      "contact": "Write to us",
+      "mailSubject": "A question about Le Comptoir Invest",
+      "items": {
+        "who": {
+          "q": "Who is Le Comptoir Invest for?",
+          "a": "For a club or a fund managing its own money, which chooses a catalogue plan, and for a management company running several vehicles on behalf of clients, which receives a quotation. Investors have their own space in the application."
+        },
+        "investors": {
+          "q": "Do my investors get access?",
+          "a": "Yes, included in the plan. Each one reads what they hold, their capital calls with the reference to quote in their transfer (and a prefilled transfer code for a call in euros), what was paid back to them, capital and income apart, and their annual statement to download. They can also ask to subscribe: the request commits nobody until the fund accepts it."
+        },
+        "bank": {
+          "q": "How is incoming money matched?",
+          "a": "You import your bank's statement (CAMT.053). For each incoming transfer, a rule proposes the subscription it belongs to from the quoted reference or the paying account, and you are the one who allocates it. Importing the same statement again creates no duplicate."
+        },
+        "currencies": {
+          "q": "Several vehicles, several currencies?",
+          "a": "Yes. Each vehicle has its own currency, bank account and terms (preferred return, carried interest, management fee). The dashboard shows the fund's position currency by currency."
+        },
+        "security": {
+          "q": "Is my data protected?",
+          "a": "Each management company sees its own register only: the server applies that filter to every read, and a read with no company established returns nothing. Investors' bank details are encrypted in the database. No password is ever sent by e-mail: you choose yours through a link. And Log out closes the session on the server, not only in the browser."
+        },
+        "audit": {
+          "q": "Can I tell who did what?",
+          "a": "Yes. The product keeps an audit journal: who changed what, and when. No bank account number appears in it in clear. The journal is kept for ninety days, then purged every day."
+        },
+        "billing": {
+          "q": "How am I billed?",
+          "a": "Monthly, by the plan you choose, which sets the number of investors included. When your plan allows going beyond it, each extra investor is billed at the stated price, and you are asked before each addition. You pay by card or SEPA direct debit with our payment provider, or by bank transfer, from the Subscription screen, where you also change plan and download your invoices as PDF."
+        },
+        "demo": {
+          "q": "Is there a free demo?",
+          "a": "Yes: every paid plan comes with a free demo. No number of days is set, it runs until your account is switched to the plan you chose."
+        },
+        "languages": {
+          "q": "In which languages?",
+          "a": "The application is in French and English: the flags at the top of every screen switch the language. Capital call notices and reminders are written in each investor's own language."
+        }
+      }
+    }
   }
 }
