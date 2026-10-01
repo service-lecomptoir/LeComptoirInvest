@@ -3,13 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { AlertTriangle, CheckCircle2, Mail } from 'lucide-react'
 import { publicApi, type Country, type PublicPlan, type SignupOutcome } from '@/api'
 import { errorMessage } from '@/api/client'
-import { usePlanPrice } from '@/lib/planPrice'
 import { checkSirenSiret } from '@/lib/siret'
 import { fieldErrors, labelsInError, useFieldCheck, type Rule } from '@/lib/formCheck'
 import { offersRetry, outcomeTitleKey, outcomeTone } from '@/lib/signupOutcome'
 import { AddressAutocomplete } from '@/components/common/AddressAutocomplete'
 import { SiretInput } from '@/components/common/SiretInput'
 import { Button, Field, Input, Select, inputBaseClass } from '@/components/ui'
+import { PlanChoice } from './PlanChoice'
 
 const FRANCE: Country = { code: 'FR', name: 'France', number_label: 'SIREN / SIRET' }
 
@@ -44,7 +44,6 @@ export function SignupForm({
   onQuotedChange?: (quoted: boolean) => void
 }) {
   const { t } = useTranslation()
-  const planPrice = usePlanPrice()
   const uid = useId()
   const [plans, setPlans] = useState<PublicPlan[] | null>(null)
   const [draft, setDraft] = useState({
@@ -109,13 +108,6 @@ export function SignupForm({
   useEffect(() => {
     onQuotedChange?.(quoted)
   }, [quoted, onQuotedChange])
-  // The demo comes with a priced plan (as Le Comptoir Immo, 7 Sept), never with a free
-  // one; no number of days, none exists: the demo runs until the plan is switched.
-  const chosenPlan = catalogue.find((p) => p.id === draft.plan_id)
-  const planHint =
-    chosenPlan && chosenPlan.monthly_price > 0
-      ? `${t('signup.planHint')} ${t('pricing.freeDemo')}.`
-      : t('signup.planHint')
   const isCompany = draft.requester_kind === COMPANY
 
   async function send(event: React.FormEvent) {
@@ -226,6 +218,9 @@ export function SignupForm({
     // ⚠️ `noValidate`: the browser's own bubble is a native dialog, in the browser's
     // language rather than the page's; the missing fields are said in the red box above.
     <form onSubmit={send} noValidate className="space-y-4">
+      {/* What the visitor is about to do, said first, as Le Comptoir Immo: an account comes
+          with the free demo, a quotation is answered by the team. */}
+      <p className="text-sm text-gray-600">{quoted ? t('signup.introQuote') : t('signup.intro')}</p>
       {problem && (
         <p ref={problemBox} className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{problem}</p>
       )}
@@ -242,29 +237,13 @@ export function SignupForm({
         />
       </Field>
       {!quoted && (
-        <Field
-          label={t('signup.plan')}
-          hint={plans !== null && catalogue.length === 0 ? t('signup.noPlan') : planHint}
+        <PlanChoice
+          plans={plans === null ? null : catalogue}
+          value={draft.plan_id}
+          onChange={(plan_id) => set({ plan_id })}
+          hint={plans !== null && catalogue.length === 0 ? t('signup.noPlan') : t('signup.planHint')}
           error={errors.plan_id}
-        >
-          <Select
-            aria-label={t('signup.plan')}
-            className={inputBaseClass}
-            value={draft.plan_id}
-            onChange={(plan_id) => set({ plan_id })}
-            placeholder={plans === null ? t('common.loading') : t('signup.choosePlan')}
-            options={catalogue.map((p) => ({
-              value: p.id,
-              label: [
-                p.name,
-                planPrice(p),
-                p.investor_limit ? t('signup.upTo', { count: p.investor_limit }) : null,
-              ]
-                .filter(Boolean)
-                .join(' · '),
-            }))}
-          />
-        </Field>
+        />
       )}
       <Field label={t('signup.requesterKind')} hint={t('signup.requesterKindHint')}>
         <Select

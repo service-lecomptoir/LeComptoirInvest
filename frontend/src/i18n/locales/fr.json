@@ -62,7 +62,6 @@
     "pitchBody": "Le vôtre tient vos véhicules d'investissement pays par pays : chacun garde sa monnaie, son numéro d'entreprise et son droit local. Quatre mouvements, et ils se recoupent toujours : ce que l'investisseur a promis, ce qu'on lui a demandé, ce qui est arrivé sur le compte, et ce qu'on lui a reversé. Pensé pour l'investisseur globetrotteur.",
     "noAccount": "Pas encore de compte ?",
     "askAccess": "Créer mon compte",
-    "askAccessHelp": "Choisissez votre formule : un e-mail de confirmation vous est envoyé, puis votre compte s'ouvre et vos accès vous parviennent. Une société de gestion qui gère plusieurs véhicules reçoit un devis.",
     "seePricing": "Voir les tarifs",
     "forgot": "Mot de passe oublié ?",
     "forgotTitle": "Mot de passe oublié",
@@ -756,6 +755,8 @@
   "signup": {
     "title": "Créer mon compte",
     "quoteTitle": "Demander un devis",
+    "intro": "Créez votre espace en quelques minutes, avec une période de démo gratuite pour tout essayer. Choisissez votre formule ; un e-mail de confirmation vous est envoyé, puis votre compte s'ouvre et vos accès vous parviennent.",
+    "introQuote": "Vous gérez plusieurs véhicules pour le compte de clients ? Décrivez votre besoin : notre équipe vous répond avec un devis.",
     "profile": "Vous êtes",
     "profiles": {
       "single_fund": "Un club ou un fonds",
@@ -765,9 +766,6 @@
     "plan": "Formule",
     "planHint": "Le prix s'entend hors taxes, par mois.",
     "noPlan": "Aucune formule n'est affichée : votre demande sera traitée par notre équipe.",
-    "choosePlan": "Choisissez une formule.",
-    "upTo_one": "jusqu'à {{count}} investisseur",
-    "upTo_other": "jusqu'à {{count}} investisseurs",
     "requesterKind": "Le compte est ouvert au nom",
     "requesterKinds": {
       "personne": "D'une personne physique",

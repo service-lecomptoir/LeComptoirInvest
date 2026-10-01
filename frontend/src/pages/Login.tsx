@@ -131,8 +131,9 @@ export default function Login() {
               <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
                 {signupQuoted ? t('signup.quoteTitle') : t('signup.title')}
               </h1>
-              <p className="mt-1 text-sm text-gray-500">{t('login.askAccessHelp')}</p>
-              <Link to="/pricing" className="mt-2 mb-6 inline-block text-sm text-brand-navy underline">
+              {/* The opening sentence is the form's own (the demo, or the quotation): the
+                  pricing page shows the same form and says the same thing. */}
+              <Link to="/pricing" className="mt-1 mb-4 inline-block text-sm text-brand-navy underline">
                 {t('login.seePricing')}
               </Link>
               <SignupForm onBack={() => setSigningUp(false)} onQuotedChange={setSignupQuoted} />

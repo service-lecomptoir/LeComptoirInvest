@@ -62,7 +62,6 @@
     "pitchBody": "Yours holds your investment vehicles country by country: each keeps its own currency, company number and local law. Four movements, and they always reconcile: what the investor pledged, what was called, what reached the account, and what was paid back. Built for the globetrotting investor.",
     "noAccount": "No account yet?",
     "askAccess": "Create my account",
-    "askAccessHelp": "Choose your plan: a confirmation e-mail is sent to you, then your account opens and your access reaches you. A management company running several vehicles receives a quote.",
     "seePricing": "See pricing",
     "forgot": "Forgot your password?",
     "forgotTitle": "Forgot your password",
@@ -756,6 +755,8 @@
   "signup": {
     "title": "Create my account",
     "quoteTitle": "Ask for a quotation",
+    "intro": "Create your space in a few minutes, with a free demo period to try everything. Choose your plan; a confirmation e-mail is sent to you, then your account opens and your access reaches you.",
+    "introQuote": "You run several vehicles on behalf of clients? Describe your need: our team answers with a quote.",
     "profile": "You are",
     "profiles": {
       "single_fund": "A club or a fund",
@@ -765,9 +766,6 @@
     "plan": "Plan",
     "planHint": "Prices are per month, excluding tax.",
     "noPlan": "No plan is shown: our team will handle your request.",
-    "choosePlan": "Choose a plan.",
-    "upTo_one": "up to {{count}} investor",
-    "upTo_other": "up to {{count}} investors",
     "requesterKind": "The account is opened in the name of",
     "requesterKinds": {
       "personne": "A natural person",
