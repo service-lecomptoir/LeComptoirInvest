@@ -26,7 +26,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String, Text
+from sqlalchemy import Boolean, DateTime, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -138,3 +138,23 @@ class User(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<User {self.email} [{self.role}]>"
+
+
+class RevokedSession(Base):
+    """A sign-in closed by « Déconnexion ».
+
+    Every token carries the id of the sign-in that issued it (`sid`). Signing out writes
+    that id here and the token stops working at once, on this device only: the person's
+    other devices keep their own sessions. A row is useless once its token has expired:
+    `expires_at` says when, and each sign-out purges the rows past it.
+    """
+
+    __tablename__ = "revoked_sessions"
+
+    sid: Mapped[str] = mapped_column(String(64), primary_key=True)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+    revoked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

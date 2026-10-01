@@ -1,5 +1,6 @@
 """Passwords and tokens."""
 
+import uuid
 from datetime import UTC, datetime, timedelta
 
 from jose import JWTError, jwt
@@ -32,7 +33,10 @@ def create_access_token(subject: str, role: str) -> str:
     settings = get_settings()
     expire = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return jwt.encode(
-        {"sub": subject, "role": role, "exp": expire},
+        # `sid`: the session this sign-in opens, what « Déconnexion » closes on the
+        # server (`services/session_service.py`). One token, one session: nothing
+        # renews it, so each token issued is a sign-in of its own.
+        {"sub": subject, "role": role, "exp": expire, "sid": uuid.uuid4().hex},
         settings.SECRET_KEY,
         algorithm=_ALGORITHM,
     )

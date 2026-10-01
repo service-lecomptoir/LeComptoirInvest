@@ -15,6 +15,13 @@ export const authApi = {
   // than trusting a role copied into local storage, which a user can edit and which
   // stays frozen after a change decided elsewhere.
   me: () => apiClient.get<Me>('/auth/me'),
+  // « Déconnexion » on the server: the session of this token is closed, so a copy of it
+  // stops working. The token is passed in, read before the browser forgets it.
+  logout: (token: string) =>
+    apiClient.post('/auth/logout', null, {
+      headers: { Authorization: `Bearer ${token}` },
+      skipErrorToast: true,
+    }),
   // « Mot de passe oublié » and the link it sends. The answer is the same whether the
   // address holds an account or not; the link's page asks whose it is before anything.
   forgotPassword: (email: string) =>

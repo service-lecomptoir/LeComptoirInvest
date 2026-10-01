@@ -108,7 +108,27 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
+    // The server closes the session too, so a copy of the token stops working. Read
+    // before the wipe, sent after it, never awaited: the screen signs out at once, even
+    // offline, and a failed call leaves only a token that expires on its own.
+    const token = localStorage.getItem(TOKEN_KEY)
     localStorage.removeItem(TOKEN_KEY)
     set({ ...CLEARED })
+    if (token) void authApi.logout(token).catch(() => undefined)
   },
 }))
+
+// 🔴 A SIGN-OUT IN ONE TAB SIGNS OUT EVERY TAB. The token lives in localStorage, shared by
+// the tabs of the site: once one tab signed out, the others still showed the account's
+// data until their next request came back 401. The browser tells the other tabs when a key
+// changes (`storage` fires in every tab but the one that wrote): a token gone means the
+// session is over here too, and the sign-in page is where the tab goes.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key !== TOKEN_KEY && event.key !== null) return
+    if (event.key !== null && event.newValue !== null) return
+    if (!useAuthStore.getState().isAuthenticated) return
+    useAuthStore.setState({ ...CLEARED })
+    window.location.assign('/login')
+  })
+}

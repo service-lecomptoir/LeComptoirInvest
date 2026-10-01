@@ -25,7 +25,7 @@ from app.models.treasury import (
     Distribution,
 )
 from app.models.audit_log import AuditLog
-from app.models.user import User
+from app.models.user import RevokedSession, User
 
 __all__ = [
     "AuditLog",
@@ -43,6 +43,7 @@ __all__ = [
     "Subscription",
     "SubscriptionConversion",
     "SubscriptionRequest",
+    "RevokedSession",
     "User",
 ]
 

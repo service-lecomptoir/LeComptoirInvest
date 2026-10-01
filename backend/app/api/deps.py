@@ -18,6 +18,7 @@ from app.core.security import read_access_token
 from app.database import SESSION
 from app.models.investor import Investor
 from app.models.user import User
+from app.services import session_service
 from app.core.i18n import pick
 
 
@@ -31,6 +32,11 @@ async def current_user(
         )
     claims = read_access_token(authorization.split(" ", 1)[1])
     if not claims or not claims.get("sub"):
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            pick("Session expirée ou invalide.", "Session expired or invalid."),
+        )
+    if await session_service.is_closed(db, claims):
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
             pick("Session expirée ou invalide.", "Session expired or invalid."),

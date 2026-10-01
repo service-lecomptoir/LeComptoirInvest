@@ -4,24 +4,25 @@ else handed you."""
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Header, Request, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.concurrency import run_in_threadpool
 
 from app.api.deps import current_user
-from app.core import account_kind
+from app.core import account_kind, audit
 from app.core.security import (
     create_access_token,
     hash_password,
+    read_access_token,
     verify_password,
 )
 from app.database import SESSION
 from app.models.user import User
 from app.core.i18n import pick
 from app.core.visitor_window import VisitorWindow
-from app.services import password_link_service
+from app.services import password_link_service, session_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -197,6 +198,27 @@ class MeOut(BaseModel):
     #: for an account nobody qualified, and the screen says so rather than guessing.
     account_kind: str | None = None
     account_kind_label: str | None = None
+
+
+@router.post("/logout", status_code=204)
+async def logout(
+    authorization: str | None = Header(default=None),
+    db: AsyncSession = SESSION,
+):
+    """« Déconnexion »: the session of the token in the `Authorization` header is closed on
+    the server, so a copy of the token stops working at once. Only that session: the
+    person's other devices stay signed in. Needs no valid session -- a token already
+    expired has nothing left to close -- and always answers 204."""
+    scheme, _, token = (authorization or "").partition(" ")
+    claims = read_access_token(token) if scheme.lower() == "bearer" and token else None
+    if claims and claims.get("sub"):
+        # The journal names who signed out (the token carries an id only), and it must
+        # know before the closed session is written.
+        user = await db.get(User, uuid.UUID(claims["sub"]))
+        if user is not None:
+            audit.identify(user_id=user.id, user_email=user.email)
+    await session_service.close(db, claims)
+    await db.commit()
 
 
 @router.get("/me", response_model=MeOut)

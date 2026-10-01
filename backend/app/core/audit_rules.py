@@ -29,6 +29,7 @@ ACTIONS = (CREATE, UPDATE, DELETE)
 #: What a person does, and is answerable for. In a product that holds other people's money
 #: that is nearly everything.
 AUDITED = (
+    "revoked_sessions",
     "users",
     "funds",
     "investors",

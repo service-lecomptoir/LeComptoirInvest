@@ -51,8 +51,9 @@ export function ProfileMenu() {
     setOpen(false)
     const ok = await confirmDialog({
       title: t('signOut.title'),
-      message: email ? t('signOut.messageWithAccount', { email }) : t('signOut.message'),
+      message: t('signOut.message'),
       confirmLabel: t('common.signOut'),
+      danger: true,
     })
     if (!ok) return
     logout()
