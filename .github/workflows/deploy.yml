@@ -104,8 +104,10 @@ jobs:
         with:
           context: ./frontend
           push: true
-          build-args: |
-            VITE_API_URL=https://invest.lecomptoir.services
+          # No VITE_API_URL: the bundle calls its API on the RELATIVE path `/api`, on the
+          # host that served the page (the edge routes /api/ of every name to the backend).
+          # An absolute address baked in here tied the interface to ONE domain: served
+          # under another name, every call became cross-origin and was refused (2 Oct 2026).
           tags: |
             ${{ env.FRONTEND_IMAGE }}:latest
             ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}

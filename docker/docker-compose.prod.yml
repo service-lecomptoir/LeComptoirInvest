@@ -65,8 +65,7 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
       target: production
-      args:
-        VITE_API_URL: https://invest.lecomptoir.services
+      # No VITE_API_URL: relative `/api` calls (see .github/workflows/deploy.yml).
     container_name: invest_frontend
     restart: always
     depends_on:
