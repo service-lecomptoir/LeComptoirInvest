@@ -162,7 +162,13 @@ async def test_the_plans_are_the_consoles_counted_in_investors(client, console):
     answers[PLANS] = httpx.Response(
         200,
         json=[
-            {"id": "a", "name": "Club", "managed_limit": 20, "monthly_price": 49},
+            {
+                "id": "a",
+                "name": "Club",
+                "managed_limit": 20,
+                "monthly_price": 49,
+                "free_demo": True,
+            },
             {"id": "b", "name": "Fonds", "managed_limit": 100, "monthly_price": 149},
             {"id": "c", "name": "Sur devis", "managed_limit": None, "sur_devis": True},
             {"name": "sans identifiant"},
@@ -179,6 +185,9 @@ async def test_the_plans_are_the_consoles_counted_in_investors(client, console):
     )
     assert seen[-1].url.params["product"] == "invest", "never another product's prices"
     assert seen[-1].headers["X-Internal-Key"] == OUTBOUND
+    # « Démo gratuite incluse » is Alice's answer (`free_demo`), never recomputed from the
+    # price here: « Fonds » is priced, and Alice did not say it includes the demo.
+    assert [p["free_demo"] for p in found] == [True, False, False]
 
 
 async def test_a_silent_console_shows_no_plan(client, console, no_console):

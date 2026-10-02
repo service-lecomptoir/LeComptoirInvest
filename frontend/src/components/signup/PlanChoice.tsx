@@ -2,7 +2,7 @@ import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Award, Check, Crown, Gem, Medal } from 'lucide-react'
 import type { PublicPlan } from '@/api'
-import { showsFreeDemo, usePlanPrice } from '@/lib/planPrice'
+import { usePlanPrice } from '@/lib/planPrice'
 
 /**
  * The catalogue plans of the sign-up, as CARDS to choose from, the way Le Comptoir Immo's
@@ -75,7 +75,7 @@ export function PlanChoice({
                   </span>
                   {/* The demo comes with a priced catalogue plan only, never a number of
                       days: none exists, the demo runs until the plan is switched. */}
-                  {showsFreeDemo(plan) && (
+                  {plan.free_demo && (
                     <span className="mt-0.5 block text-xs font-medium text-green-700">{t('pricing.freeDemo')}</span>
                   )}
                 </span>

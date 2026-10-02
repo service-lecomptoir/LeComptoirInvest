@@ -41,8 +41,8 @@ describe('the public page', () => {
     // The catalogue only, and the demo only where there is a price to try: never on a
     // quotation, never on a free plan, and never with a number of days.
     expect(pricing).toContain('.filter((plan) => !plan.sur_devis)')
-    // The rule is the sign-up's (`showsFreeDemo`: a priced catalogue plan), read by both.
-    expect(pricing).toMatch(/\{showsFreeDemo\(plan\) && \(\s*<p[^>]*>\{t\('pricing\.freeDemo'\)\}/)
+    // One answer, Alice's (`free_demo`, relayed by the server), read by both.
+    expect(pricing).toMatch(/\{plan\.free_demo && \(\s*<p[^>]*>\{t\('pricing\.freeDemo'\)\}/)
     for (const [lang, catalogue] of Object.entries(LOCALES)) {
       expect(catalogue.pricing.freeDemo, lang).toBeTruthy()
       expect(catalogue.pricing.freeDemo, `${lang}: no number of days`).not.toMatch(/\d/)

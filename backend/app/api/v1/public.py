@@ -105,6 +105,10 @@ class PublicPlan(BaseModel):
     billable_currencies: list[str] = []
     #: A quotation: no price shown, the request goes to an operator.
     sur_devis: bool = False
+    #: Whether the sign-up writes « Démo gratuite incluse » under this plan. ALICE DECIDES
+    #: (`plan_catalog.includes_free_demo`), this relay passes her answer on: the rule was
+    #: written thirteen times in the nine fronts, in three spellings (1 Oct 2026).
+    free_demo: bool = False
 
 
 def holder_name(data: AccessRequest, company: str) -> str:
@@ -183,6 +187,7 @@ def _plan_of(row: dict) -> PublicPlan | None:
             prices=row.get("prices") or None,
             billable_currencies=row.get("billable_currencies") or [],
             sur_devis=bool(row.get("sur_devis") or row.get("quote_only")),
+            free_demo=bool(row.get("free_demo", False)),
         )
     except (KeyError, TypeError, ValueError, AttributeError):
         return None

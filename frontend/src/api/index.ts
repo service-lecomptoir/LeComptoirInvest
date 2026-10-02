@@ -244,6 +244,9 @@ export interface PublicPlan {
   tva_rate: number
   /** A quotation: never shown on the public page, which lists the catalogue only. */
   sur_devis: boolean
+  /** Whether « Démo gratuite incluse » is written under this plan. Alice decides it
+   *  (`plan_catalog.includes_free_demo`) and the server relays it: no screen recomputes it. */
+  free_demo: boolean
 }
 
 /** A country the platform serves, as the console lists it. */

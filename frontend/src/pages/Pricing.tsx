@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Check, LogIn } from 'lucide-react'
 import { publicApi, type PublicPlan } from '@/api'
 import { money } from '@/lib/format'
-import { showsFreeDemo, usePlanPrice } from '@/lib/planPrice'
+import { usePlanPrice } from '@/lib/planPrice'
 import { useAuthStore } from '@/store/authStore'
 import { LogoMark } from '@/components/common/Logo'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
@@ -142,10 +142,10 @@ export function PlanOffer({
                 {plan.monthly_price > 0 && (
                   <p className="text-xs text-gray-500">{t('pricing.excludingTax', { rate: plan.tva_rate })}</p>
                 )}
-                {/* The demo, on a priced catalogue plan only (as Le Comptoir Immo, 7 Sept):
-                    never on a quotation nor on a free plan, and no number of days, none
-                    exists -- the demo runs until the plan is switched. */}
-                {showsFreeDemo(plan) && (
+                {/* The demo, where Alice says the plan includes it (`free_demo`, as Le
+                    Comptoir Immo, 7 Sept), and no number of days, none exists -- the demo
+                    runs until the plan is switched. */}
+                {plan.free_demo && (
                   <p className="mt-1 text-xs font-medium text-green-700">{t('pricing.freeDemo')}</p>
                 )}
                 <ul className="mt-4 flex-1 space-y-2 text-sm text-gray-700">
