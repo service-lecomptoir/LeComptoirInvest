@@ -11,6 +11,7 @@ import {
 import { confirmDialog } from '@/store/confirm'
 import { toast } from '@/store/toast'
 import { money, day } from '@/lib/format'
+import { PAYMENT_RETURN_PARAMS, readPaymentReturn } from '@/lib/paymentReturn'
 import type {
   BillingInvoice, BillingPlan, BillingStatus, BillingSubscription, PaymentMethods,
 } from '@/types'
@@ -49,12 +50,12 @@ export default function Billing() {
   // is to pay again. The parameter is removed from the address as soon as it is read, so
   // that a refresh does not replay the message.
   const [params, setParams] = useSearchParams()
-  const [outcome, setOutcome] = useState<'succes' | 'annule' | null>(null)
+  const [outcome, setOutcome] = useState<'success' | 'cancelled' | null>(null)
   useEffect(() => {
-    const paid = params.get('paiement')
-    if (paid !== 'succes' && paid !== 'annule') return
+    const paid = readPaymentReturn(params)
+    if (paid !== 'success' && paid !== 'cancelled') return
     setOutcome(paid)
-    params.delete('paiement')
+    PAYMENT_RETURN_PARAMS.forEach(name => params.delete(name))
     setParams(params, { replace: true })
   }, [params, setParams])
 
@@ -197,7 +198,7 @@ export default function Billing() {
 
       {outcome && (
         <div className="mb-5">
-          {outcome === 'succes' ? (
+          {outcome === 'success' ? (
             <Notice tone="info" title={t('billing.paymentDone')}>{t('billing.paymentDoneHint')}</Notice>
           ) : (
             <Notice tone="warn" title={t('billing.paymentCancelled')}>{t('billing.paymentCancelledHint')}</Notice>

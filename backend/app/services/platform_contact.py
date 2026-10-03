@@ -1,8 +1,8 @@
 """The platform's contact address, read in Alice (Communication screen, tab Alice).
 
-🔴 IT WAS WRITTEN HERE, IN FIVE SENTENCES AND ON THE PUBLIC PAGES (the manager, 3 Oct 2026:
-« je dois avoir un endroit pour modifier cette adresse avec une vue »). Moving to
-lecomptoir-services.com meant a deployment of every product for a mailbox. Alice serves it
+🔴 IT WAS WRITTEN HERE, IN FIVE SENTENCES AND ON THE PUBLIC PAGES. The manager asked, on
+3 Oct 2026, for one place to change it, with a view of it: moving to lecomptoir-services.com
+meant a deployment of every product for a mailbox. Alice serves it
 on the door this product already calls for its e-mail settings (`/internal/comm-config`).
 
 ⚠️ THE LAST ADDRESS KNOWN IS KEPT. The sentences that name it are the ones said when

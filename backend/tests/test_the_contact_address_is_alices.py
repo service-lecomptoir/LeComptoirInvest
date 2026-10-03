@@ -1,6 +1,6 @@
 """The contact address is the one Alice holds, never one written here (3 Oct 2026).
 
-The manager: « je dois avoir un endroit pour modifier cette adresse avec une vue ». The
+The manager asked, on 3 Oct 2026, for one place to change it, with a view of it. The
 address lives on Alice's Communication screen (tab Alice); this product reads it on the door
 it already calls (`/internal/comm-config`) and relays it to its pages (`/public/contact`).
 
