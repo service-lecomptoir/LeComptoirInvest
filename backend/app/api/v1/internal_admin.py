@@ -2,7 +2,7 @@
 
 🔴 MOUNTED AT THE ROOT, OUTSIDE `/api`, AND THAT IS THE SECURITY. The edge proxy forwards
 only `/api/` and `/health` to this backend; everything else goes to the front end, whose
-SPA fallback answers `index.html`. So `https://invest.lecomptoir.services/internal/managers`
+SPA fallback answers `index.html`. So `https://invest.lecomptoir-services.com/internal/managers`
 reaches a static page and never this router. It is reachable only from the shared Docker
 network, which is where Alice lives. Verified on 18 August 2026: the public URL answers
 `text/html`, not JSON.

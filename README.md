@@ -4,7 +4,7 @@ Un fonds d'investissement : des investisseurs y placent de l'argent, le fonds le
 dans des projets, les projets rapportent, les investisseurs sont payés. L'outil n'a qu'un
 vrai travail — que ces quatre mouvements se recoupent **toujours**.
 
-> État au 18 août 2026 : **en production sur https://invest.lecomptoir.services.**
+> État au 18 août 2026 : **en production sur https://invest.lecomptoir-services.com.**
 > Les quatre mouvements existent de bout en bout, l'invariant de trésorerie est vérifié,
 > la cascade de distribution est appliquée et gardée. Le contrat `/internal` existe et
 > Alice pilote le produit. Toutes les gardes sont exigées par le pipeline **avant** que
@@ -139,7 +139,7 @@ valeur du produit **est** l'arithmétique, et une erreur y est invisible.
 
 | Élément | Valeur |
 |---|---|
-| Domaine | `invest.lecomptoir.services`, certificat dédié |
+| Domaine | `invest.lecomptoir-services.com`, certificat dédié |
 | Projet compose | **`invest`** — jamais `docker` : le préfixe nomme les volumes, et un mauvais projet monte un volume **vide** |
 | Conteneurs | `invest_backend` (8001), `invest_frontend` (80), `invest_db` |
 | Réseau | `lecomptoir_net` (partagé), proxy `edge_nginx` |

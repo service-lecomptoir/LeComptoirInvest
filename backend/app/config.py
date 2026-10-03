@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     #: Where this product's screens are served: the links a letter carries (choosing a
     #: password) point there. A default is safe here because it names ITSELF, as
     #: `SMTP_FROM_NAME` does; a local run sets its own.
-    PUBLIC_APP_URL: str = "https://invest.lecomptoir.services"
+    PUBLIC_APP_URL: str = "https://invest.lecomptoir-services.com"
 
     #: Alice, the SaaS console that owns manager accounts. Same contract as the sister
     #: products: a manager is never minted here.

@@ -147,7 +147,7 @@ app.include_router(public_router, prefix="/api/v1")
 # 🔴 MOUNTED AT THE ROOT, WITHOUT `/api`. The edge proxy forwards only `/api/` and
 # `/health` to this backend; everything else goes to the front end, whose SPA fallback
 # answers `index.html`.
-# `https://invest.lecomptoir.services/internal/managers` therefore reaches a static page and
+# `https://invest.lecomptoir-services.com/internal/managers` therefore reaches a static page and
 # never this router: it is reachable only from the Docker network, where Alice lives.
 # Moving it under `/api` would publish the fund's account administration on the open
 # internet, behind a single shared header. The prefix is not cosmetic.
