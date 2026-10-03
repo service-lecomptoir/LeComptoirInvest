@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowRight, ArrowDownLeft, ArrowUpRight, Mail, Menu, Minus, Plus, Scale, X } from 'lucide-react'
 import i18n from '@/i18n'
+import { useContactEmail } from '@/lib/contact'
 import { GUIDE_SECTIONS, type GuideCard } from '@/lib/guide'
 import { LogoMark } from '@/components/common/Logo'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
@@ -46,7 +47,6 @@ const FAQ_KEYS = [
 ]
 
 /** The product's contact address, the one its refusals already give (`api/v1/public.py`). */
-const CONTACT_EMAIL = 'contact@lecomptoir.services'
 
 /** The four movements the product reconciles, as the hero card names them. */
 const MOVEMENTS = [
@@ -303,6 +303,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 function Faq() {
   const { t } = useTranslation()
+  const contact = useContactEmail()
   return (
     <section id="faq" className="scroll-mt-16 bg-gray-50 py-20 sm:py-24">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
@@ -315,17 +316,20 @@ function Faq() {
             <FaqItem key={k} q={t(`landing.faq.items.${k}.q`)} a={t(`landing.faq.items.${k}.a`)} />
           ))}
         </div>
+        {/* The address is the console's: none known, no button to an address invented here. */}
+        {contact && (
         <div className="mt-10 text-center">
           <p className="text-sm text-gray-500">{t('landing.faq.another')}</p>
           {/* A CONTACT gesture, not a sign-up one (Le Comptoir Immo, 4 Sept): a visitor with a
               question is not asked for their company. */}
           <a
-            href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(t('landing.faq.mailSubject'))}`}
+            href={`mailto:${contact}?subject=${encodeURIComponent(t('landing.faq.mailSubject'))}`}
             className="mt-3 inline-flex items-center gap-2 rounded-xl bg-brand-navy px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-navy-light"
           >
             <Mail size={15} /> {t('landing.faq.contact')}
           </a>
         </div>
+        )}
       </div>
     </section>
   )

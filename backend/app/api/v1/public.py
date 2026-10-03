@@ -27,9 +27,18 @@ from app.core import account_kind
 from app.core.i18n import current_lang, french_colons, pick
 from app.core.landlord_kind_values import COMPANY, PERSON
 from app.core.visitor_window import VisitorWindow
-from app.services import alice_client
+from app.services import alice_client, platform_contact
+from app.services.platform_contact import OR_WRITE, WRITE
 
 router = APIRouter(prefix="/public", tags=["public"])
+
+
+@router.get("/contact", summary="The platform's contact address")
+async def contact() -> dict:
+    """The address the public pages give a visitor to write to, held in Alice
+    (Communication screen, tab Alice); empty when none is known: say no address."""
+    return {"contact_email": await platform_contact.contact_email()}
+
 
 #: What the console will see in « Demandes », so as to know where the prospect comes from.
 _SOURCE = "invest_login"
@@ -214,18 +223,17 @@ def _own_sentence(word: str) -> str:
     if word == "confirmation_not_sent":
         return pick(
             "Votre demande est enregistrée, mais l'e-mail de confirmation n'a pas pu partir. "
-            "Réessayez dans quelques minutes, ou écrivez-nous à contact@lecomptoir.services.",
+            "Réessayez dans quelques minutes" + OR_WRITE,
             "Your request is recorded, but the confirmation e-mail could not be sent. Try "
-            "again in a few minutes, or write to us at contact@lecomptoir.services.",
+            "again in a few minutes" + OR_WRITE,
         )
     if word == NOT_ANSWERED:
         return pick(
             "Votre demande est partie, mais la réponse a tardé : si un e-mail de confirmation "
-            "vous parvient dans quelques minutes, elle est bien enregistrée. Sinon, réessayez "
-            "ou écrivez-nous à contact@lecomptoir.services.",
+            "vous parvient dans quelques minutes, elle est bien enregistrée. Sinon, réessayez"
+            + OR_WRITE,
             "Your request was sent, but the answer was late: if a confirmation e-mail reaches "
-            "you within a few minutes, it is recorded. Otherwise, try again or write to us at "
-            "contact@lecomptoir.services.",
+            "you within a few minutes, it is recorded. Otherwise, try again" + OR_WRITE,
         )
     if word == "account_exists":
         return pick(
@@ -265,11 +273,12 @@ async def access_request(
         # difference changes what the reader must do.
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
-            pick(
-                "Les demandes d'accès ne sont pas configurées sur cette installation. "
-                "Écrivez-nous à contact@lecomptoir.services.",
-                "Access requests are not configured on this installation. "
-                "Write to us at contact@lecomptoir.services.",
+            await platform_contact.said(
+                pick(
+                    "Les demandes d'accès ne sont pas configurées sur cette installation. "
+                    + WRITE,
+                    "Access requests are not configured on this installation. " + WRITE,
+                )
             ),
         )
     if data.profile not in PROFILES or data.requester_kind not in REQUESTER_KINDS:
@@ -288,10 +297,16 @@ async def access_request(
         # ⚠️ NOT A REFUSAL: said as an outcome (202, « accepted, not confirmed »), in the
         # warning tone of the screen, never in its red error box.
         response.status_code = status.HTTP_202_ACCEPTED
-        return Outcome(status=NOT_ANSWERED, message=_own_sentence(NOT_ANSWERED))
+        return Outcome(
+            status=NOT_ANSWERED,
+            message=await platform_contact.said(_own_sentence(NOT_ANSWERED)),
+        )
     except alice_client.AliceUnavailable as failed:
         # ⚠️ WE DO NOT PRETEND: the request exists nowhere if the call failed.
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(failed)) from None
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            await platform_contact.said(str(failed)),
+        ) from None
 
     word = str(said.get("status") or "received")
     theirs = said.get("message")
@@ -304,7 +319,7 @@ async def access_request(
     ):
         message = french_colons(theirs.strip())
     else:
-        message = _own_sentence(word)
+        message = await platform_contact.said(_own_sentence(word))
     return Outcome(
         status=word,
         message=message,

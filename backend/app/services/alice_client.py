@@ -26,6 +26,7 @@ import httpx
 
 from app.config import get_settings
 from app.core.i18n import pick
+from app.services.platform_contact import OR_WRITE
 
 logger = logging.getLogger(__name__)
 
@@ -258,10 +259,9 @@ async def public_plans() -> list[dict]:
 
 def _lead_unavailable() -> str:
     return pick(
-        "Nous n'avons pas pu enregistrer votre demande. Réessayez dans un instant, ou "
-        "écrivez-nous à contact@lecomptoir.services.",
-        "We could not record your request. Try again in a moment, or write to us at "
-        "contact@lecomptoir.services.",
+        "Nous n'avons pas pu enregistrer votre demande. Réessayez dans un instant"
+        + OR_WRITE,
+        "We could not record your request. Try again in a moment" + OR_WRITE,
     )
 
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useContactEmail } from '@/lib/contact'
 import { Check, LogIn } from 'lucide-react'
 import { publicApi, type PublicPlan } from '@/api'
 import { money } from '@/lib/format'
@@ -96,6 +97,7 @@ export function PlanOffer({
 }) {
   const { t } = useTranslation()
   const planPrice = usePlanPrice()
+  const contact = useContactEmail()
   const [plans, setPlans] = useState<PublicPlan[] | null>(null)
   // What the form has become (a quote once the profile asks for one): the title says it.
   const [formQuoted, setFormQuoted] = useState<boolean | null>(null)
@@ -122,7 +124,10 @@ export function PlanOffer({
       {plans === null ? (
         <Loading label={t('common.loading')} />
       ) : plans.length === 0 ? (
-        <Card className="p-6 text-center text-sm text-gray-600">{t('pricing.none')}</Card>
+        <Card className="p-6 text-center text-sm text-gray-600">
+          {t('pricing.none')}
+          {contact && ` ${t('pricing.writeTo', { email: contact })}`}
+        </Card>
       ) : (
         <section
           className={`grid gap-x-4 gap-y-6 pt-2 ${planGridClass(plans.length)}`}

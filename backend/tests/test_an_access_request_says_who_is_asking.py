@@ -23,12 +23,13 @@ from app.api.v1 import public
 from app.api.v1.public import AccessRequest, lead_payload
 from app.config import get_settings
 from app.main import app
-from app.services import alice_client
+from app.services import alice_client, platform_contact
 
 OUTBOUND = "cle-sortante-de-test"
 INBOUND = "cle-entrante-de-test"
 LEADS = "/api/v1/internal/leads"
 PLANS = "/api/v1/internal/plans"
+COMM_CONFIG = "/api/v1/internal/comm-config"
 
 #: What every sign-up carries, whoever asks: a phone and the whole address.
 _REACHABLE = {
@@ -37,6 +38,12 @@ _REACHABLE = {
     "zip_code": "69003",
     "city": "Lyon",
 }
+
+
+@pytest.fixture(autouse=True)
+def _no_contact_known_yet(monkeypatch):
+    """The contact address is Alice's (3 Oct 2026): each test starts knowing none."""
+    monkeypatch.setattr(platform_contact, "_known", {"value": "", "next": 0.0})
 
 
 @pytest.fixture
@@ -270,9 +277,13 @@ async def test_the_consoles_refusal_is_said_as_it_is(client, console):
 async def test_a_failure_is_never_a_fake_success(client, console, failure):
     _seen, answers = console
     answers[LEADS] = failure
+    answers[COMM_CONFIG] = httpx.Response(
+        200, json={"contact_email": "contact@example.org"}
+    )
     out = await client.post("/api/v1/public/access-request", json=_body())
     assert out.status_code == 503
-    assert "contact@lecomptoir.services" in out.json()["detail"]
+    # The address Alice holds, never one written here.
+    assert "contact@example.org" in out.json()["detail"]
 
 
 async def test_without_a_console_the_request_is_refused_and_says_where_to_write(
@@ -280,7 +291,10 @@ async def test_without_a_console_the_request_is_refused_and_says_where_to_write(
 ):
     out = await client.post("/api/v1/public/access-request", json=_body())
     assert out.status_code == 503
-    assert "contact@lecomptoir.services" in out.json()["detail"]
+    # No console, no address known: none is invented.
+    assert out.json()["detail"] == (
+        "Les demandes d'accès ne sont pas configurées sur cette installation."
+    )
 
 
 async def test_an_unknown_profile_is_refused_before_the_console_is_asked(
