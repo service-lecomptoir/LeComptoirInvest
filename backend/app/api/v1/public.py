@@ -20,13 +20,15 @@ silence is worse than a refusal: the prospect believes they have been heard.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, EmailStr, Field
 
-from app.core import account_kind
+from app.api.v1 import terms as terms_api
+from app.core import account_kind, audit
 from app.core.i18n import current_lang, french_colons, pick
 from app.core.landlord_kind_values import COMPANY, PERSON
 from app.core.visitor_window import VisitorWindow
+from app.models.user import MANAGER
 from app.services import alice_client, platform_contact
 from app.services.platform_contact import OR_WRITE, WRITE
 
@@ -63,6 +65,20 @@ def _profile_sentence(profile: str) -> str:
     return "Un club ou un fonds."
 
 
+class SignupTerms(BaseModel):
+    """The versions the form's boxes showed, ticked; None for a box that was not there."""
+
+    cgu: str | None = Field(default=None, max_length=20)
+    cgv: str | None = Field(default=None, max_length=20)
+    #: The language the texts were read in: the form's.
+    language: str = Field(default="fr", max_length=5)
+
+
+#: 🔴 A SIGN-UP OPENS A MANAGER'S ACCOUNT: the terms of use asked are those of the fund's
+#: management, under Alice's word for it, and the account is filed under the same word.
+SIGNUP_AUDIENCE = terms_api.AUDIENCES[MANAGER]
+
+
 class AccessRequest(BaseModel):
     #: A person gives a first name and a last name; a company, its name and number. The
     #: account's name is built from them (`holder_name`), never typed a second time.
@@ -84,6 +100,8 @@ class AccessRequest(BaseModel):
     region: str = Field(default="", max_length=120)
     #: The country's ISO code (or its name): France by default.
     country: str = Field(default="FR", max_length=60)
+    #: The terms ticked. Alice refuses a sign-up that did not tick a published text.
+    terms: SignupTerms | None = None
 
 
 #: The request left and the console did not answer in time: it may well be filed. Not
@@ -127,7 +145,37 @@ def holder_name(data: AccessRequest, company: str) -> str:
     return f"{data.first_name.strip()} {data.last_name.strip()}".strip()
 
 
-def lead_payload(data: AccessRequest, company: str) -> dict:
+def _terms_given(
+    data: AccessRequest, quoted: bool, ip: str | None, user_agent: str | None
+) -> dict:
+    """What the boxes showed and the person ticked, with the proof of who ticked them.
+
+    🔴 THE ADDRESS AND THE BROWSER ARE THE PERSON'S, read from the request this product
+    received: Alice is called server to server. She keeps the tick and writes the
+    acceptance when the account is born, after the e-mail confirmation.
+
+    ⚠️ NO TERMS OF SALE ON A QUOTATION: it takes no licence, and a box ticked there by an
+    old page must not travel as an acceptance of a sale nobody made.
+    """
+    ticked = data.terms or SignupTerms(language=current_lang())
+    return {
+        "language": ticked.language,
+        "audience": SIGNUP_AUDIENCE,
+        "account_kind": SIGNUP_AUDIENCE,
+        "cgu": ticked.cgu or None,
+        "cgv": None if quoted else (ticked.cgv or None),
+        "ip": ip,
+        "user_agent": user_agent,
+    }
+
+
+def lead_payload(
+    data: AccessRequest,
+    company: str,
+    *,
+    ip: str | None = None,
+    user_agent: str | None = None,
+) -> dict:
     """What the console receives: its own words for the notions it already knows.
 
     ⚠️ `quote_only` FOR A MANAGEMENT COMPANY, and never a plan with it: a catalogue plan
@@ -138,6 +186,7 @@ def lead_payload(data: AccessRequest, company: str) -> dict:
         message = f"{message} {data.message.strip()}"
     quoted = data.profile == MANAGEMENT_COMPANY
     return {
+        "terms": _terms_given(data, quoted, ip, user_agent),
         # 🔴 A SIGN-UP, SAID AS SUCH: the console then applies the common rule (names,
         # company number checked against the register, phone, whole address) -- the rule
         # lives there, for every product, and not here.
@@ -264,7 +313,10 @@ _KNOWN_ANSWERS = (
     "/access-request", response_model=Outcome, status_code=status.HTTP_201_CREATED
 )
 async def access_request(
-    data: AccessRequest, response: Response, _: None = Depends(rate_limited)
+    data: AccessRequest,
+    request: Request,
+    response: Response,
+    _: None = Depends(rate_limited),
 ) -> Outcome:
     """Files a sign-up with the console: with a catalogue plan, Alice sends the
     confirmation e-mail and creates the account; without one, an operator answers."""
@@ -286,13 +338,19 @@ async def access_request(
             status.HTTP_400_BAD_REQUEST,
             pick("Précisez qui demande l'accès.", "Say who is asking for access."),
         )
-    payload = lead_payload(data, data.company.strip())
+    payload = lead_payload(
+        data,
+        data.company.strip(),
+        ip=audit.client_address(request),
+        user_agent=request.headers.get("user-agent"),
+    )
     try:
         said = await alice_client.file_lead(payload)
     except alice_client.SignupRefused as refused:
         # The console's own sentence (« Indiquez votre prénom et votre nom. »): it is what
-        # the person must correct, said once, for every product.
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(refused)) from None
+        # the person must correct, said once, for every product. A 409 stays a 409: the
+        # page showed terms that changed while it was filled, and must be reloaded.
+        raise HTTPException(refused.status, str(refused)) from None
     except alice_client.SignupNotAnswered:
         # ⚠️ NOT A REFUSAL: said as an outcome (202, « accepted, not confirmed »), in the
         # warning tone of the screen, never in its red error box.
@@ -325,4 +383,27 @@ async def access_request(
         message=message,
         login_url=said.get("login_url"),
         subscription_url=said.get("subscription_url"),
+    )
+
+
+@router.get("/terms")
+async def signup_terms(
+    kind: str = Query(max_length=3),
+    language: str = Query(default="fr", max_length=5),
+) -> dict:
+    """The text the sign-up form asks a newcomer to tick: the latest PUBLISHED version.
+
+    404: nothing is published, so the form shows no box. 🔴 503 when Alice is silent, and
+    the form then refuses to send: a sign-up that cannot record its acceptance must not go
+    through (FAIL CLOSED, the other half of `api/v1/terms.py`).
+
+    ⚠️ THE TERMS OF SALE ARE ONE TEXT FOR EVERY ACCOUNT (`all`), exactly the scope Alice
+    checks a sign-up's tick against; the terms of use are the management's.
+    """
+    terms_api.known_kind(kind)
+    return await terms_api.relay_text(
+        kind,
+        language=language,
+        audience=terms_api.EVERYONE if kind == terms_api.SALE else SIGNUP_AUDIENCE,
+        newcomer=True,
     )

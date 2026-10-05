@@ -81,6 +81,30 @@ export function day(value: string | null | undefined): string {
   return new Intl.DateTimeFormat(activeLocale(), { day: '2-digit', month: 'short', year: 'numeric' }).format(d)
 }
 
+/** A day in figures, « 01/10/2026 »: the way a text's effective date is quoted. */
+export function numericDay(value: string | null | undefined): string {
+  if (!value) return '-'
+  const d = dayOf(value)
+  if (Number.isNaN(d.getTime())) return '-'
+  return new Intl.DateTimeFormat(activeLocale(), { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d)
+}
+
+/**
+ * An INSTANT, with its time, in the reader's clock: « 02/10/2026 09:30 ».
+ *
+ * ⚠️ NOT `day()`. An instant has a zone, and the moment somebody accepted a text is read in
+ * the device's own clock (this product records no time zone per account): the date alone
+ * would hide the hour a dispute turns on.
+ */
+export function instant(value: string | null | undefined): string {
+  if (!value) return '-'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return '-'
+  return new Intl.DateTimeFormat(activeLocale(), {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  }).format(d)
+}
+
 /** A percentage from a fraction: « 8,00 % » in French (no-break space), « 8.00% » in English,
  *  as the server writes it in the letters (`app/core/display.py`). */
 export function percent(fraction: number | null | undefined, digits = 2): string {

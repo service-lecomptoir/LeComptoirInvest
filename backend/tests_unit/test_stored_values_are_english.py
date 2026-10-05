@@ -114,6 +114,13 @@ APPROVED: dict[str, str] = {
     # link's signed token carries (read back when the link is followed).
     "NOT_ANSWERED": "not_answered",
     "TOKEN_TYPE": "password_link",
+    # ⚠️ ALICE'S WORDS FOR THE TWO DOCUMENTS AND FOR « EVERY KIND OF ACCOUNT » (2 Oct
+    # 2026), which reach no column here: this product keeps nothing of the terms. They
+    # travel on the contract with the console, which spells them so for every product,
+    # and « cgu » / « cgv » are its codes, not French prose to translate.
+    "USE": "cgu",
+    "SALE": "cgv",
+    "EVERYONE": "all",
     # ⚠️ THE TWO DELIBERATE EXCEPTIONS, and they are not an oversight. Le Comptoir Immo
     # stores exactly these two words on its landlords, and an investor is very often a
     # landlord. A second vocabulary would have to be translated wherever the two products

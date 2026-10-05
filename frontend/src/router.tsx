@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react'
 import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Shell } from '@/components/layout/Shell'
+import { TermsGate } from '@/components/terms/TermsGate'
 import { useAuthStore } from '@/store/authStore'
 import { loginFor } from '@/lib/nextPath'
 import Login from '@/pages/Login'
@@ -62,7 +63,13 @@ function RequireAuth() {
     const query = back === '/' ? '' : `?next=${encodeURIComponent(back)}`
     return <Navigate to={`${PROFILE_ROUTE}${query}`} replace />
   }
-  return <Outlet />
+  // 🔴 AND THE TERMS, AT THE SAME DOOR (the manager, 2 Oct 2026): a version owed is
+  // accepted before any screen opens, on every route at once. See `TermsGate`.
+  return (
+    <TermsGate>
+      <Outlet />
+    </TermsGate>
+  )
 }
 
 /** The fund's screens and the investor's are different ROUTES, not one set with rows

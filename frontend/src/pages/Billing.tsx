@@ -4,13 +4,17 @@ import { useTranslation } from 'react-i18next'
 import { CreditCard, Landmark, ExternalLink, FileText, Check } from 'lucide-react'
 import { billingApi } from '@/api'
 import { apiClient } from '@/api/client'
+import { termsApi } from '@/api/terms'
 import { Button, Badge } from '@/components/ui'
 import {
   Card, EmptyState, Loading, Notice, PageHeader, Pill, TableWrap, Td, Th,
 } from '@/components/common/Primitives'
+import { AcceptedTerms } from '@/components/terms/AcceptedTerms'
+import { TermsCheckbox } from '@/components/terms/TermsBoxes'
 import { confirmDialog } from '@/store/confirm'
 import { toast } from '@/store/toast'
-import { money, day } from '@/lib/format'
+import { money, day, numericDay } from '@/lib/format'
+import { termsBlock, useTermsOverview, type TermsBox } from '@/lib/terms'
 import type {
   BillingInvoice, BillingPlan, BillingStatus, BillingSubscription, PaymentMethods,
 } from '@/types'
@@ -31,9 +35,15 @@ import type {
  * ⚠️ « JE NE SAIS PAS » IS NOT « C'EST GRATUIT ». When the console does not answer, or when
  * none drives the instance, the screen says so plainly. Showing an empty subscription at
  * 0 € would let one believe in a right nobody has granted.
+ *
+ * 🔴 THE TERMS OF SALE LIVE HERE, FOR THE SUBSCRIBER ONLY (the manager, 2 Oct 2026): the
+ * version accepted, read-only, and a required box, unticked, before a plan is chosen.
+ * Choosing a plan is subscribing: the version ticked travels with it, and the server has
+ * Alice record it before anything is paid. A colleague of the firm sees neither: they do
+ * not hold the licence.
  */
 export default function Billing() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [subscription, setSubscription] = useState<BillingSubscription | null>(null)
   const [methods, setMethods] = useState<PaymentMethods | null>(null)
   const [status, setStatus] = useState<BillingStatus | null>(null)
@@ -42,6 +52,54 @@ export default function Billing() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
   const [refusal, setRefusal] = useState<string | null>(null)
+
+  // The terms of sale: what the subscriber accepted, and the text a plan change asks.
+  // Read again after a 409 (a version published while the page was open), unticked.
+  const language = i18n.resolvedLanguage || i18n.language || 'fr'
+  const [termsRead, setTermsRead] = useState(0)
+  const terms = useTermsOverview(termsRead)
+  const subscriber = terms?.status?.subscriber ?? false
+  const owedVersion = terms?.status?.cgv?.version ?? null
+  const [saleBox, setSaleBox] = useState<TermsBox>({ state: 'loading' })
+  const [saleTicked, setSaleTicked] = useState(false)
+  useEffect(() => {
+    if (!terms) return
+    // 🔴 « LOADING » IS NOT « NO TERMS »: the status said nothing (the console is silent),
+    // so the box cannot be drawn and no plan can be chosen (fail closed, as at sign-up).
+    if (!terms.status || terms.status.unavailable) {
+      setSaleBox({ state: 'unavailable' })
+      return
+    }
+    if (!subscriber) {
+      setSaleBox({ state: 'none' })
+      return
+    }
+    let live = true
+    setSaleBox({ state: 'loading' })
+    termsApi
+      .text({ kind: 'cgv', language, version: owedVersion })
+      .then(({ data }): TermsBox => ({ state: 'ready', text: data }))
+      .catch((error): TermsBox =>
+        error?.response?.status === 404 ? { state: 'none' } : { state: 'unavailable' },
+      )
+      .then((box) => {
+        if (live) setSaleBox(box)
+      })
+    return () => {
+      live = false
+    }
+  }, [terms, subscriber, owedVersion, language])
+  // Why no plan may be chosen yet, or null: nothing before the status is known, then the
+  // subscriber's box. Only the subscriber is asked: the server skips the terms of sale for
+  // any other account.
+  const saleHold = !terms
+    ? 'loading'
+    : subscriber
+      ? termsBlock({ cgu: { state: 'none' }, cgv: saleBox }, true, { cgu: false, cgv: saleTicked })
+      : null
+  const sale = saleBox.state === 'ready' && saleTicked
+    ? { cgv: saleBox.text.version, language }
+    : undefined
 
   // 🔴 THIS IS WHERE STRIPE SENDS THE PAYER BACK, and the screen must recognise it.
   // Without that, a manager who has just paid comes back to a page identical to the one
@@ -80,7 +138,14 @@ export default function Billing() {
   useEffect(load, [])
 
   const refusalOf = (error: unknown): string => {
-    const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
+    const answer = (error as { response?: { status?: number; data?: { detail?: unknown } } })?.response
+    if (answer?.status === 409) {
+      // The terms of sale changed while the page was open: the new text is read again,
+      // unticked, and Alice's sentence says why.
+      setSaleTicked(false)
+      setTermsRead((n) => n + 1)
+    }
+    const detail = answer?.data?.detail
     return typeof detail === 'string' ? detail : t('billing.unavailable')
   }
 
@@ -89,7 +154,8 @@ export default function Billing() {
     setBusy('checkout')
     setRefusal(null)
     try {
-      const { data } = await billingApi.checkout(planId)
+      // A plan named here is subscribed to: the terms of sale ticked travel with it.
+      const { data } = await billingApi.checkout(planId, planId ? sale : undefined)
       if (data?.url) window.location.href = data.url
       else setRefusal(t('billing.noPaymentPage'))
     } catch (error) {
@@ -159,7 +225,7 @@ export default function Billing() {
     setBusy(plan.id)
     setRefusal(null)
     try {
-      await billingApi.changePlan(plan.id)
+      await billingApi.changePlan(plan.id, sale)
       toast.success(t('billing.changed'))
       load()
     } catch (error) {
@@ -356,6 +422,29 @@ export default function Billing() {
             <Card>
               <div className="p-5 sm:p-6 pb-3">
                 <h2 className="text-sm font-semibold text-gray-900">{t('billing.offers')}</h2>
+                {saleHold === 'unavailable' && (
+                  <div className="mt-3">
+                    <Notice tone="warn" title={t('terms.textUnavailable')}>{t('terms.billing.unavailable')}</Notice>
+                  </div>
+                )}
+                {saleBox.state === 'ready' && subscriber && (
+                  <div className="mt-3">
+                    <TermsCheckbox
+                      text={saleBox.text}
+                      checked={saleTicked}
+                      onChange={setSaleTicked}
+                      label={t('terms.signup.acceptCgv')}
+                      hint={t('terms.billing.hint', {
+                        version: saleBox.text.version,
+                        date: numericDay(saleBox.text.effective_from),
+                      })}
+                    />
+                    {/* Never a silent grey button: what it waits for is said here. */}
+                    {saleHold === 'unticked' && (
+                      <p className="mt-1 ml-6 text-xs text-amber-800">{t('terms.billing.unticked')}</p>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="px-5 sm:px-6 pb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {plans.map((plan) => {
@@ -388,7 +477,7 @@ export default function Billing() {
                         <Button
                           variant="secondary"
                           className="mt-4"
-                          disabled={busy === plan.id}
+                          disabled={busy === plan.id || saleHold !== null}
                           onClick={() =>
                             status?.has_subscription ? changePlan(plan) : goToPayment(plan.id)
                           }
@@ -402,6 +491,9 @@ export default function Billing() {
               </div>
             </Card>
           )}
+
+          {/* ── The terms of sale accepted, for the subscriber ───────────────── */}
+          {subscriber && <AcceptedTerms kind="cgv" overview={terms} />}
 
           {/* ── The invoices ──────────────────────────────────────────────────── */}
           <Card>

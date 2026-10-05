@@ -9,6 +9,8 @@ import { offersRetry, outcomeTitleKey, outcomeTone } from '@/lib/signupOutcome'
 import { AddressAutocomplete } from '@/components/common/AddressAutocomplete'
 import { SiretInput } from '@/components/common/SiretInput'
 import { Button, Field, Input, Select, inputBaseClass } from '@/components/ui'
+import { TermsBoxes } from '@/components/terms/TermsBoxes'
+import { UNTICKED, termsBlock, termsGiven, useSignupTerms, type Ticked } from '@/lib/terms'
 import { PlanChoice } from './PlanChoice'
 
 const FRANCE: Country = { code: 'FR', name: 'France', number_label: 'SIREN / SIRET' }
@@ -43,7 +45,7 @@ export function SignupForm({
    *  compte » for a catalogue plan, « Demander un devis » once the profile asks for one. */
   onQuotedChange?: (quoted: boolean) => void
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const uid = useId()
   const [plans, setPlans] = useState<PublicPlan[] | null>(null)
   const [draft, setDraft] = useState({
@@ -71,6 +73,13 @@ export function SignupForm({
   const { errors, check, flag } = useFieldCheck()
   const [outcome, setOutcome] = useState<SignupOutcome | null>(null)
   const set = (patch: Partial<typeof draft>) => setDraft((d) => ({ ...d, ...patch }))
+  // 🔴 THE TERMS, AS ALICE PUBLISHES THEM: the boxes start unticked and the button stays
+  // off until each published text is ticked. Read again after a 409 (a version published
+  // while the form was being filled): the page then shows what it now asks.
+  const language = i18n.resolvedLanguage || i18n.language || 'fr'
+  const [termsRead, setTermsRead] = useState(0)
+  const termBoxes = useSignupTerms(language, termsRead)
+  const [ticked, setTicked] = useState<Ticked>(UNTICKED)
 
   useEffect(() => {
     publicApi
@@ -109,6 +118,9 @@ export function SignupForm({
     onQuotedChange?.(quoted)
   }, [quoted, onQuotedChange])
   const isCompany = draft.requester_kind === COMPANY
+  // The terms of sale come with a licence: a catalogue plan, never a quotation.
+  const withSale = !quoted
+  const termsHold = termsBlock(termBoxes, withSale, ticked)
 
   async function send(event: React.FormEvent) {
     event.preventDefault()
@@ -148,14 +160,25 @@ export function SignupForm({
       setProblem(t('signup.badNumber'))
       return
     }
+    if (termsHold) {
+      setProblem(t(`terms.signup.${termsHold}`))
+      return
+    }
     setBusy(true)
     try {
       const { data } = await publicApi.accessRequest({
         ...draft,
         plan_id: quoted ? null : draft.plan_id || null,
+        terms: termsGiven(termBoxes, withSale, ticked, language),
       })
       setOutcome(data)
     } catch (error: any) {
+      if (error?.response?.status === 409) {
+        // The terms changed while the form was open: what is now asked is read again,
+        // unticked, and Alice's sentence says why.
+        setTicked(UNTICKED)
+        setTermsRead((n) => n + 1)
+      }
       // The one refusal this server words itself before the console: an address the
       // e-mail validator rejects. Its raw sentence is the library's, in English.
       const detail = error?.response?.data?.detail
@@ -417,6 +440,12 @@ export function SignupForm({
           />
         </Field>
       )}
+      <TermsBoxes
+        boxes={termBoxes}
+        withSale={withSale}
+        ticked={ticked}
+        onTick={(kind, checked) => setTicked((was) => ({ ...was, [kind]: checked }))}
+      />
       <p className="text-xs text-gray-500">{quoted ? t('signup.quoteNext') : t('signup.next')}</p>
       <div className="flex flex-wrap items-center justify-between gap-2">
         {onBack ? (
@@ -426,10 +455,14 @@ export function SignupForm({
         ) : (
           <span />
         )}
-        <Button type="submit" isLoading={busy}>
+        <Button type="submit" isLoading={busy} disabled={termsHold !== null}>
           {quoted ? t('signup.askQuote') : t('signup.create')}
         </Button>
       </div>
+      {/* Never a silent grey button: what it waits for is said under it. */}
+      {termsHold === 'unticked' && (
+        <p className="text-xs text-gray-500 text-right">{t('terms.signup.unticked')}</p>
+      )}
     </form>
   )
 }

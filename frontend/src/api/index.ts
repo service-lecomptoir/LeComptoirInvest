@@ -162,6 +162,12 @@ export const statementsApi = {
     }),
 }
 
+/** The version of the terms of sale ticked on the plan screen, and its language. */
+export interface SaleTicked {
+  cgv: string
+  language: string
+}
+
 /**
  * The manager's subscription TO THE PRODUCT.
  *
@@ -176,14 +182,16 @@ export const billingApi = {
   plans: () => apiClient.get<BillingPlan[]>('/billing/plans'),
   // The refusal is SHOWN IN PLACE, next to the button: an unreachable console is
   // useful information, not a fleeting red banner at the top of the screen.
-  checkout: (planId?: string) =>
-    apiClient.post<{ url?: string }>('/billing/checkout', planId ? { plan_id: planId } : {},
-      { skipErrorToast: true }),
+  // A plan chosen here is subscribed to: the terms of sale ticked travel with it
+  // (`sale`), and the server has Alice record them before anything is paid.
+  checkout: (planId?: string, sale?: SaleTicked) =>
+    apiClient.post<{ url?: string }>('/billing/checkout',
+      planId ? { plan_id: planId, ...sale } : {}, { skipErrorToast: true }),
   portal: () => apiClient.post<{ url?: string }>('/billing/portal', {}, { skipErrorToast: true }),
   declareTransfer: () => apiClient.post('/billing/declare-transfer', {}, { skipErrorToast: true }),
   cancelTransfer: () => apiClient.post('/billing/cancel-transfer', {}, { skipErrorToast: true }),
-  changePlan: (planId: string) =>
-    apiClient.post('/billing/change-plan', { plan_id: planId }, { skipErrorToast: true }),
+  changePlan: (planId: string, sale?: SaleTicked) =>
+    apiClient.post('/billing/change-plan', { plan_id: planId, ...sale }, { skipErrorToast: true }),
   previewChange: (planId: string) =>
     apiClient.post<{ amount_due?: number; currency?: string }>(
       '/billing/change-plan-preview', { plan_id: planId }, { skipErrorToast: true }),

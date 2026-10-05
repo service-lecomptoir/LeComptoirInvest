@@ -944,5 +944,69 @@
         }
       }
     }
+  },
+  "terms": {
+    "versionInForce": "Version {{version}}, en vigueur le {{date}}",
+    "fellBackTitle": "Texte en français",
+    "fellBack": "Ce texte n'existe pas encore dans votre langue : il est affiché en français.",
+    "summary": "Ce qui change",
+    "reading": "Conditions générales",
+    "textUnavailable": "Texte indisponible",
+    "read": "Lire les conditions",
+    "readThis": "Lire ce texte",
+    "names": {
+      "cgu": "Conditions générales d'utilisation",
+      "cgv": "Conditions générales de vente"
+    },
+    "signup": {
+      "acceptCgu": "J'accepte les conditions générales d'utilisation",
+      "acceptCgv": "J'accepte les conditions générales de vente",
+      "hint": "Obligatoire pour créer votre compte. Version {{version}}, en vigueur le {{date}}.",
+      "unavailable": "Les conditions générales ne peuvent pas être chargées pour le moment : réessayez dans quelques minutes.",
+      "loading": "Les conditions générales se chargent : un instant, puis envoyez à nouveau.",
+      "unticked": "Cochez les conditions générales pour envoyer la demande."
+    },
+    "gate": {
+      "titleChanged": "Nos conditions ont changé",
+      "titleFirst": "Avant de commencer",
+      "subtitleFirst": {
+        "cgu": "Merci de lire et d'accepter les conditions générales d'utilisation.",
+        "cgv": "Merci de lire et d'accepter les conditions générales de vente."
+      },
+      "subtitleChanged": {
+        "cgu": "Vous aviez accepté la version {{version}} des conditions générales d'utilisation. Merci de lire la nouvelle version, puis de l'accepter pour continuer.",
+        "cgv": "Vous aviez accepté la version {{version}} des conditions générales de vente. Merci de lire la nouvelle version, puis de l'accepter pour continuer."
+      },
+      "refused": "Votre acceptation n'a pas été enregistrée",
+      "accept": "J'accepte",
+      "signOut": "Se déconnecter",
+      "help": "Tant que ce texte n'est pas accepté, l'application reste fermée. Vous pouvez vous déconnecter et revenir plus tard."
+    },
+    "accepted": {
+      "title": {
+        "cgu": "Conditions d'utilisation",
+        "cgv": "Conditions générales de vente"
+      },
+      "version": "Version acceptée",
+      "versionNamed": "version {{version}}",
+      "on": "Acceptée le {{when}}",
+      "newerTitle": "Nouvelle version",
+      "newer": "Une nouvelle version {{version}} est en vigueur depuis le {{date}}.",
+      "none": {
+        "cgu": "Vous n'avez encore accepté aucune version des conditions générales d'utilisation.",
+        "cgv": "Vous n'avez encore accepté aucune version des conditions générales de vente."
+      },
+      "unavailableTitle": "Conditions indisponibles",
+      "unavailable": "La console ne répond pas : les conditions acceptées ne peuvent pas être lues pour le moment. Réessayez dans quelques minutes.",
+      "helpSubscriber": "Lecture seule. Pour retirer votre accord, fermez votre compte : résiliez votre abonnement dans Abonnement › Gérer mon abonnement, puis demandez-nous de fermer le compte.",
+      "helpOther": "Lecture seule. Pour retirer votre accord, fermez votre compte : demandez-le à votre société de gestion.",
+      "writeToSubscriber": "Écrivez-nous à {{email}}.",
+      "writeToOther": "Vous pouvez aussi nous écrire à {{email}}."
+    },
+    "billing": {
+      "hint": "Obligatoire pour souscrire ou changer de formule. Version {{version}}, en vigueur le {{date}}.",
+      "unavailable": "Les conditions générales de vente ne peuvent pas être chargées pour le moment : réessayez dans quelques minutes.",
+      "unticked": "Cochez les conditions générales de vente pour choisir une formule."
+    }
   }
 }

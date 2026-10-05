@@ -20,10 +20,11 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
 from app.api.deps import current_manager
+from app.api.v1 import terms as terms_api
 from app.models.user import User
 from app.services import alice_client
 from app.services.alice_client import AliceUnavailable
@@ -126,6 +127,58 @@ async def available_plans(user: User = Depends(current_manager)) -> list:
 
 class _PlanIn(BaseModel):
     plan_id: str | None = None
+    #: The version of the terms of sale the screen showed and the subscriber ticked, when
+    #: Alice publishes any. See `_sale_accepted`.
+    cgv: str | None = None
+    language: str = "fr"
+
+
+async def _sale_accepted(user: User, request: Request, body: _PlanIn) -> None:
+    """Choosing a plan is subscribing: the terms of sale are accepted there and then.
+
+    🔴 THE MANAGER, 2 OCT 2026: the subscriber accepts the terms of sale at subscription,
+    a plan change included. Alice's plan change carries no terms, so the acceptance is
+    recorded first (`method="plan"`), and a refusal (409, a version that changed while the
+    page was open) stops the change before it reaches the payment.
+
+    ⚠️ THE SERVER CHECKS, NOT ONLY THE BOX: a change sent without the tick while Alice
+    publishes terms of sale is refused. Only the subscriber is asked; another account is
+    not the one Alice bills, and her own refusal answers it.
+    """
+    if not user.holds_the_licence:
+        return
+    if body.cgv:
+        await terms_api.record_acceptance(
+            user,
+            request,
+            kind=terms_api.SALE,
+            version=body.cgv,
+            language=body.language,
+            method="plan",
+        )
+        return
+    owed = await alice_client.terms_status(
+        user.id, audience=terms_api.AUDIENCES[user.role], subscriber=True
+    )
+    if owed is None:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            pick(
+                "Les conditions générales de vente ne peuvent pas être chargées pour le "
+                "moment : réessayez dans quelques minutes.",
+                "The terms of sale cannot be loaded at the moment: try again in a few "
+                "minutes.",
+            ),
+        )
+    sale = owed.get("cgv")
+    if isinstance(sale, dict) and sale.get("anything_to_accept"):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            pick(
+                "Acceptez les conditions générales de vente pour changer de formule.",
+                "Accept the terms of sale to change plan.",
+            ),
+        )
 
 
 def _unavailable(exc: AliceUnavailable) -> HTTPException:
@@ -136,11 +189,17 @@ def _unavailable(exc: AliceUnavailable) -> HTTPException:
 
 @router.post("/checkout", summary="Pay by card or SEPA direct debit")
 async def checkout(
-    body: _PlanIn | None = None, user: User = Depends(current_manager)
+    request: Request,
+    body: _PlanIn | None = None,
+    user: User = Depends(current_manager),
 ) -> dict:
-    """Opens a payment session and returns the address where the manager completes it."""
+    """Opens a payment session and returns the address where the manager completes it.
+
+    A plan named here is a subscription to it: its terms of sale are accepted first.
+    """
     payload: dict = {"currency": "eur"}
     if body and body.plan_id:
+        await _sale_accepted(user, request, body)
         payload["plan_id"] = body.plan_id
     try:
         return (
@@ -181,12 +240,15 @@ async def cancel_transfer(user: User = Depends(current_manager)) -> dict:
 
 
 @router.post("/change-plan", summary="Change plan")
-async def change_plan(body: _PlanIn, user: User = Depends(current_manager)) -> dict:
+async def change_plan(
+    body: _PlanIn, request: Request, user: User = Depends(current_manager)
+) -> dict:
     if not body.plan_id:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             pick("Préciser l'offre choisie.", "Say which plan was chosen."),
         )
+    await _sale_accepted(user, request, body)
     try:
         return (
             await alice_client.billing(

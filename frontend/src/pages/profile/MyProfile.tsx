@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Building2, Landmark, Mail, ShieldCheck } from 'lucide-react'
 
 import { Card, PageHeader } from '@/components/common/Primitives'
+import { TermsOfUseSection } from '@/components/terms/AcceptedTerms'
 import { roleKey } from '@/lib/roleLabel'
 import { useAuthStore } from '@/store/authStore'
 
@@ -28,6 +29,9 @@ import { PasswordSection } from './PasswordSection'
  * ⚠️ THE LOOK OF THE E-MAILS IS SHOWN ONLY TO THOSE WHO RUN THE FUND. It is the management
  * company's setting, the letters to investors go out in it, and an investor's login sends
  * nothing: offering it the choice would offer a setting the server refuses.
+ *
+ * 🔴 THE TERMS OF USE ACCEPTED ARE SHOWN TO EVERY ACCOUNT THAT ACCEPTS THEM (the manager,
+ * 2 Oct 2026), read-only. The platform's operator is not one: it publishes them.
  */
 export default function MyProfile() {
   const { t } = useTranslation()
@@ -93,6 +97,8 @@ export default function MyProfile() {
             {t('profile.managedByConsole')}
           </p>
         </section>
+
+        {role !== 'admin' && <TermsOfUseSection />}
 
         {seesWholeFund && <EmailThemeSection />}
 

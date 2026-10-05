@@ -94,6 +94,7 @@ Et un prêt dont le montant dû n'est pas calculable **bloque tout** : sans rép
 | `app/core/notices.py` + `app/services/notice_service.py` | **l'avis d'appel et la relance**, écrits dans la langue de l'INVESTISSEUR ; la relance réclame ce qui manque, jamais l'appel entier |
 | `app/core/mailer.py` | l'envoi, qui **lève** au lieu de rendre `False` : un avis non parti ne doit jamais s'enregistrer comme parti |
 | `app/services/statement_service.py` | le relevé fiscal : l'année du **paiement**, jamais de la décision |
+| `app/api/v1/terms.py` + `app/services/alice_client.py` | 🔴 **les conditions générales viennent d'Alice, ce produit n'en garde rien** (ni table, ni colonne, ni copie) : textes, versions, langues et preuves d'acceptation sont chez elle, ce produit les relaie parce que la clé interne n'atteint jamais un navigateur. Les CGU sont acceptées par chaque compte qui se connecte (la plateforme, éditrice, n'en est pas une partie), les CGV par l'abonné seul (`User.holds_the_licence`). **Alice injoignable : l'existant n'est jamais bloqué, l'inscription l'est** |
 | `app/api/v1/` | 25 routes : connexion, registre, KYC, demandes, conversion, trésorerie, appels, projets, distributions, relevés |
 | `alembic/versions/` | **0001** le socle, **0002** les projets. La chaîne va jusqu'à head contre une base vide |
 | `tests/` + `tests_unit/` | **99 gardes**, dont la base de test bâtie par les migrations |

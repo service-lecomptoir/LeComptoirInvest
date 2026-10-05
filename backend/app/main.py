@@ -126,6 +126,7 @@ from app.api.v1.projects import router as projects_router  # noqa: E402
 from app.api.v1.public import router as public_router  # noqa: E402
 from app.api.v1.statements import router as statements_router  # noqa: E402
 from app.api.v1.subscriptions import router as subscriptions_router  # noqa: E402
+from app.api.v1.terms import router as terms_router  # noqa: E402
 from app.api.v1.treasury import router as treasury_router  # noqa: E402
 
 app.include_router(auth_router, prefix="/api/v1")
@@ -139,6 +140,8 @@ app.include_router(distributions_router, prefix="/api/v1")
 app.include_router(statements_router, prefix="/api/v1")
 app.include_router(billing_router, prefix="/api/v1")
 app.include_router(performance_router, prefix="/api/v1")
+# The terms of use and of sale, relayed from Alice for the signed-in account.
+app.include_router(terms_router, prefix="/api/v1")
 # Public and throttled: a form asks it before anybody is signed in.
 app.include_router(lookups_router, prefix="/api/v1")
 # Public too: the plans the console sells, and the sign-up that carries one of them.

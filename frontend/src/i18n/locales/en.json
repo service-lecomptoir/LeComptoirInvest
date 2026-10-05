@@ -944,5 +944,69 @@
         }
       }
     }
+  },
+  "terms": {
+    "versionInForce": "Version {{version}}, in force from {{date}}",
+    "fellBackTitle": "Text in French",
+    "fellBack": "This text does not exist in your language yet: it is shown in French.",
+    "summary": "What changes",
+    "reading": "Terms",
+    "textUnavailable": "Text unavailable",
+    "read": "Read the terms",
+    "readThis": "Read this text",
+    "names": {
+      "cgu": "Terms of use",
+      "cgv": "Terms of sale"
+    },
+    "signup": {
+      "acceptCgu": "I accept the terms of use",
+      "acceptCgv": "I accept the terms of sale",
+      "hint": "Required to create your account. Version {{version}}, in force from {{date}}.",
+      "unavailable": "The terms cannot be loaded at the moment: try again in a few minutes.",
+      "loading": "The terms are loading: wait a moment, then send again.",
+      "unticked": "Tick the terms to send the request."
+    },
+    "gate": {
+      "titleChanged": "Our terms have changed",
+      "titleFirst": "Before you start",
+      "subtitleFirst": {
+        "cgu": "Please read and accept the terms of use.",
+        "cgv": "Please read and accept the terms of sale."
+      },
+      "subtitleChanged": {
+        "cgu": "You had accepted version {{version}} of the terms of use. Please read the new version, then accept it to continue.",
+        "cgv": "You had accepted version {{version}} of the terms of sale. Please read the new version, then accept it to continue."
+      },
+      "refused": "Your acceptance was not recorded",
+      "accept": "I accept",
+      "signOut": "Sign out",
+      "help": "Until this text is accepted, the application stays closed. You can sign out and come back later."
+    },
+    "accepted": {
+      "title": {
+        "cgu": "Terms of use",
+        "cgv": "Terms of sale"
+      },
+      "version": "Version accepted",
+      "versionNamed": "version {{version}}",
+      "on": "Accepted on {{when}}",
+      "newerTitle": "New version",
+      "newer": "A new version {{version}} has been in force since {{date}}.",
+      "none": {
+        "cgu": "You have not accepted any version of the terms of use yet.",
+        "cgv": "You have not accepted any version of the terms of sale yet."
+      },
+      "unavailableTitle": "Terms unavailable",
+      "unavailable": "The console is not answering: the terms you accepted cannot be read at the moment. Try again in a few minutes.",
+      "helpSubscriber": "Read only. To withdraw your agreement, close your account: cancel your subscription in Subscription › Manage my subscription, then ask us to close the account.",
+      "helpOther": "Read only. To withdraw your agreement, close your account: ask your management company.",
+      "writeToSubscriber": "Write to us at {{email}}.",
+      "writeToOther": "You can also write to us at {{email}}."
+    },
+    "billing": {
+      "hint": "Required to subscribe or change plan. Version {{version}}, in force from {{date}}.",
+      "unavailable": "The terms of sale cannot be loaded at the moment: try again in a few minutes.",
+      "unticked": "Tick the terms of sale to choose a plan."
+    }
   }
 }

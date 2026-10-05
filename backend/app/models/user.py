@@ -136,6 +136,19 @@ class User(Base, TimestampMixin):
         """One place answers it, so no endpoint decides on its own."""
         return self.role in FUND_WIDE_ROLES
 
+    @property
+    def holds_the_licence(self) -> bool:
+        """Whether this account is THE SUBSCRIBER: the one that holds the licence and pays.
+
+        🔴 WRITTEN ONCE, HERE. Alice provisions the subscriber through `/internal/managers`
+        and files the licence under its id (`manager_user_id`); that account is born a
+        `manager` with no `firm_id`, because it IS the management company. A colleague
+        attached to the firm (`firm_id` set) works under that licence and never holds it,
+        and the platform's own `admin` is the publisher, not a customer. The terms of sale
+        are asked of this account and of no other.
+        """
+        return self.role == MANAGER and self.firm_id is None
+
     def __repr__(self) -> str:
         return f"<User {self.email} [{self.role}]>"
 

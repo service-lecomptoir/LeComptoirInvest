@@ -232,7 +232,15 @@ PRODUCT = "invest"
 
 
 class SignupRefused(ValueError):
-    """The console refused a sign-up and said why, in one sentence the person can act on."""
+    """The console refused a sign-up and said why, in one sentence the person can act on.
+
+    `status` is what the product answers: 400 for a field to correct, 409 when the terms
+    the page showed changed while it was being filled (the page is to be reloaded).
+    """
+
+    def __init__(self, sentence: str, status: int = 400) -> None:
+        super().__init__(sentence)
+        self.status = status
 
 
 class SignupNotAnswered(RuntimeError):
@@ -299,6 +307,8 @@ async def file_lead(payload: dict) -> dict:
             pass
         if resp.status_code == 422 and isinstance(detail, str) and detail.strip():
             raise SignupRefused(detail.strip())
+        if resp.status_code == 409 and isinstance(detail, str) and detail.strip():
+            raise SignupRefused(detail.strip(), status=409)
         logger.warning("Alice POST %s -> %s", _LEADS_PATH, resp.status_code)
         raise AliceUnavailable(_lead_unavailable())
     try:
@@ -373,3 +383,116 @@ async def invoice_pdf(user_id: UUID, invoice_id: str) -> tuple[bytes, str] | Non
     return resp.content, resp.headers.get(
         "content-disposition", 'attachment; filename="FACTURE.pdf"'
     )
+
+
+# ── Terms of use and terms of sale ────────────────────────────────────────────────────
+#
+# 🔴 ALICE HOLDS THE TEXTS AND THE PROOF; THIS PRODUCT KEEPS NOTHING (the manager, 2 Oct
+# 2026): no table, no column, no copy of a text. These calls relay, with the OUTBOUND key,
+# so that key never reaches a browser.
+#
+# ⚠️ EVERY ONE OF THEM IS FAIL-SOFT, and None always means « Alice did not answer ». What
+# a caller makes of that differs, and is decided where the caller stands: an existing
+# account goes on working (`api/v1/terms.py`), a new sign-up is refused (`api/v1/public.py`).
+
+_TERMS_PATH = "/api/v1/terms"
+
+
+class TermsReply:
+    """Alice's status code and body, for the calls where a refusal carries meaning.
+
+    ⚠️ A 404 IS NOT A FAILURE HERE: « nothing published » means no box and nothing owed,
+    and a 409 carries the sentence the page must show. Collapsing them into None, as `_call`
+    does, would make « no terms » and « Alice is down » the same answer.
+    """
+
+    __slots__ = ("status", "body")
+
+    def __init__(self, status: int, body: Any) -> None:
+        self.status = status
+        self.body = body
+
+    @property
+    def detail(self) -> str | None:
+        """Alice's own sentence for a refusal, when she gave one."""
+        found = self.body.get("detail") if isinstance(self.body, dict) else None
+        return found.strip() if isinstance(found, str) and found.strip() else None
+
+
+async def _terms_request(
+    method: str, path: str, *, params: dict | None = None, json: dict | None = None
+) -> TermsReply | None:
+    target = _target()
+    if target is None:
+        return None
+    base, headers = target
+    try:
+        async with httpx.AsyncClient(timeout=_READ_TIMEOUT, verify=_tls()) as client:
+            resp = await client.request(
+                method,
+                f"{base}{_TERMS_PATH}{path}",
+                headers=headers,
+                params=params,
+                json=json,
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Alice %s %s unreachable: %s", method, path, exc)
+        return None
+    try:
+        body = resp.json() if resp.content else None
+    except ValueError:
+        body = None
+    if resp.status_code >= 500:
+        logger.warning("Alice %s %s -> %s", method, path, resp.status_code)
+        return None
+    return TermsReply(resp.status_code, body)
+
+
+async def terms_text(
+    kind: str,
+    *,
+    language: str,
+    audience: str,
+    product: str = PRODUCT,
+    version: str | None = None,
+    newcomer: bool = False,
+) -> TermsReply | None:
+    """One text: the one in force, the one a newcomer is asked, or a named version."""
+    params: dict[str, str] = {
+        "kind": kind,
+        "product": product,
+        "audience": audience,
+        "language": language,
+    }
+    if version:
+        params["version"] = version
+    if newcomer:
+        params["newcomer"] = "true"
+    return await _terms_request("GET", "/current", params=params)
+
+
+async def terms_status(
+    account_id: UUID, *, audience: str, subscriber: bool
+) -> dict | None:
+    """What this account still owes: `{cgu, cgv}`, or None when Alice did not answer."""
+    reply = await _terms_request(
+        "GET",
+        f"/accounts/{PRODUCT}/{account_id}/status",
+        params={"audience": audience, "subscriber": "true" if subscriber else "false"},
+    )
+    if reply is None or reply.status != 200 or not isinstance(reply.body, dict):
+        return None
+    return reply.body
+
+
+async def accept_terms(payload: dict) -> TermsReply | None:
+    """Record one acceptance; Alice checks the version against the one owed."""
+    return await _terms_request("POST", "/accept", json=payload)
+
+
+async def terms_history(account_id: UUID) -> list | None:
+    """What this account accepted, most recent first; None when Alice did not answer."""
+    reply = await _terms_request("GET", f"/accounts/{PRODUCT}/{account_id}/history")
+    if reply is None or reply.status != 200 or not isinstance(reply.body, list):
+        return None
+    return reply.body
