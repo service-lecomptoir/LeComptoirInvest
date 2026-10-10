@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FileText, X } from 'lucide-react'
 import { errorMessage } from '@/api/client'
@@ -6,6 +6,7 @@ import type { TermsText } from '@/api/terms'
 import { Loading, Notice } from '@/components/common/Primitives'
 import { Button } from '@/components/ui'
 import { numericDay } from '@/lib/format'
+import { readToTheEnd } from '@/lib/terms'
 
 /** The layout of a text Alice serves as HTML: headings, paragraphs, lists, warning box, tables. */
 const TERMS_LAYOUT = [
@@ -29,8 +30,28 @@ const TERMS_LAYOUT = [
  * blockquote, hr, tables), so nothing in it can run. While she does not serve it yet, the
  * Markdown `body` (the binding text) is shown as written (`whitespace-pre-wrap`).
  */
-export function TermsBody({ text, scroll = true }: { text: TermsText; scroll?: boolean }) {
+export function TermsBody({
+  text,
+  scroll = true,
+  onReadToEnd,
+}: {
+  text: TermsText
+  scroll?: boolean
+  /** Told once the reader has reached the end of the scrolling box (or it fits whole). */
+  onReadToEnd?: () => void
+}) {
   const { t } = useTranslation()
+  const box = useRef<HTMLDivElement | null>(null)
+  const told = useRef(onReadToEnd)
+  told.current = onReadToEnd
+  const check = useCallback(() => {
+    const el = box.current
+    if (el && readToTheEnd(el.scrollTop, el.clientHeight, el.scrollHeight)) told.current?.()
+  }, [])
+  // A text that fits whole in the box is read as soon as it is shown.
+  useEffect(() => {
+    if (scroll) check()
+  }, [text, scroll, check])
   return (
     <div className="space-y-3">
       <p className="text-xs text-gray-500">
@@ -51,6 +72,9 @@ export function TermsBody({ text, scroll = true }: { text: TermsText; scroll?: b
         className={`break-words text-sm leading-relaxed text-gray-800 ${
           text.body_html ? TERMS_LAYOUT : 'whitespace-pre-wrap'
         } ${scroll ? 'max-h-[50vh] overflow-y-auto rounded-xl border border-gray-200 p-4' : ''}`}
+        tabIndex={scroll ? 0 : undefined}
+        ref={box}
+        onScroll={scroll ? check : undefined}
         {...(text.body_html
           ? { dangerouslySetInnerHTML: { __html: text.body_html } }
           : { children: text.body })}

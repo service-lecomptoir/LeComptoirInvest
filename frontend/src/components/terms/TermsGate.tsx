@@ -37,6 +37,13 @@ export function TermsGateScreen({
 }) {
   const { t } = useTranslation()
   const changed = Boolean(document.accepted_version)
+  // 🔴 READ TO THE END BEFORE ACCEPTING (the manager, 10 Oct 2026: « même sans avoir tout
+  // lu, on peut déjà accepter »). « J'accepte » waits for the reader to reach the end of
+  // the text; a new text asks again. The text read is kept rather than a flag reset by an
+  // effect: the box's own check on mount runs before any effect of this screen, and a
+  // reset there would undo it for a text that fits whole (no scroll can ever come).
+  const [readText, setReadText] = useState<TermsText | null>(null)
+  const read = !!text && readText === text
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-2xl">
@@ -62,15 +69,24 @@ export function TermsGateScreen({
                 {refusal}
               </Notice>
             )}
-            {text ? <TermsBody text={text} /> : <Loading label={t('common.loading')} />}
+            {text ? (
+              <TermsBody text={text} onReadToEnd={() => setReadText(text)} />
+            ) : (
+              <Loading label={t('common.loading')} />
+            )}
           </div>
-          <div className="flex flex-col-reverse gap-2 border-t border-gray-200 bg-gray-50 px-5 py-4 sm:flex-row sm:justify-end sm:px-8 rounded-b-2xl">
-            <Button type="button" variant="secondary" onClick={onSignOut}>
-              {t('terms.gate.signOut')}
-            </Button>
-            <Button type="button" onClick={onAccept} disabled={!text} isLoading={busy}>
-              {t('terms.gate.accept')}
-            </Button>
+          <div className="space-y-2 border-t border-gray-200 bg-gray-50 px-5 py-4 sm:px-8 rounded-b-2xl">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button type="button" variant="secondary" onClick={onSignOut}>
+                {t('terms.gate.signOut')}
+              </Button>
+              <Button type="button" onClick={onAccept} disabled={!text || !read} isLoading={busy}>
+                {t('terms.gate.accept')}
+              </Button>
+            </div>
+            {text && !read && (
+              <p className="text-xs text-gray-500 sm:text-right">{t('terms.gate.scrollToAccept')}</p>
+            )}
           </div>
         </div>
         <p className="mt-3 text-xs text-gray-500">{t('terms.gate.help')}</p>

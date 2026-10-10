@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import i18n from '@/i18n'
 import type { TermsAcceptance, TermsDocumentStatus, TermsStatus, TermsText } from '@/api/terms'
 
-import { UNTICKED, pendingDocument, termsBlock, termsGiven, type TermsBox, type TermsOverview } from '@/lib/terms'
+import { UNTICKED, pendingDocument, readToTheEnd, termsBlock, termsGiven, type TermsBox, type TermsOverview } from '@/lib/terms'
 
 import { AcceptedTermsView } from './AcceptedTerms'
 import { TermsBoxes } from './TermsBoxes'
@@ -13,6 +13,7 @@ import { TermsGateScreen } from './TermsGate'
 import { TermsBody } from './TermsReader'
 import SIGNUP_FORM from '../signup/SignupForm.tsx?raw'
 import GATE from './TermsGate.tsx?raw'
+import READER from './TermsReader.tsx?raw'
 import ROUTER from '../../router.tsx?raw'
 import PROFILE from '../../pages/profile/MyProfile.tsx?raw'
 import BILLING from '../../pages/Billing.tsx?raw'
@@ -131,6 +132,38 @@ describe('the gate', () => {
     expect(changed).toContain('Article 4 réécrit.')
     expect(changed).toContain("Ce texte n'existe pas encore dans votre langue : il est affiché en français.")
     expect(changed).toContain('Les conditions ont changé.')
+  })
+
+  it('holds « J’accepte » until the text is read to the end (10 Oct 2026)', async () => {
+    await i18n.changeLanguage('fr')
+    const page = render(
+      <TermsGateScreen kind="cgu" document={owed()} text={{ ...CGU, version: '2026-11' }} refusal={null}
+        busy={false} onAccept={() => undefined} onSignOut={() => undefined} />,
+    )
+    expect(page).toContain("Faites défiler le texte jusqu'à la fin pour pouvoir l'accepter.")
+    expect(page).toMatch(/<button[^>]*disabled[^>]*>J'accepte<\/button>/)
+    // The bottom of the box, within a few pixels, or a text that fits whole.
+    expect(readToTheEnd(0, 300, 1200)).toBe(false)
+    expect(readToTheEnd(896, 300, 1200)).toBe(true)
+    expect(readToTheEnd(0, 300, 280)).toBe(true)
+    // Read from the source: the box's check runs in an effect, which a static render does not run.
+    expect(GATE).toContain('<TermsBody text={text} onReadToEnd={() => setReadText(text)} />')
+    expect(GATE).toContain('disabled={!text || !read}')
+    expect(READER).toContain('onScroll={scroll ? check : undefined}')
+    expect(READER).toMatch(/useEffect\(\(\) => \{\s*if \(scroll\) check\(\)\s*\}, \[text, scroll, check\]\)/)
+    // The box takes the keyboard, so the end can be reached without a mouse.
+    expect(render(<TermsBody text={CGU} onReadToEnd={() => undefined} />)).toContain('tabindex="0"')
+  })
+
+  it('leaves « J’accepte » free for a short text that fits whole in the box', () => {
+    // No scroll can ever come on a box that does not overflow: the box's check on mount is
+    // the only signal. React runs that child effect BEFORE any effect of the gate, so a
+    // « read » flag reset by an effect of the gate would undo it and lock the button for
+    // good. What was read is the text itself; a new text is simply not that one.
+    expect(readToTheEnd(0, 400, 120)).toBe(true)
+    expect(GATE).toContain('const read = !!text && readText === text')
+    expect(GATE).not.toMatch(/setRead\w*\((false|null)\)/)
+    expect(GATE).not.toMatch(/useEffect\([^)]*setRead/)
   })
 })
 

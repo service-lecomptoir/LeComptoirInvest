@@ -980,6 +980,7 @@
       "refused": "Your acceptance was not recorded",
       "accept": "I accept",
       "signOut": "Sign out",
+      "scrollToAccept": "Scroll to the end of the text to be able to accept it.",
       "help": "Until this text is accepted, the application stays closed. You can sign out and come back later."
     },
     "accepted": {

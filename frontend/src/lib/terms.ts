@@ -139,3 +139,12 @@ export function useTermsOverview(attempt = 0): TermsOverview | null {
   }, [attempt])
   return overview
 }
+
+/**
+ * Has the reader reached the end of the text? (the manager, 10 Oct 2026: « même sans avoir
+ * tout lu, on peut déjà accepter »). True at the bottom of the scrolling box, within a few
+ * pixels, and at once for a text that fits whole in the box.
+ */
+export function readToTheEnd(scrollTop: number, clientHeight: number, scrollHeight: number): boolean {
+  return scrollTop + clientHeight >= scrollHeight - 8
+}

@@ -980,6 +980,7 @@
       "refused": "Votre acceptation n'a pas été enregistrée",
       "accept": "J'accepte",
       "signOut": "Se déconnecter",
+      "scrollToAccept": "Faites défiler le texte jusqu'à la fin pour pouvoir l'accepter.",
       "help": "Tant que ce texte n'est pas accepté, l'application reste fermée. Vous pouvez vous déconnecter et revenir plus tard."
     },
     "accepted": {
