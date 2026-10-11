@@ -33,8 +33,11 @@ export function AcceptedTermsView({
   const history = overview?.history
   const latest = history?.entries.find((entry) => entry.kind === kind) ?? null
   const now = overview?.status?.[kind] ?? null
-  const newer =
-    latest && now?.pending && now.version && now.version !== latest.version ? now : null
+  // 🔴 « NEWER » IS ALICE'S ANSWER, NEVER A STRING COMPARISON (the owner, 11 Oct 2026).
+  // A different version is not a later one: an account that accepted 2026-10 ahead of
+  // its date was told « une nouvelle version 2026-09 est en vigueur ». Alice orders the
+  // versions by effective date (`up_to_date`), and `pending` is its verdict.
+  const newer = latest && now?.pending && now.version ? now : null
   const subscriber = overview?.status?.subscriber ?? false
 
   return (
