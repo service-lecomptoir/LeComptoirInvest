@@ -7,8 +7,8 @@ import fr from '../../i18n/locales/fr.json'
 import en from '../../i18n/locales/en.json'
 
 /**
- * The owner, 11 Oct 2026: « Je ne vois pas la possibilité de changer d'offre comme pour
- * Immo [...] faudra les aligner. » The plans are Alice's offer, drawn as cards with their
+ * The owner, 11 Oct 2026: a plan change as on Le Comptoir Immo, in every product
+ * The plans are Alice's offer, drawn as cards with their
  * VAT and their refusals, changed through a confirmation, or asked of the team.
  */
 

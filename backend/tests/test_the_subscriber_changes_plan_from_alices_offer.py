@@ -1,7 +1,7 @@
 """The subscriber changes plan from Alice's offer (the owner, 11 Oct 2026).
 
-« Je ne vois pas la possibilité de changer d'offre comme pour Immo [...] faudra les
-aligner. » This relay serves Alice's offer (`/internal/billing/plan-offer`), her preview,
+The owner asked for a plan change as on Le Comptoir Immo, in every product.
+This relay serves Alice's offer (`/internal/billing/plan-offer`), her preview,
 her change and the request to the team; the subscriber alone acts, and each act is
 journaled. The rules (which plans, the VAT, a cap under the use refused) are Alice's.
 """

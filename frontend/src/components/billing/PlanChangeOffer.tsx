@@ -16,8 +16,7 @@ import {
 
 /**
  * The plans of THIS product as cards, and the change of plan, drawn from ALICE'S offer
- * (the owner, 11 Oct 2026: « Je ne vois pas la possibilité de changer d'offre comme pour
- * Immo [...] faudra les aligner »).
+ * (the owner, 11 Oct 2026: a plan change as on Le Comptoir Immo, in every product).
  *
  * 🔴 NOTHING IS PRICED OR DECIDED HERE. Which plans, their price before tax, the VAT of the
  * subscriber's territory, whether a cap holds what the account already has, how a plan is
@@ -267,7 +266,7 @@ function ConfirmChange({
   const refusal = preview?.refusal ?? plan.refusal
   const day = (iso: string) => new Intl.DateTimeFormat(i18n.language, { dateStyle: 'long' }).format(new Date(`${iso}T12:00:00`))
 
-  async function confirm() {
+  async function submitChange() {
     setBusy(true)
     setProblem(null)
     try {
@@ -342,7 +341,7 @@ function ConfirmChange({
         <button ref={safe} type="button" className={QUIET} onClick={onCancel}>
           {t('planChange.cancel')}
         </button>
-        <button type="button" className={PRIMARY} disabled={busy || Boolean(refusal)} onClick={() => void confirm()}>
+        <button type="button" className={PRIMARY} disabled={busy || Boolean(refusal)} onClick={() => void submitChange()}>
           {atPayment ? t('planChange.pay') : t('planChange.confirm')}
         </button>
       </div>

@@ -343,8 +343,8 @@ async def payments(user: User = Depends(current_manager)) -> list:
 
 
 # ── Changing plan, from Alice's offer (the owner, 11 Oct 2026) ────────────────────────────
-# « Je ne vois pas la possibilité de changer d'offre comme pour Immo [...] faudra les
-# aligner. » Every product draws the same page from ONE answer of Alice
+# The owner asked for a plan change as on Le Comptoir Immo, in every product.
+# Every product draws the same page from ONE answer of Alice
 # (`/internal/billing/plan-offer`, her `services/plan_change.py`): the plans, their price
 # with the VAT of the subscriber's territory, a cap under the current use refused, a
 # bespoke or beta plan asked of the team. This relay adds who asks, and nothing else.
