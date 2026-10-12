@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { CreditCard, Landmark, ExternalLink, FileText, Check } from 'lucide-react'
+import { CreditCard, Landmark, ExternalLink, FileText } from 'lucide-react'
 import { billingApi } from '@/api'
 import { apiClient } from '@/api/client'
 import { termsApi } from '@/api/terms'
@@ -16,8 +16,9 @@ import { toast } from '@/store/toast'
 import { money, day, numericDay } from '@/lib/format'
 import { termsBlock, useTermsOverview, type TermsBox } from '@/lib/terms'
 import type {
-  BillingInvoice, BillingPlan, BillingStatus, BillingSubscription, PaymentMethods,
+  BillingInvoice, BillingStatus, BillingSubscription, PaymentMethods,
 } from '@/types'
+import { PlanChangeOffer } from '@/components/billing/PlanChangeOffer'
 
 /**
  * What the manager pays to use this product, and by what means.
@@ -47,7 +48,6 @@ export default function Billing() {
   const [subscription, setSubscription] = useState<BillingSubscription | null>(null)
   const [methods, setMethods] = useState<PaymentMethods | null>(null)
   const [status, setStatus] = useState<BillingStatus | null>(null)
-  const [plans, setPlans] = useState<BillingPlan[]>([])
   const [invoices, setInvoices] = useState<BillingInvoice[]>([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
@@ -124,13 +124,11 @@ export default function Billing() {
       billingApi.mine(),
       billingApi.paymentMethods(),
       billingApi.status(),
-      billingApi.plans(),
       billingApi.invoices(),
-    ]).then(([s, m, st, p, i]) => {
+    ]).then(([s, m, st, i]) => {
       if (s.status === 'fulfilled') setSubscription(s.value.data)
       if (m.status === 'fulfilled') setMethods(m.value.data)
       if (st.status === 'fulfilled') setStatus(st.value.data)
-      if (p.status === 'fulfilled') setPlans(p.value.data)
       if (i.status === 'fulfilled') setInvoices(i.value.data)
       setLoading(false)
     })
@@ -199,41 +197,6 @@ export default function Billing() {
     }
   }
 
-  const changePlan = async (plan: BillingPlan) => {
-    // The pro rata estimate is asked for BEFORE the question: confirming a change of
-    // offer without knowing what it costs today is not confirming.
-    let estimate = ''
-    try {
-      const { data } = await billingApi.previewChange(plan.id)
-      if (data?.amount_due != null) {
-        estimate = t('billing.prorationEstimate', {
-          amount: money(data.amount_due, data.currency || 'eur'),
-        })
-      }
-    } catch {
-      /* a missing estimate does not prevent changing the offer */
-    }
-    const confirmed = await confirmDialog({
-      title: t('billing.changeTitle', { plan: plan.name }),
-      message: `${t('billing.changeMessage', {
-        plan: plan.name,
-        price: money(plan.monthly_price, methods?.currency || 'eur'),
-      })}${estimate ? ` ${estimate}` : ''}`,
-      confirmLabel: t('billing.changeConfirm'),
-    })
-    if (!confirmed) return
-    setBusy(plan.id)
-    setRefusal(null)
-    try {
-      await billingApi.changePlan(plan.id, sale)
-      toast.success(t('billing.changed'))
-      load()
-    } catch (error) {
-      setRefusal(refusalOf(error))
-    } finally {
-      setBusy(null)
-    }
-  }
 
   /** The PDF goes through the authenticated client: a bare address would return a 401. */
   const openInvoice = async (invoice: BillingInvoice) => {
@@ -418,7 +381,7 @@ export default function Billing() {
           </Card>
 
           {/* ── The offers ────────────────────────────────────────────────────── */}
-          {plans.length > 0 && (
+          {(
             <Card>
               <div className="p-5 sm:p-6 pb-3">
                 <h2 className="text-sm font-semibold text-gray-900">{t('billing.offers')}</h2>
@@ -446,48 +409,15 @@ export default function Billing() {
                   </div>
                 )}
               </div>
-              <div className="px-5 sm:px-6 pb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {plans.map((plan) => {
-                  const isCurrent = plan.name === current?.plan_name
-                  return (
-                    <div
-                      key={plan.id}
-                      className={`rounded-xl border p-4 flex flex-col ${
-                        isCurrent ? 'border-brand-teal bg-brand-teal/5' : 'border-gray-200'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold text-gray-900">{plan.name}</p>
-                        {isCurrent && (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-teal">
-                            <Check size={13} /> {t('billing.yourPlan')}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 text-lg font-semibold text-gray-900">
-                        {money(plan.monthly_price, currency)}
-                        <span className="text-sm font-normal text-gray-500"> {t('billing.monthSuffix')}</span>
-                      </p>
-                      <p className="mt-1 text-sm text-gray-600 flex-1">
-                        {plan.managed_limit != null
-                          ? t('billing.investorLimit', { count: plan.managed_limit })
-                          : t('billing.unlimitedInvestors')}
-                      </p>
-                      {!isCurrent && (
-                        <Button
-                          variant="secondary"
-                          className="mt-4"
-                          disabled={busy === plan.id || saleHold !== null}
-                          onClick={() =>
-                            status?.has_subscription ? changePlan(plan) : goToPayment(plan.id)
-                          }
-                        >
-                          {status?.has_subscription ? t('billing.switchTo') : t('billing.subscribe')}
-                        </Button>
-                      )}
-                    </div>
-                  )
-                })}
+              <div className="px-5 sm:px-6 pb-6">
+                {/* 🔴 THE PLANS ARE ALICE'S OFFER (the owner, 11 Oct 2026): cards, refusals,
+                    VAT, preview and confirmation are drawn by PlanChangeOffer. */}
+                <PlanChangeOffer
+                  saleTerms={sale}
+                  blocked={saleHold !== null}
+                  limitLabel={(limit) => (limit != null ? t('billing.investorLimit', { count: limit }) : t('billing.unlimitedInvestors'))}
+                  onChanged={load}
+                />
               </div>
             </Card>
           )}

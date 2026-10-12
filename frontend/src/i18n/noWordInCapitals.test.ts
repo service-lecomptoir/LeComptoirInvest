@@ -14,8 +14,8 @@ import fr from './locales/fr.json'
 import en from './locales/en.json'
 
 const ACRONYMS = new Set([
-  'BIC', 'CAMT', 'DPI', 'FAQ', 'HTTPS', 'IBAN', 'JSON', 'PDF', 'QR', 'RVPI', 'SEPA', 'SIREN',
-  'SIRET', 'TVA', 'TVPI', 'VAT',
+  'BIC', 'CAMT', 'DPI', 'FAQ', 'HT', 'HTTPS', 'IBAN', 'JSON', 'PDF', 'QR', 'RVPI', 'SEPA',
+  'SIREN', 'SIRET', 'TTC', 'TVA', 'TVPI', 'VAT',
 ])
 
 function flat(node: unknown, path = ''): [string, string][] {

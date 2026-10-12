@@ -2,7 +2,7 @@ import { apiClient } from './client'
 import type {
   CapitalCall, Distribution, Investor, Me, Movement, Portfolio, Project,
   Statement, SubscriptionRequest, Waterfall,
-  BillingSubscription, PaymentMethods, BillingPlan, BillingInvoice, BillingStatus,
+  BillingSubscription, PaymentMethods, BillingInvoice, BillingStatus,
   PerformanceBlock, CapitalAccountLine, ProjectValuation, LateCall, InvestorCategory,
   CamtImport, Fund, FundNetAssetValue, CallNotice, InvestorQuota, EmailLook,
 } from '@/types'
@@ -179,7 +179,6 @@ export const billingApi = {
   mine: () => apiClient.get<BillingSubscription>('/billing'),
   paymentMethods: () => apiClient.get<PaymentMethods>('/billing/payment-methods'),
   status: () => apiClient.get<BillingStatus>('/billing/status'),
-  plans: () => apiClient.get<BillingPlan[]>('/billing/plans'),
   // The refusal is SHOWN IN PLACE, next to the button: an unreachable console is
   // useful information, not a fleeting red banner at the top of the screen.
   // A plan chosen here is subscribed to: the terms of sale ticked travel with it
@@ -190,11 +189,7 @@ export const billingApi = {
   portal: () => apiClient.post<{ url?: string }>('/billing/portal', {}, { skipErrorToast: true }),
   declareTransfer: () => apiClient.post('/billing/declare-transfer', {}, { skipErrorToast: true }),
   cancelTransfer: () => apiClient.post('/billing/cancel-transfer', {}, { skipErrorToast: true }),
-  changePlan: (planId: string, sale?: SaleTicked) =>
-    apiClient.post('/billing/change-plan', { plan_id: planId, ...sale }, { skipErrorToast: true }),
-  previewChange: (planId: string) =>
-    apiClient.post<{ amount_due?: number; currency?: string }>(
-      '/billing/change-plan-preview', { plan_id: planId }, { skipErrorToast: true }),
+  // Changing plan: `components/billing/PlanChangeOffer`, from Alice's offer.
   invoices: () => apiClient.get<BillingInvoice[]>('/billing/invoices'),
   invoicePdfUrl: (id: string) => `/billing/invoices/${id}/pdf`,
 }

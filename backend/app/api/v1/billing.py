@@ -19,12 +19,17 @@ manager convinced they have paid: those raise an error.
 from __future__ import annotations
 
 import logging
+import uuid
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api.deps import current_manager
 from app.api.v1 import terms as terms_api
+from app.core import audit
+from app.database import AsyncSessionLocal
+from app.models.audit_log import AuditLog
 from app.models.user import User
 from app.services import alice_client
 from app.services.alice_client import AliceUnavailable
@@ -199,7 +204,9 @@ async def checkout(
     """
     payload: dict = {"currency": "eur"}
     if body and body.plan_id:
+        _subscriber_only(user)
         await _sale_accepted(user, request, body)
+        await _journal(user, "subscription.checkout_started", {"plan_id": body.plan_id})
         payload["plan_id"] = body.plan_id
     try:
         return (
@@ -243,6 +250,12 @@ async def cancel_transfer(user: User = Depends(current_manager)) -> dict:
 async def change_plan(
     body: _PlanIn, request: Request, user: User = Depends(current_manager)
 ) -> dict:
+    """Move the subscription to another plan, through Alice (proration by Stripe).
+
+    🔴 THE SUBSCRIBER ALONE (the owner, 11 Oct 2026), the terms of sale first (a plan is a
+    sale), and Alice's refusals relayed with her sentence: a plan whose cap is under what
+    the account holds, a bespoke or beta plan left by a click. Journaled once done."""
+    _subscriber_only(user)
     if not body.plan_id:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
@@ -250,7 +263,7 @@ async def change_plan(
         )
     await _sale_accepted(user, request, body)
     try:
-        return (
+        answer = (
             await alice_client.billing(
                 "POST",
                 "change-plan",
@@ -261,14 +274,27 @@ async def change_plan(
         )
     except AliceUnavailable as exc:
         raise _unavailable(exc)
+    await _journal(
+        user,
+        "subscription.plan_changed",
+        {
+            "plan_id": body.plan_id,
+            "from": answer.get("previous_plan_name"),
+            "to": answer.get("plan_name"),
+        },
+    )
+    return answer
 
 
 @router.post("/change-plan-preview", summary="Estimate the cost of changing plan")
 async def change_plan_preview(
     body: _PlanIn, user: User = Depends(current_manager)
 ) -> dict:
-    """The prorated amount, before committing. Degrades softly: a missing estimate beats a
+    """Alice's preview of a change, before the subscriber confirms: the card (price before
+    tax, VAT, total), the prorated amount (`proration_amount`), how and from when it
+    applies, and a refusal when there is one. Degrades softly: a missing estimate beats a
     plan-change screen nobody can open."""
+    _subscriber_only(user)
     if not body.plan_id:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
@@ -314,3 +340,102 @@ async def invoice_pdf(
 async def payments(user: User = Depends(current_manager)) -> list:
     data = await alice_client.billing("GET", "payments", user.id, strict=False)
     return data if isinstance(data, list) else []
+
+
+# ── Changing plan, from Alice's offer (the owner, 11 Oct 2026) ────────────────────────────
+# « Je ne vois pas la possibilité de changer d'offre comme pour Immo [...] faudra les
+# aligner. » Every product draws the same page from ONE answer of Alice
+# (`/internal/billing/plan-offer`, her `services/plan_change.py`): the plans, their price
+# with the VAT of the subscriber's territory, a cap under the current use refused, a
+# bespoke or beta plan asked of the team. This relay adds who asks, and nothing else.
+
+
+def _holds(user: User) -> bool:
+    """The subscriber: the account that holds the licence and pays."""
+    return bool(user.holds_the_licence)
+
+
+def _subscriber_only(user: User) -> None:
+    if not _holds(user):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            pick(
+                "Seul le compte titulaire de l'abonnement change de formule.",
+                "Only the account that holds the subscription changes plan.",
+            ),
+        )
+
+
+async def _journal(user: User, action: str, details: dict) -> None:
+    """🔴 A PLAN CHANGE IS AUDITED HERE TOO (« tout produit a son journal d'audit »): no row
+    of this product changes, so the listeners write nothing. Its own session, so a line is
+    written whatever the request's own unit of work does; never blocking."""
+    try:
+        async with AsyncSessionLocal() as session:
+            session.add(
+                AuditLog(
+                    id=uuid.uuid4(),
+                    created_at=datetime.now(UTC),
+                    user_id=str(user.id),
+                    user_email=user.email,
+                    action=action,
+                    entity_type="subscription",
+                    entity_id=str(user.id),
+                    details=details,
+                    ip_address=audit.current_actor().get("ip"),
+                )
+            )
+            await session.commit()
+    except Exception:  # noqa: BLE001 - the journal never undoes a change already made
+        logger.warning("[audit] could not record %s", action, exc_info=True)
+
+
+@router.get("/offer", summary="The plans this account may take, from Alice")
+async def plan_offer(user: User = Depends(current_manager)) -> dict:
+    """Alice's offer for this licence, and whether THIS account may act on it."""
+    try:
+        data = await alice_client.billing("GET", "plan-offer", user.id)
+    except AliceUnavailable as exc:
+        raise _unavailable(exc)
+    if not isinstance(data, dict):
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            pick(
+                "Aucune licence Le Comptoir Invest n'est rattachée à ce compte.",
+                "No Le Comptoir Invest licence is attached to this account.",
+            ),
+        )
+    return {**data, "can_change": _holds(user)}
+
+
+class _ChangeRequestIn(BaseModel):
+    plan_id: str | None = Field(default=None, max_length=64)
+    message: str | None = Field(default=None, max_length=2000)
+
+
+@router.post(
+    "/change-request", status_code=201, summary="Ask the team for a change of plan"
+)
+async def change_request(
+    body: _ChangeRequestIn, user: User = Depends(current_manager)
+) -> dict:
+    """« Demander un changement »: for a plan the team hands out (bespoke, beta tester, on
+    quotation), a free plan, or wherever online payment is off. Stored in Alice's
+    « Demandes » and announced to the team."""
+    _subscriber_only(user)
+    try:
+        answer = await alice_client.billing(
+            "POST",
+            "change-request",
+            user.id,
+            json={
+                "plan_id": body.plan_id,
+                "message": (body.message or "").strip() or None,
+                "full_name": user.account_name or user.email,
+                "email": user.email,
+            },
+        )
+    except AliceUnavailable as exc:
+        raise _unavailable(exc)
+    await _journal(user, "subscription.change_requested", {"plan_id": body.plan_id})
+    return answer or {"status": "received"}
