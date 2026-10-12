@@ -247,6 +247,7 @@ describe('the profile section', () => {
   it('is in the profile of every account that accepts, and the terms of sale on the subscription screen', () => {
     expect(PROFILE).toContain("{role !== 'admin' && <TermsOfUseSection />}")
     expect(BILLING).toContain('{subscriber && <AcceptedTerms kind="cgv" overview={terms} />}')
-    expect(BILLING).toContain('disabled={busy === plan.id || saleHold !== null}')
+    // No plan is taken while the terms of sale are owed and unticked (PlanChangeOffer).
+    expect(BILLING).toContain('blocked={saleHold !== null}')
   })
 })
