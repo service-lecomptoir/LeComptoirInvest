@@ -248,52 +248,55 @@ export default function Billing() {
             <Notice tone="bad" title={t('billing.blocked')}>{t('billing.blockedHint')}</Notice>
           )}
 
-          {/* ── The current offer ─────────────────────────────────────────────── */}
-          <Card>
-            <div className="p-5 sm:p-6">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs text-gray-500">
-                    {t('billing.currentPlan')}
-                  </p>
-                  <p className="mt-1 text-xl font-semibold text-gray-900">
-                    {current?.plan_name || t('billing.noPlan')}
-                  </p>
-                  {/* ⚠️ The licence does not carry the price; the billing status does. */}
-                  {(current?.monthly_price ?? status?.monthly_price) != null && (
-                    <p className="mt-0.5 text-sm text-gray-600">
-                      {t('billing.perMonth', {
-                        price: money((current?.monthly_price ?? status?.monthly_price) as number, currency),
-                      })}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {current?.investor_limit != null && (
-                    <Pill tone="info">{t('billing.investorLimit', { count: current.investor_limit })}</Pill>
-                  )}
-                  {status?.has_subscription ? (
-                    <Badge variant="green">{t('billing.active')}</Badge>
-                  ) : (
-                    <Badge variant="gray">{t('billing.notSubscribed')}</Badge>
-                  )}
-                </div>
+          {/* ── The plan: ONE card in every product (the owner, 12 Oct 2026) ─────── */}
+          {/* 🔴 The plan, its quantity, its next payment, then the plans by price or the
+              single request, drawn from Alice's offer by PlanChangeOffer, the same file in
+              every product; the cap, the renewal and the end are its lines now. */}
+          <PlanChangeOffer
+            saleTerms={sale}
+            blocked={saleHold !== null}
+            limitLabel={(limit) => (limit != null ? t('billing.investorLimit', { count: limit }) : t('billing.unlimitedInvestors'))}
+            onChanged={load}
+            usageLabel={(count, limit) =>
+              limit != null ? t('billing.usage', { count, limit }) : t('billing.usageUnlimited', { count })
+            }
+            badges={
+              <>
+              {status?.has_subscription ? (
+                <Badge variant="green">{t('billing.active')}</Badge>
+              ) : (
+                <Badge variant="gray">{t('billing.notSubscribed')}</Badge>
+              )}
+              </>
+            }
+            plansNote={
+              <>
+            {saleHold === 'unavailable' && (
+              <div className="mt-3">
+                <Notice tone="warn" title={t('terms.textUnavailable')}>{t('terms.billing.unavailable')}</Notice>
               </div>
-
-              {status?.current_period_end && (
-                <p className="mt-4 text-sm text-gray-600">
-                  {status.cancel_at_period_end
-                    ? t('billing.endsOn', { date: day(status.current_period_end) })
-                    : t('billing.renewsOn', { date: day(status.current_period_end) })}
-                </p>
-              )}
-              {current?.access_until && (
-                <p className="mt-1 text-sm text-gray-600">
-                  {t('billing.accessUntil', { date: day(current.access_until) })}
-                </p>
-              )}
-            </div>
-          </Card>
+            )}
+            {saleBox.state === 'ready' && subscriber && (
+              <div className="mt-3">
+                <TermsCheckbox
+                  text={saleBox.text}
+                  checked={saleTicked}
+                  onChange={setSaleTicked}
+                  label={t('terms.signup.acceptCgv')}
+                  hint={t('terms.billing.hint', {
+                    version: saleBox.text.version,
+                    date: numericDay(saleBox.text.effective_from),
+                  })}
+                />
+                {/* Never a silent grey button: what it waits for is said here. */}
+                {saleHold === 'unticked' && (
+                  <p className="mt-1 ml-6 text-xs text-amber-800">{t('terms.billing.unticked')}</p>
+                )}
+              </div>
+            )}
+              </>
+            }
+          />
 
           {/* ── The payment methods ───────────────────────────────────────────── */}
           <Card>
@@ -379,48 +382,6 @@ export default function Billing() {
               )}
             </div>
           </Card>
-
-          {/* ── The offers ────────────────────────────────────────────────────── */}
-          {(
-            <Card>
-              <div className="p-5 sm:p-6 pb-3">
-                <h2 className="text-sm font-semibold text-gray-900">{t('billing.offers')}</h2>
-                {saleHold === 'unavailable' && (
-                  <div className="mt-3">
-                    <Notice tone="warn" title={t('terms.textUnavailable')}>{t('terms.billing.unavailable')}</Notice>
-                  </div>
-                )}
-                {saleBox.state === 'ready' && subscriber && (
-                  <div className="mt-3">
-                    <TermsCheckbox
-                      text={saleBox.text}
-                      checked={saleTicked}
-                      onChange={setSaleTicked}
-                      label={t('terms.signup.acceptCgv')}
-                      hint={t('terms.billing.hint', {
-                        version: saleBox.text.version,
-                        date: numericDay(saleBox.text.effective_from),
-                      })}
-                    />
-                    {/* Never a silent grey button: what it waits for is said here. */}
-                    {saleHold === 'unticked' && (
-                      <p className="mt-1 ml-6 text-xs text-amber-800">{t('terms.billing.unticked')}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="px-5 sm:px-6 pb-6">
-                {/* 🔴 THE PLANS ARE ALICE'S OFFER (the owner, 11 Oct 2026): cards, refusals,
-                    VAT, preview and confirmation are drawn by PlanChangeOffer. */}
-                <PlanChangeOffer
-                  saleTerms={sale}
-                  blocked={saleHold !== null}
-                  limitLabel={(limit) => (limit != null ? t('billing.investorLimit', { count: limit }) : t('billing.unlimitedInvestors'))}
-                  onChanged={load}
-                />
-              </div>
-            </Card>
-          )}
 
           {/* ── The terms of sale accepted, for the subscriber ───────────────── */}
           {subscriber && <AcceptedTerms kind="cgv" overview={terms} />}

@@ -241,7 +241,7 @@ describe('the profile section', () => {
       <AcceptedTermsView kind="cgu" overview={overview({ status: status({ cgu: owed({ accepted_version: '2026-10' }), subscriber: true }) })} onRead={() => undefined} />,
     )
     expect(newer).toContain('Une nouvelle version 2026-11 est en vigueur depuis le 01/11/2026.')
-    expect(newer).toContain('Abonnement › Gérer mon abonnement')
+    expect(newer).toContain('Mon abonnement › Gérer mon abonnement')
   })
 
   it('is in the profile of every account that accepts, and the terms of sale on the subscription screen', () => {
