@@ -1,6 +1,9 @@
 import { Info } from 'lucide-react'
 import { useId, useLayoutEffect, useRef, useState } from 'react'
 
+/** How long the hover and focus of a tap come before its click, at most. */
+const TAP_GESTURE_MS = 600
+
 /** The gap kept between the bubble and the edge of the content it opens in. */
 const EDGE_GAP = 12
 
@@ -34,6 +37,14 @@ export function InfoBubble({
   align?: 'center' | 'end' | 'start'
 }) {
   const [open, setOpen] = useState(false)
+  // ⚠️ A TAP IS A HOVER, A FOCUS AND A CLICK IN A ROW (a phone sends all three): the first two
+  // open the bubble, so a click that simply toggled shut it at once and the phone never saw it
+  // (found on Market at 375 px, 31 Oct 2026). The click closes only a bubble opened before this gesture.
+  const openedAt = useRef(0)
+  const show = () => {
+    if (!open) openedAt.current = Date.now()
+    setOpen(true)
+  }
   const id = useId()
   const bubble = useRef<HTMLSpanElement>(null)
 
@@ -62,14 +73,14 @@ export function InfoBubble({
         aria-label={label}
         aria-describedby={id}
         aria-expanded={open}
-        onMouseEnter={() => setOpen(true)}
+        onMouseEnter={show}
         onMouseLeave={() => setOpen(false)}
-        onFocus={() => setOpen(true)}
+        onFocus={show}
         onBlur={() => setOpen(false)}
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          setOpen((v) => !v)
+          setOpen((v) => !v || Date.now() - openedAt.current < TAP_GESTURE_MS)
         }}
         className="text-gray-400 hover:text-gray-700 focus:outline-none focus-visible:text-gray-700 align-middle"
       >
