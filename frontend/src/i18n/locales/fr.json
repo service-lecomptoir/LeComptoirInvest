@@ -924,6 +924,10 @@
           "q": "Mes données sont-elles protégées ?",
           "a": "Chaque société de gestion ne voit que son propre registre : le serveur applique ce filtre à chaque lecture, et une lecture sans société identifiée ne renvoie rien. Les coordonnées bancaires des investisseurs sont chiffrées en base. Aucun mot de passe ne part par e-mail : vous choisissez le vôtre par un lien. Et Déconnexion ferme la session sur le serveur, pas seulement dans le navigateur."
         },
+        "processing": {
+          "q": "Qui est responsable des données de mes investisseurs ?",
+          "a": "Vous. Pour les données de vos investisseurs, votre structure est responsable du traitement et Le Comptoir agit comme sous-traitant, selon l'accord de traitement des données (art. 28 RGPD) que le titulaire de l'abonnement accepte à la souscription, puis à chaque nouvelle version. La liste à jour des sous-traitants ultérieurs se consulte dans l'application, écran Mon abonnement, sous le texte de l'accord : tout ajout vous est annoncé avant de prendre effet."
+        },
         "audit": {
           "q": "Peut-on savoir qui a fait quoi ?",
           "a": "Oui. Le produit tient un journal d'audit : qui a modifié quoi, et quand. Aucun numéro de compte bancaire n'y figure en clair. Le journal est conservé quatre-vingt-dix jours, puis purgé chaque jour."
@@ -954,7 +958,8 @@
     "readThis": "Lire ce texte",
     "names": {
       "cgu": "Conditions générales d'utilisation",
-      "cgv": "Conditions générales de vente"
+      "cgv": "Conditions générales de vente",
+      "dpa": "Accord de traitement des données"
     },
     "signup": {
       "acceptCgu": "J'accepte les conditions générales d'utilisation",
@@ -962,18 +967,21 @@
       "hint": "Obligatoire pour créer votre compte. Version {{version}}, en vigueur le {{date}}.",
       "unavailable": "Les conditions générales ne peuvent pas être chargées pour le moment : réessayez dans quelques minutes.",
       "loading": "Les conditions générales se chargent : un instant, puis envoyez à nouveau.",
-      "unticked": "Cochez les conditions générales pour envoyer la demande."
+      "unticked": "Cochez les conditions générales pour envoyer la demande.",
+      "acceptDpa": "J'ai lu et j'accepte l'accord de traitement des données"
     },
     "gate": {
       "titleChanged": "Nos conditions ont changé",
       "titleFirst": "Avant de commencer",
       "subtitleFirst": {
         "cgu": "Merci de lire et d'accepter les conditions générales d'utilisation.",
-        "cgv": "Merci de lire et d'accepter les conditions générales de vente."
+        "cgv": "Merci de lire et d'accepter les conditions générales de vente.",
+        "dpa": "Merci de lire et d'accepter l'accord de traitement des données (art. 28 RGPD) : vous êtes responsable du traitement des données de vos investisseurs, Le Comptoir en est le sous-traitant."
       },
       "subtitleChanged": {
         "cgu": "Vous aviez accepté la version {{version}} des conditions générales d'utilisation. Merci de lire la nouvelle version, puis de l'accepter pour continuer.",
-        "cgv": "Vous aviez accepté la version {{version}} des conditions générales de vente. Merci de lire la nouvelle version, puis de l'accepter pour continuer."
+        "cgv": "Vous aviez accepté la version {{version}} des conditions générales de vente. Merci de lire la nouvelle version, puis de l'accepter pour continuer.",
+        "dpa": "Vous aviez accepté la version {{version}} de l'accord de traitement des données. Merci de lire la nouvelle version, puis de l'accepter pour continuer."
       },
       "refused": "Votre acceptation n'a pas été enregistrée",
       "accept": "J'accepte",
@@ -984,7 +992,8 @@
     "accepted": {
       "title": {
         "cgu": "Conditions d'utilisation",
-        "cgv": "Conditions générales de vente"
+        "cgv": "Conditions générales de vente",
+        "dpa": "Accord de traitement des données"
       },
       "version": "Version acceptée",
       "versionNamed": "version {{version}}",
@@ -993,7 +1002,8 @@
       "newer": "Une nouvelle version {{version}} est en vigueur depuis le {{date}}.",
       "none": {
         "cgu": "Vous n'avez encore accepté aucune version des conditions générales d'utilisation.",
-        "cgv": "Vous n'avez encore accepté aucune version des conditions générales de vente."
+        "cgv": "Vous n'avez encore accepté aucune version des conditions générales de vente.",
+        "dpa": "Vous n'avez encore accepté aucune version de l'accord de traitement des données."
       },
       "unavailableTitle": "Conditions indisponibles",
       "unavailable": "La console ne répond pas : les conditions acceptées ne peuvent pas être lues pour le moment. Réessayez dans quelques minutes.",
@@ -1005,7 +1015,22 @@
     "billing": {
       "hint": "Obligatoire pour souscrire ou changer de formule. Version {{version}}, en vigueur le {{date}}.",
       "unavailable": "Les conditions générales de vente ne peuvent pas être chargées pour le moment : réessayez dans quelques minutes.",
-      "unticked": "Cochez les conditions générales de vente pour choisir une formule."
+      "unticked": "Cochez les conditions générales de vente pour choisir une formule.",
+      "unavailableDpa": "L'accord de traitement des données ne peut pas être chargé pour le moment : réessayez dans quelques minutes.",
+      "untickedDpa": "Cochez l'accord de traitement des données pour choisir une formule."
+    },
+    "readDpa": "Lire l'accord",
+    "subprocessors": {
+      "title": "Sous-traitants ultérieurs",
+      "infoLabel": "À propos des sous-traitants ultérieurs",
+      "info": "Les prestataires auxquels Le Comptoir confie une partie du traitement des données de vos investisseurs. Tout ajout vous est annoncé avant sa date d'effet, et vous pouvez vous y opposer.",
+      "line": "{{service}}, {{location}}",
+      "none": "Aucun sous-traitant ultérieur n'est déclaré.",
+      "announcedTitle": "Ajouts annoncés",
+      "from": "À partir du {{date}}",
+      "objectTo": "Pour vous opposer à un ajout, écrivez à {{email}}.",
+      "unavailableTitle": "Liste indisponible",
+      "unavailable": "La liste des sous-traitants ultérieurs ne peut pas être chargée pour le moment : réessayez dans quelques minutes."
     }
   },
   "planChange": {

@@ -924,6 +924,10 @@
           "q": "Is my data protected?",
           "a": "Each management company sees its own register only: the server applies that filter to every read, and a read with no company established returns nothing. Investors' bank details are encrypted in the database. No password is ever sent by e-mail: you choose yours through a link. And Log out closes the session on the server, not only in the browser."
         },
+        "processing": {
+          "q": "Who is responsible for my investors' data?",
+          "a": "You are. For your investors' data, your organisation is the controller and Le Comptoir acts as its processor, under the data processing agreement (art. 28 GDPR) the subscription holder accepts when subscribing, then at each new version. The up-to-date list of sub-processors can be read in the application, on the My subscription screen, under the text of the agreement: any addition is announced to you before it takes effect."
+        },
         "audit": {
           "q": "Can I tell who did what?",
           "a": "Yes. The product keeps an audit journal: who changed what, and when. No bank account number appears in it in clear. The journal is kept for ninety days, then purged every day."
@@ -954,7 +958,8 @@
     "readThis": "Read this text",
     "names": {
       "cgu": "Terms of use",
-      "cgv": "Terms of sale"
+      "cgv": "Terms of sale",
+      "dpa": "Data processing agreement"
     },
     "signup": {
       "acceptCgu": "I accept the terms of use",
@@ -962,18 +967,21 @@
       "hint": "Required to create your account. Version {{version}}, in force from {{date}}.",
       "unavailable": "The terms cannot be loaded at the moment: try again in a few minutes.",
       "loading": "The terms are loading: wait a moment, then send again.",
-      "unticked": "Tick the terms to send the request."
+      "unticked": "Tick the terms to send the request.",
+      "acceptDpa": "I have read and accept the data processing agreement"
     },
     "gate": {
       "titleChanged": "Our terms have changed",
       "titleFirst": "Before you start",
       "subtitleFirst": {
         "cgu": "Please read and accept the terms of use.",
-        "cgv": "Please read and accept the terms of sale."
+        "cgv": "Please read and accept the terms of sale.",
+        "dpa": "Please read and accept the data processing agreement (art. 28 GDPR): you are the controller of your investors' data, Le Comptoir is its processor."
       },
       "subtitleChanged": {
         "cgu": "You had accepted version {{version}} of the terms of use. Please read the new version, then accept it to continue.",
-        "cgv": "You had accepted version {{version}} of the terms of sale. Please read the new version, then accept it to continue."
+        "cgv": "You had accepted version {{version}} of the terms of sale. Please read the new version, then accept it to continue.",
+        "dpa": "You had accepted version {{version}} of the data processing agreement. Please read the new version, then accept it to continue."
       },
       "refused": "Your acceptance was not recorded",
       "accept": "I accept",
@@ -984,7 +992,8 @@
     "accepted": {
       "title": {
         "cgu": "Terms of use",
-        "cgv": "Terms of sale"
+        "cgv": "Terms of sale",
+        "dpa": "Data processing agreement"
       },
       "version": "Version accepted",
       "versionNamed": "version {{version}}",
@@ -993,7 +1002,8 @@
       "newer": "A new version {{version}} has been in force since {{date}}.",
       "none": {
         "cgu": "You have not accepted any version of the terms of use yet.",
-        "cgv": "You have not accepted any version of the terms of sale yet."
+        "cgv": "You have not accepted any version of the terms of sale yet.",
+        "dpa": "You have not accepted any version of the data processing agreement yet."
       },
       "unavailableTitle": "Terms unavailable",
       "unavailable": "The console is not answering: the terms you accepted cannot be read at the moment. Try again in a few minutes.",
@@ -1005,7 +1015,22 @@
     "billing": {
       "hint": "Required to subscribe or change plan. Version {{version}}, in force from {{date}}.",
       "unavailable": "The terms of sale cannot be loaded at the moment: try again in a few minutes.",
-      "unticked": "Tick the terms of sale to choose a plan."
+      "unticked": "Tick the terms of sale to choose a plan.",
+      "unavailableDpa": "The data processing agreement cannot be loaded at the moment: try again in a few minutes.",
+      "untickedDpa": "Tick the data processing agreement to choose a plan."
+    },
+    "readDpa": "Read the agreement",
+    "subprocessors": {
+      "title": "Sub-processors",
+      "infoLabel": "About the sub-processors",
+      "info": "The providers to which Le Comptoir entrusts part of the processing of your investors' data. Any addition is announced to you before it takes effect, and you may object to it.",
+      "line": "{{service}}, {{location}}",
+      "none": "No sub-processor is declared.",
+      "announcedTitle": "Announced additions",
+      "from": "From {{date}}",
+      "objectTo": "To object to an addition, write to {{email}}.",
+      "unavailableTitle": "List unavailable",
+      "unavailable": "The list of sub-processors cannot be loaded at the moment: try again in a few minutes."
     }
   },
   "planChange": {

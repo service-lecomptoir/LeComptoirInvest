@@ -49,8 +49,9 @@ export interface Preview {
   proration_amount?: number
 }
 
-/** The terms of sale ticked beside the plans, as each product's page holds them. */
-export type SaleTerms = { cgv?: string | null; language?: string } | false | null | undefined
+/** The terms of sale and the data processing agreement ticked beside the plans, as each
+ *  product's page holds them. */
+export type SaleTerms = { cgv?: string | null; dpa?: string | null; language?: string } | false | null | undefined
 
 /** This product's own routes, which relay Alice. */
 export interface OfferRoutes {

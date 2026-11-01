@@ -7,6 +7,7 @@ import { Loading, Notice } from '@/components/common/Primitives'
 import { Button } from '@/components/ui'
 import { numericDay } from '@/lib/format'
 import { readToTheEnd } from '@/lib/terms'
+import { Subprocessors } from './Subprocessors'
 
 /** The layout of a text Alice serves as HTML: headings, paragraphs, lists, warning box, tables. */
 const TERMS_LAYOUT = [
@@ -152,7 +153,11 @@ export function TermsReader({
               {refused}
             </Notice>
           ) : text ? (
-            <TermsBody text={text} scroll={false} />
+            <div className="space-y-4">
+              <TermsBody text={text} scroll={false} />
+              {/* Under the agreement, who else holds the data (the owner, 13 Oct 2026). */}
+              {text.kind === 'dpa' && <Subprocessors />}
+            </div>
           ) : (
             <Loading label={t('common.loading')} />
           )}

@@ -135,7 +135,36 @@ class _PlanIn(BaseModel):
     #: The version of the terms of sale the screen showed and the subscriber ticked, when
     #: Alice publishes any. See `_sale_accepted`.
     cgv: str | None = None
+    #: The version of the data processing agreement ticked beside it, on the same rule.
+    dpa: str | None = None
     language: str = "fr"
+
+
+def _owed_unreadable() -> HTTPException:
+    return HTTPException(
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        pick(
+            "Les conditions générales de vente ne peuvent pas être chargées pour le "
+            "moment : réessayez dans quelques minutes.",
+            "The terms of sale cannot be loaded at the moment: try again in a few "
+            "minutes.",
+        ),
+    )
+
+
+def _tick_required(kind: str) -> HTTPException:
+    return HTTPException(
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        pick(
+            "Acceptez l'accord de traitement des données pour changer de formule.",
+            "Accept the data processing agreement to change plan.",
+        )
+        if kind == terms_api.DPA
+        else pick(
+            "Acceptez les conditions générales de vente pour changer de formule.",
+            "Accept the terms of sale to change plan.",
+        ),
+    )
 
 
 async def _sale_accepted(user: User, request: Request, body: _PlanIn) -> None:
@@ -144,46 +173,40 @@ async def _sale_accepted(user: User, request: Request, body: _PlanIn) -> None:
     🔴 THE MANAGER, 2 OCT 2026: the subscriber accepts the terms of sale at subscription,
     a plan change included. Alice's plan change carries no terms, so the acceptance is
     recorded first (`method="plan"`), and a refusal (409, a version that changed while the
-    page was open) stops the change before it reaches the payment.
+    page was open) stops the change before it reaches the payment. 🔴 THE OWNER, 13 OCT
+    2026: the data processing agreement is ticked and recorded the same way, beside them.
 
-    ⚠️ THE SERVER CHECKS, NOT ONLY THE BOX: a change sent without the tick while Alice
-    publishes terms of sale is refused. Only the subscriber is asked; another account is
-    not the one Alice bills, and her own refusal answers it.
+    ⚠️ THE SERVER CHECKS, NOT ONLY THE BOX: a change sent without a tick while Alice
+    publishes that document is refused, BEFORE anything is recorded (no half acceptance).
+    Only the subscriber is asked; another account is not the one Alice bills, and her own
+    refusal answers it. An Alice that does not serve the agreement yet (no `dpa` in her
+    status) asks nothing of it.
     """
     if not user.holds_the_licence:
         return
-    if body.cgv:
-        await terms_api.record_acceptance(
-            user,
-            request,
-            kind=terms_api.SALE,
-            version=body.cgv,
-            language=body.language,
-            method="plan",
+    ticked = {terms_api.SALE: body.cgv, terms_api.DPA: body.dpa}
+    missing = [kind for kind in terms_api.SUBSCRIBER_KINDS if not ticked[kind]]
+    if missing:
+        owed = await alice_client.terms_status(
+            user.id, audience=terms_api.AUDIENCES[user.role], subscriber=True
         )
-        return
-    owed = await alice_client.terms_status(
-        user.id, audience=terms_api.AUDIENCES[user.role], subscriber=True
-    )
-    if owed is None:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE,
-            pick(
-                "Les conditions générales de vente ne peuvent pas être chargées pour le "
-                "moment : réessayez dans quelques minutes.",
-                "The terms of sale cannot be loaded at the moment: try again in a few "
-                "minutes.",
-            ),
-        )
-    sale = owed.get("cgv")
-    if isinstance(sale, dict) and sale.get("anything_to_accept"):
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            pick(
-                "Acceptez les conditions générales de vente pour changer de formule.",
-                "Accept the terms of sale to change plan.",
-            ),
-        )
+        if owed is None:
+            raise _owed_unreadable()
+        for kind in missing:
+            document = owed.get(kind)
+            if isinstance(document, dict) and document.get("anything_to_accept"):
+                raise _tick_required(kind)
+    for kind in terms_api.SUBSCRIBER_KINDS:
+        version = ticked[kind]
+        if version:
+            await terms_api.record_acceptance(
+                user,
+                request,
+                kind=kind,
+                version=version,
+                language=body.language,
+                method="plan",
+            )
 
 
 def _unavailable(exc: AliceUnavailable) -> HTTPException:

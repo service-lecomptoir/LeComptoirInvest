@@ -70,6 +70,8 @@ class SignupTerms(BaseModel):
 
     cgu: str | None = Field(default=None, max_length=20)
     cgv: str | None = Field(default=None, max_length=20)
+    #: The data processing agreement, ticked beside the terms of sale.
+    dpa: str | None = Field(default=None, max_length=20)
     #: The language the texts were read in: the form's.
     language: str = Field(default="fr", max_length=5)
 
@@ -155,7 +157,8 @@ def _terms_given(
     acceptance when the account is born, after the e-mail confirmation.
 
     ⚠️ NO TERMS OF SALE ON A QUOTATION: it takes no licence, and a box ticked there by an
-    old page must not travel as an acceptance of a sale nobody made.
+    old page must not travel as an acceptance of a sale nobody made. Nor the data
+    processing agreement: it is the subscriber's, on the same path.
     """
     ticked = data.terms or SignupTerms(language=current_lang())
     return {
@@ -164,6 +167,7 @@ def _terms_given(
         "account_kind": SIGNUP_AUDIENCE,
         "cgu": ticked.cgu or None,
         "cgv": None if quoted else (ticked.cgv or None),
+        "dpa": None if quoted else (ticked.dpa or None),
         "ip": ip,
         "user_agent": user_agent,
     }
@@ -397,13 +401,26 @@ async def signup_terms(
     the form then refuses to send: a sign-up that cannot record its acceptance must not go
     through (FAIL CLOSED, the other half of `api/v1/terms.py`).
 
-    ⚠️ THE TERMS OF SALE ARE ONE TEXT FOR EVERY ACCOUNT (`all`), exactly the scope Alice
-    checks a sign-up's tick against; the terms of use are the management's.
+    ⚠️ THE TERMS OF SALE AND THE DATA PROCESSING AGREEMENT ARE ONE TEXT FOR EVERY ACCOUNT
+    (`all`), exactly the scope Alice checks a sign-up's tick against; the terms of use are
+    the management's.
     """
     terms_api.known_kind(kind)
     return await terms_api.relay_text(
         kind,
         language=language,
-        audience=terms_api.EVERYONE if kind == terms_api.SALE else SIGNUP_AUDIENCE,
+        audience=terms_api.EVERYONE
+        if kind in terms_api.SUBSCRIBER_KINDS
+        else SIGNUP_AUDIENCE,
         newcomer=True,
     )
+
+
+@router.get("/terms/subprocessors")
+async def signup_subprocessors() -> dict:
+    """The sub-processors the data processing agreement authorises: shown under its text.
+
+    Public, as at Alice's: a client reads who will hold its investors' data BEFORE it
+    accepts. 503 when Alice is silent (`terms.relay_subprocessors`).
+    """
+    return await terms_api.relay_subprocessors()

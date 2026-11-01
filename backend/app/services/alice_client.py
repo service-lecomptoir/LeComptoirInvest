@@ -385,7 +385,7 @@ async def invoice_pdf(user_id: UUID, invoice_id: str) -> tuple[bytes, str] | Non
     )
 
 
-# ── Terms of use and terms of sale ────────────────────────────────────────────────────
+# ── Terms of use, terms of sale and data processing agreement ─────────────────────────
 #
 # 🔴 ALICE HOLDS THE TEXTS AND THE PROOF; THIS PRODUCT KEEPS NOTHING (the manager, 2 Oct
 # 2026): no table, no column, no copy of a text. These calls relay, with the OUTBOUND key,
@@ -474,7 +474,9 @@ async def terms_text(
 async def terms_status(
     account_id: UUID, *, audience: str, subscriber: bool
 ) -> dict | None:
-    """What this account still owes: `{cgu, cgv}`, or None when Alice did not answer."""
+    """What this account still owes: `{cgu, cgv, dpa}`, or None when Alice did not answer.
+
+    ⚠️ `dpa` IS ABSENT from an Alice deployed before 13 Oct 2026: read as nothing owed."""
     reply = await _terms_request(
         "GET",
         f"/accounts/{PRODUCT}/{account_id}/status",
@@ -488,6 +490,15 @@ async def terms_status(
 async def accept_terms(payload: dict) -> TermsReply | None:
     """Record one acceptance; Alice checks the version against the one owed."""
     return await _terms_request("POST", "/accept", json=payload)
+
+
+async def subprocessors(product: str = PRODUCT) -> TermsReply | None:
+    """The sub-processors the data processing agreement authorises, today and announced.
+
+    Public at Alice's (a client reads the list BEFORE accepting): `{current, announced,
+    contact_email}`. None when she did not answer.
+    """
+    return await _terms_request("GET", "/subprocessors", params={"product": product})
 
 
 async def terms_history(account_id: UUID) -> list | None:

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { CreditCard, Landmark, ExternalLink, FileText } from 'lucide-react'
 import { billingApi } from '@/api'
 import { apiClient } from '@/api/client'
-import { termsApi } from '@/api/terms'
+import { SUBSCRIBER_KINDS, termsApi, type SubscriberKind } from '@/api/terms'
 import { Button, Badge } from '@/components/ui'
 import {
   Card, EmptyState, Loading, Notice, PageHeader, Pill, TableWrap, Td, Th,
@@ -42,7 +42,29 @@ import { PlanChangeOffer } from '@/components/billing/PlanChangeOffer'
  * Choosing a plan is subscribing: the version ticked travels with it, and the server has
  * Alice record it before anything is paid. A colleague of the firm sees neither: they do
  * not hold the licence.
+ *
+ * 🔴 AND THE DATA PROCESSING AGREEMENT BESIDE THEM (the owner, 13 Oct 2026): a second box on
+ * the same rule, its sub-processors listed under its text, its acceptance read-only below.
+ * Asked only when the console serves it (absent from an older status: nothing is asked).
  */
+const LOADING: TermsBox = { state: 'loading' }
+const NONE: TermsBox = { state: 'none' }
+const UNAVAILABLE: TermsBox = { state: 'unavailable' }
+
+/** What the subscriber is told while a box waits, document by document. */
+const UNTICKED_HINT: Record<SubscriberKind, string> = {
+  cgv: 'terms.billing.unticked',
+  dpa: 'terms.billing.untickedDpa',
+}
+const UNAVAILABLE_HINT: Record<SubscriberKind, string> = {
+  cgv: 'terms.billing.unavailable',
+  dpa: 'terms.billing.unavailableDpa',
+}
+const ACCEPT_LABEL: Record<SubscriberKind, string> = {
+  cgv: 'terms.signup.acceptCgv',
+  dpa: 'terms.signup.acceptDpa',
+}
+
 export default function Billing() {
   const { t, i18n } = useTranslation()
   const [subscription, setSubscription] = useState<BillingSubscription | null>(null)
@@ -53,52 +75,61 @@ export default function Billing() {
   const [busy, setBusy] = useState<string | null>(null)
   const [refusal, setRefusal] = useState<string | null>(null)
 
-  // The terms of sale: what the subscriber accepted, and the text a plan change asks.
-  // Read again after a 409 (a version published while the page was open), unticked.
+  // The terms of sale and the agreement: what the subscriber accepted, and the texts a plan
+  // change asks. Read again after a 409 (a version published while the page was open),
+  // unticked.
   const language = i18n.resolvedLanguage || i18n.language || 'fr'
   const [termsRead, setTermsRead] = useState(0)
   const terms = useTermsOverview(termsRead)
   const subscriber = terms?.status?.subscriber ?? false
-  const owedVersion = terms?.status?.cgv?.version ?? null
-  const [saleBox, setSaleBox] = useState<TermsBox>({ state: 'loading' })
-  const [saleTicked, setSaleTicked] = useState(false)
+  const saleVersion = terms?.status?.cgv?.version ?? null
+  // The agreement is asked only when the status names it with a published version.
+  const dpaVersion = terms?.status?.dpa?.version ?? null
+  const [boxes, setBoxes] = useState<Record<SubscriberKind, TermsBox>>({ cgv: LOADING, dpa: LOADING })
+  const [ticked, setTicked] = useState<Record<SubscriberKind, boolean>>({ cgv: false, dpa: false })
   useEffect(() => {
     if (!terms) return
     // 🔴 « LOADING » IS NOT « NO TERMS »: the status said nothing (the console is silent),
     // so the box cannot be drawn and no plan can be chosen (fail closed, as at sign-up).
+    // One notice says it: the agreement waits behind the terms of sale.
     if (!terms.status || terms.status.unavailable) {
-      setSaleBox({ state: 'unavailable' })
+      setBoxes({ cgv: UNAVAILABLE, dpa: NONE })
       return
     }
     if (!subscriber) {
-      setSaleBox({ state: 'none' })
+      setBoxes({ cgv: NONE, dpa: NONE })
       return
     }
     let live = true
-    setSaleBox({ state: 'loading' })
-    termsApi
-      .text({ kind: 'cgv', language, version: owedVersion })
-      .then(({ data }): TermsBox => ({ state: 'ready', text: data }))
-      .catch((error): TermsBox =>
-        error?.response?.status === 404 ? { state: 'none' } : { state: 'unavailable' },
-      )
-      .then((box) => {
-        if (live) setSaleBox(box)
-      })
+    const read = (kind: SubscriberKind, version: string | null) =>
+      termsApi
+        .text({ kind, language, version })
+        .then(({ data }): TermsBox => ({ state: 'ready', text: data }))
+        .catch((error): TermsBox => (error?.response?.status === 404 ? NONE : UNAVAILABLE))
+        .then((box) => {
+          if (live) setBoxes((was) => ({ ...was, [kind]: box }))
+        })
+    setBoxes({ cgv: LOADING, dpa: dpaVersion ? LOADING : NONE })
+    void read('cgv', saleVersion)
+    if (dpaVersion) void read('dpa', dpaVersion)
     return () => {
       live = false
     }
-  }, [terms, subscriber, owedVersion, language])
+  }, [terms, subscriber, saleVersion, dpaVersion, language])
   // Why no plan may be chosen yet, or null: nothing before the status is known, then the
-  // subscriber's box. Only the subscriber is asked: the server skips the terms of sale for
-  // any other account.
+  // subscriber's boxes. Only the subscriber is asked: the server skips the terms of sale
+  // and the agreement for any other account.
   const saleHold = !terms
     ? 'loading'
     : subscriber
-      ? termsBlock({ cgu: { state: 'none' }, cgv: saleBox }, true, { cgu: false, cgv: saleTicked })
+      ? termsBlock({ cgu: NONE, ...boxes }, true, { cgu: false, ...ticked })
       : null
-  const sale = saleBox.state === 'ready' && saleTicked
-    ? { cgv: saleBox.text.version, language }
+  const versionTicked = (kind: SubscriberKind): string | null => {
+    const box = boxes[kind]
+    return box.state === 'ready' && ticked[kind] ? box.text.version : null
+  }
+  const sale = versionTicked('cgv') || versionTicked('dpa')
+    ? { cgv: versionTicked('cgv'), dpa: versionTicked('dpa'), language }
     : undefined
 
   // 🔴 THIS IS WHERE STRIPE SENDS THE PAYER BACK, and the screen must recognise it.
@@ -138,9 +169,9 @@ export default function Billing() {
   const refusalOf = (error: unknown): string => {
     const answer = (error as { response?: { status?: number; data?: { detail?: unknown } } })?.response
     if (answer?.status === 409) {
-      // The terms of sale changed while the page was open: the new text is read again,
-      // unticked, and Alice's sentence says why.
-      setSaleTicked(false)
+      // The terms of sale or the agreement changed while the page was open: the new text
+      // is read again, unticked, and Alice's sentence says why.
+      setTicked({ cgv: false, dpa: false })
       setTermsRead((n) => n + 1)
     }
     const detail = answer?.data?.detail
@@ -271,29 +302,36 @@ export default function Billing() {
             }
             plansNote={
               <>
-            {saleHold === 'unavailable' && (
-              <div className="mt-3">
-                <Notice tone="warn" title={t('terms.textUnavailable')}>{t('terms.billing.unavailable')}</Notice>
-              </div>
-            )}
-            {saleBox.state === 'ready' && subscriber && (
-              <div className="mt-3">
-                <TermsCheckbox
-                  text={saleBox.text}
-                  checked={saleTicked}
-                  onChange={setSaleTicked}
-                  label={t('terms.signup.acceptCgv')}
-                  hint={t('terms.billing.hint', {
-                    version: saleBox.text.version,
-                    date: numericDay(saleBox.text.effective_from),
-                  })}
-                />
-                {/* Never a silent grey button: what it waits for is said here. */}
-                {saleHold === 'unticked' && (
-                  <p className="mt-1 ml-6 text-xs text-amber-800">{t('terms.billing.unticked')}</p>
-                )}
-              </div>
-            )}
+            {SUBSCRIBER_KINDS.map((kind) => {
+              const box = boxes[kind]
+              if (box.state === 'unavailable') {
+                if (saleHold !== 'unavailable') return null
+                return (
+                  <div key={kind} className="mt-3">
+                    <Notice tone="warn" title={t('terms.textUnavailable')}>{t(UNAVAILABLE_HINT[kind])}</Notice>
+                  </div>
+                )
+              }
+              if (box.state !== 'ready' || !subscriber) return null
+              return (
+                <div key={kind} className="mt-3">
+                  <TermsCheckbox
+                    text={box.text}
+                    checked={ticked[kind]}
+                    onChange={(checked) => setTicked((was) => ({ ...was, [kind]: checked }))}
+                    label={t(ACCEPT_LABEL[kind])}
+                    hint={t('terms.billing.hint', {
+                      version: box.text.version,
+                      date: numericDay(box.text.effective_from),
+                    })}
+                  />
+                  {/* Never a silent grey button: what it waits for is said here. */}
+                  {saleHold === 'unticked' && !ticked[kind] && (
+                    <p className="mt-1 ml-6 text-xs text-amber-800">{t(UNTICKED_HINT[kind])}</p>
+                  )}
+                </div>
+              )
+            })}
               </>
             }
           />
@@ -383,8 +421,9 @@ export default function Billing() {
             </div>
           </Card>
 
-          {/* ── The terms of sale accepted, for the subscriber ───────────────── */}
+          {/* ── The terms of sale and the agreement accepted, for the subscriber ── */}
           {subscriber && <AcceptedTerms kind="cgv" overview={terms} />}
+          {subscriber && <AcceptedTerms kind="dpa" overview={terms} />}
 
           {/* ── The invoices ──────────────────────────────────────────────────── */}
           <Card>

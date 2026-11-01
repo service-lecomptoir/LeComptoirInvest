@@ -1,8 +1,10 @@
-"""The terms of use and the terms of sale, relayed from Alice for the signed-in account.
+"""The terms of use, the terms of sale and the data processing agreement, relayed from Alice.
 
 The manager, 2 Oct 2026: every person who signs in accepts the terms of use (`cgu`) for
 themself, at their first sign-in and again at each new version; only the subscriber, the
-account that holds the licence and pays, accepts the terms of sale (`cgv`). Alice holds
+account that holds the licence and pays, accepts the terms of sale (`cgv`). The owner,
+13 Oct 2026: the data processing agreement (`dpa`, art. 28 GDPR) is a third document,
+owed by the same subscriber on the same path as the terms of sale. Alice holds
 the texts, the versions and the proof; this product keeps nothing of its own and relays
 through its server, because the internal key never reaches a browser.
 
@@ -31,12 +33,19 @@ from app.services import alice_client
 
 router = APIRouter(prefix="/terms", tags=["terms"])
 
-#: The two documents, in Alice's words.
+#: The three documents, in Alice's words.
 USE = "cgu"
 SALE = "cgv"
-KINDS: tuple[str, ...] = (USE, SALE)
+#: The data processing agreement (art. 28 GDPR): the client is the controller, Le
+#: Comptoir its processor.
+DPA = "dpa"
+KINDS: tuple[str, ...] = (USE, SALE, DPA)
 
-#: The terms of sale are one text for every kind of account (Alice's `all`).
+#: 🔴 THE DOCUMENTS ONLY THE SUBSCRIBER ACCEPTS, in the order the gate asks them. The
+#: agreement follows exactly the rule of the terms of sale: same account, same scope.
+SUBSCRIBER_KINDS: tuple[str, ...] = (SALE, DPA)
+
+#: The terms of sale and the agreement are one text for every kind of account (`all`).
 EVERYONE = "all"
 
 #: 🔴 THE ROLE AND THE WORD ALICE'S REGISTRY NAMES IT BY. `admin` is deliberately absent:
@@ -54,8 +63,10 @@ def known_kind(kind: str) -> str:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             pick(
-                "Le document est « cgu » (utilisation) ou « cgv » (vente).",
-                "The document is « cgu » (use) or « cgv » (sale).",
+                "Le document est « cgu » (utilisation), « cgv » (vente) ou « dpa » "
+                "(accord de traitement des données).",
+                "The document is « cgu » (use), « cgv » (sale) or « dpa » (data "
+                "processing agreement).",
             ),
         )
     return kind
@@ -85,6 +96,9 @@ class TermsStatus(BaseModel):
     cgu: DocumentStatus | None = None
     #: Only for the subscriber; None for every other account.
     cgv: DocumentStatus | None = None
+    #: The data processing agreement: the subscriber's only, like the terms of sale. None
+    #: as well while Alice does not serve it (the key is absent from her answer).
+    dpa: DocumentStatus | None = None
     #: Alice did not answer. Nothing is pending, and the account goes on working.
     unavailable: bool = False
     #: This account holds the licence (`User.holds_the_licence`): the screens show it the
@@ -122,6 +136,7 @@ async def my_terms_status(user: User = Depends(current_user)) -> TermsStatus:
     return TermsStatus(
         cgu=_document(raw.get("cgu")),
         cgv=_document(raw.get("cgv")) if subscriber else None,
+        dpa=_document(raw.get("dpa")) if subscriber else None,
         subscriber=subscriber,
     )
 
@@ -167,11 +182,63 @@ async def relay_text(
     )
     if reply is None:
         raise _terms_unavailable()
-    if reply.status == 404:
+    if reply.status == 404 or (reply.status == 422 and kind == DPA):
+        # ⚠️ A 422 ON THE AGREEMENT IS AN ALICE THAT DOES NOT KNOW IT YET (deployed before
+        # 13 Oct 2026): nothing is published, so nothing is asked, as for its absence
+        # from the status. Read as a silence, it would close the sign-up to everyone.
         raise _nothing_published()
     if reply.status != 200 or not isinstance(reply.body, dict):
         raise _terms_unavailable()
     return reply.body
+
+
+#: What a sub-processor's line shows: Alice's own fields, nothing added.
+SUBPROCESSOR_FIELDS: tuple[str, ...] = (
+    "name",
+    "service",
+    "data",
+    "location",
+    "safeguards",
+    "products_label",
+    "website",
+    "effective_from",
+    "ended_on",
+)
+
+
+def _subprocessor_rows(raw: object) -> list[dict]:
+    if not isinstance(raw, list):
+        return []
+    return [
+        {key: row.get(key) for key in SUBPROCESSOR_FIELDS}
+        for row in raw
+        if isinstance(row, dict) and row.get("name")
+    ]
+
+
+async def relay_subprocessors() -> dict:
+    """The sub-processors the agreement authorises, as Alice lists them for this product.
+
+    🔴 THE SAME FALLBACK AS THE TEXT: 503 when Alice is silent, and the screen then says it
+    cannot show the list, never « no sub-processor ».
+    """
+    reply = await alice_client.subprocessors()
+    if reply is None or reply.status != 200 or not isinstance(reply.body, dict):
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            pick(
+                "La liste des sous-traitants ultérieurs ne peut pas être chargée pour le "
+                "moment : réessayez dans quelques minutes.",
+                "The list of sub-processors cannot be loaded at the moment: try again in "
+                "a few minutes.",
+            ),
+        )
+    contact = reply.body.get("contact_email")
+    return {
+        "current": _subprocessor_rows(reply.body.get("current")),
+        "announced": _subprocessor_rows(reply.body.get("announced")),
+        "contact_email": contact if isinstance(contact, str) and contact else None,
+    }
 
 
 @router.get("/text")
@@ -194,7 +261,7 @@ async def read_terms_text(
         kind,
         language=language,
         audience=audience
-        or (EVERYONE if kind == SALE else (audience_of(user) or EVERYONE)),
+        or (EVERYONE if kind in SUBSCRIBER_KINDS else (audience_of(user) or EVERYONE)),
         product=product or alice_client.PRODUCT,
         version=version,
     )
@@ -205,6 +272,18 @@ class AcceptIn(BaseModel):
     #: The version the screen SHOWED. Alice refuses it (409) when it is not the one owed.
     version: str = Field(max_length=20)
     language: str = Field(default="fr", max_length=5)
+
+
+def _subscriber_alone(kind: str) -> str:
+    if kind == DPA:
+        return pick(
+            "Seul le titulaire de l'abonnement accepte l'accord de traitement des données.",
+            "Only the subscription holder accepts the data processing agreement.",
+        )
+    return pick(
+        "Seul le titulaire de l'abonnement accepte les conditions générales de vente.",
+        "Only the subscription holder accepts the terms of sale.",
+    )
 
 
 def _not_recorded() -> HTTPException:
@@ -236,14 +315,8 @@ async def record_acceptance(
                 "This account publishes the terms: it has nothing to accept.",
             ),
         )
-    if kind == SALE and not user.holds_the_licence:
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN,
-            pick(
-                "Seul le titulaire de l'abonnement accepte les conditions générales de vente.",
-                "Only the subscription holder accepts the terms of sale.",
-            ),
-        )
+    if kind in SUBSCRIBER_KINDS and not user.holds_the_licence:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, _subscriber_alone(kind))
     reply = await alice_client.accept_terms(
         {
             "account_product": alice_client.PRODUCT,

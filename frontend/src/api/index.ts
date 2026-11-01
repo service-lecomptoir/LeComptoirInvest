@@ -162,9 +162,13 @@ export const statementsApi = {
     }),
 }
 
-/** The version of the terms of sale ticked on the plan screen, and its language. */
+/**
+ * The versions of the terms of sale and of the data processing agreement ticked on the plan
+ * screen (null for a box that was not there), and their language.
+ */
 export interface SaleTicked {
-  cgv: string
+  cgv: string | null
+  dpa: string | null
   language: string
 }
 

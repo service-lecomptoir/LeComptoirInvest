@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
-  termsApi, type TermsDocumentStatus, type TermsHistory, type TermsKind, type TermsStatus,
-  type TermsText,
+  SUBSCRIBER_KINDS, termsApi, type Subprocessors, type TermsDocumentStatus, type TermsHistory,
+  type TermsKind, type TermsStatus, type TermsText,
 } from '@/api/terms'
 
 /**
@@ -26,11 +26,14 @@ export type TermsBox =
 
 export type Ticked = Record<TermsKind, boolean>
 
-export const UNTICKED: Ticked = { cgu: false, cgv: false }
+export const UNTICKED: Ticked = { cgu: false, cgv: false, dpa: false }
 
-/** The documents a sign-up is asked: the terms of sale only with a catalogue plan. */
+/**
+ * The documents a sign-up is asked: the terms of sale and the data processing agreement
+ * only with a catalogue plan (a quotation takes no licence).
+ */
 export function asked(withSale: boolean): TermsKind[] {
-  return withSale ? ['cgu', 'cgv'] : ['cgu']
+  return withSale ? ['cgu', ...SUBSCRIBER_KINDS] : ['cgu']
 }
 
 /**
@@ -57,26 +60,29 @@ export function termsGiven(
   withSale: boolean,
   ticked: Ticked,
   language: string,
-): { cgu: string | null; cgv: string | null; language: string } {
+): { cgu: string | null; cgv: string | null; dpa: string | null; language: string } {
   const version = (kind: TermsKind) => {
     const box = boxes[kind]
     return asked(withSale).includes(kind) && box.state === 'ready' && ticked[kind]
       ? box.text.version
       : null
   }
-  return { cgu: version('cgu'), cgv: version('cgv'), language }
+  return { cgu: version('cgu'), cgv: version('cgv'), dpa: version('dpa'), language }
+}
+
+const ALL_LOADING: Record<TermsKind, TermsBox> = {
+  cgu: { state: 'loading' },
+  cgv: { state: 'loading' },
+  dpa: { state: 'loading' },
 }
 
 /** The texts a person signing up is asked, in the form's language. `attempt` reads them
  *  again (after a 409: a version published while the form was open). */
 export function useSignupTerms(language: string, attempt = 0): Record<TermsKind, TermsBox> {
-  const [boxes, setBoxes] = useState<Record<TermsKind, TermsBox>>({
-    cgu: { state: 'loading' },
-    cgv: { state: 'loading' },
-  })
+  const [boxes, setBoxes] = useState<Record<TermsKind, TermsBox>>(ALL_LOADING)
   useEffect(() => {
     let live = true
-    setBoxes({ cgu: { state: 'loading' }, cgv: { state: 'loading' } })
+    setBoxes(ALL_LOADING)
     const read = (kind: TermsKind) =>
       termsApi
         .forSignup(kind, language)
@@ -89,6 +95,7 @@ export function useSignupTerms(language: string, attempt = 0): Record<TermsKind,
         })
     void read('cgu')
     void read('cgv')
+    void read('dpa')
     return () => {
       live = false
     }
@@ -96,12 +103,15 @@ export function useSignupTerms(language: string, attempt = 0): Record<TermsKind,
   return boxes
 }
 
-/** The document the gate asks first: the terms of use, then the terms of sale. */
+/**
+ * The document the gate asks first: the terms of use, then the terms of sale, then the
+ * data processing agreement (one at a time).
+ */
 export function pendingDocument(
   status: TermsStatus | null,
 ): { kind: TermsKind; document: TermsDocumentStatus } | null {
   if (!status || status.unavailable) return null
-  for (const kind of ['cgu', 'cgv'] as const) {
+  for (const kind of ['cgu', ...SUBSCRIBER_KINDS] as const) {
     const document = status[kind]
     if (document?.pending && document.version) return { kind, document }
   }
@@ -147,4 +157,33 @@ export function useTermsOverview(attempt = 0): TermsOverview | null {
  */
 export function readToTheEnd(scrollTop: number, clientHeight: number, scrollHeight: number): boolean {
   return scrollTop + clientHeight >= scrollHeight - 8
+}
+
+/**
+ * The sub-processors the data processing agreement authorises, as the console lists them.
+ *
+ * ⚠️ A FAILED READ IS « UNAVAILABLE », NEVER « NO SUB-PROCESSOR »: the screen must not tell
+ * a client nobody else holds its investors' data because the console was slow.
+ */
+export type SubprocessorsState =
+  | { state: 'loading' }
+  | { state: 'unavailable' }
+  | { state: 'ready'; list: Subprocessors }
+
+export function useSubprocessors(): SubprocessorsState {
+  const [found, setFound] = useState<SubprocessorsState>({ state: 'loading' })
+  useEffect(() => {
+    let live = true
+    termsApi
+      .subprocessors()
+      .then(({ data }): SubprocessorsState => ({ state: 'ready', list: data }))
+      .catch((): SubprocessorsState => ({ state: 'unavailable' }))
+      .then((next) => {
+        if (live) setFound(next)
+      })
+    return () => {
+      live = false
+    }
+  }, [])
+  return found
 }

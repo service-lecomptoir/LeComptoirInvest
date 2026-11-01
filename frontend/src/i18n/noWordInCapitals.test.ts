@@ -14,7 +14,7 @@ import fr from './locales/fr.json'
 import en from './locales/en.json'
 
 const ACRONYMS = new Set([
-  'BIC', 'CAMT', 'DPI', 'FAQ', 'HT', 'HTTPS', 'IBAN', 'JSON', 'PDF', 'QR', 'RVPI', 'SEPA',
+  'BIC', 'CAMT', 'DPI', 'FAQ', 'GDPR', 'HT', 'HTTPS', 'IBAN', 'JSON', 'PDF', 'QR', 'RGPD', 'RVPI', 'SEPA',
   'SIREN', 'SIRET', 'TTC', 'TVA', 'TVPI', 'VAT',
 ])
 

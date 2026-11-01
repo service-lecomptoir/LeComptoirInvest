@@ -1,7 +1,9 @@
-"""The terms of use and of sale are asked, accepted and read back through Alice.
+"""The terms of use, of sale and the data processing agreement go through Alice.
 
 The manager, 2 Oct 2026: every account that signs in accepts the terms of use for itself,
 the subscriber alone accepts the terms of sale, and Alice holds the texts and the proof.
+The owner, 13 Oct 2026: the data processing agreement (`dpa`) follows the terms of sale
+exactly: the same subscriber, the same scope, the same path.
 This product relays, with its OUTBOUND key, and keeps nothing.
 
 🔴 WHAT IS GUARDED HERE:
@@ -15,7 +17,10 @@ This product relays, with its OUTBOUND key, and keeps nothing.
   * 🔴 AN ALICE OUTAGE LOCKS NOBODY OUT (status `unavailable`, nothing pending), and
     refuses a new sign-up (503): fail open for the accounts, closed for the door;
   * the platform's operator is never asked;
-  * a plan change accepts the terms of sale first, and is stopped by a refusal.
+  * a plan change accepts the terms of sale first, and is stopped by a refusal;
+  * the agreement: ticked at the sign-up and at a plan change, refused to anyone but the
+    subscriber, relayed in the status, its sub-processors listed (503 when Alice is
+    silent), and nothing asked of it by an Alice that does not serve it yet.
 """
 
 from __future__ import annotations
@@ -148,7 +153,12 @@ async def test_the_sign_up_hands_alice_the_ticks_and_the_browser(client, alice):
         "/api/v1/public/access-request",
         json={
             **_SIGNUP,
-            "terms": {"cgu": "2026-10", "cgv": "2026-09", "language": "en"},
+            "terms": {
+                "cgu": "2026-10",
+                "cgv": "2026-09",
+                "dpa": "2026-10",
+                "language": "en",
+            },
         },
         headers=FORWARDED,
     )
@@ -162,6 +172,7 @@ async def test_the_sign_up_hands_alice_the_ticks_and_the_browser(client, alice):
         "account_kind": "manager",
         "cgu": "2026-10",
         "cgv": "2026-09",
+        "dpa": "2026-10",
         "ip": "203.0.113.9",
         "user_agent": BROWSER,
     }
@@ -176,13 +187,19 @@ async def test_a_quotation_carries_no_terms_of_sale(client, alice):
             **_SIGNUP,
             "profile": public.MANAGEMENT_COMPANY,
             "message": "Quatre véhicules.",
-            "terms": {"cgu": "2026-10", "cgv": "2026-09", "language": "fr"},
+            "terms": {
+                "cgu": "2026-10",
+                "cgv": "2026-09",
+                "dpa": "2026-10",
+                "language": "fr",
+            },
         },
         headers=FORWARDED,
     )
     sent = json.loads(_lead(seen).content)
     assert sent["terms"]["cgu"] == "2026-10"
     assert sent["terms"]["cgv"] is None, "a quotation takes no licence"
+    assert sent["terms"]["dpa"] is None, "nor the subscriber's agreement"
 
 
 async def test_a_sign_up_without_the_box_is_refused_in_alices_words(client, alice):
@@ -196,6 +213,7 @@ async def test_a_sign_up_without_the_box_is_refused_in_alices_words(client, alic
     assert resp.json()["detail"] == refusal
     sent = json.loads(_lead(seen).content)
     assert sent["terms"]["cgu"] is None and sent["terms"]["cgv"] is None
+    assert sent["terms"]["dpa"] is None
 
 
 async def test_terms_changed_during_the_sign_up_are_a_409(client, alice):
@@ -239,6 +257,13 @@ async def test_the_form_reads_the_text_a_newcomer_is_asked(client, alice):
     assert seen[-1].url.params["audience"] == "all", (
         "one text of sale for every account"
     )
+    await client.get("/api/v1/public/terms", params={"kind": "dpa"})
+    asked = seen[-1].url.params
+    assert (asked["kind"], asked["audience"], asked["newcomer"]) == (
+        "dpa",
+        "all",
+        "true",
+    ), "the agreement is asked like the terms of sale"
 
 
 async def test_nothing_published_is_no_box(client, alice):
@@ -246,6 +271,54 @@ async def test_nothing_published_is_no_box(client, alice):
     answers[f"{TERMS}/current"] = httpx.Response(404, json={"detail": "Aucune version"})
     resp = await client.get("/api/v1/public/terms", params={"kind": "cgv"})
     assert resp.status_code == 404
+
+
+async def test_an_alice_that_does_not_know_the_agreement_asks_nothing(client, alice):
+    """Alice deployed before 13 Oct 2026 refuses the word (422): no box, never a 503
+    that would close the sign-up to everyone."""
+    _, answers = alice
+    answers[f"{TERMS}/current"] = httpx.Response(422, json={"detail": "Le document"})
+    resp = await client.get("/api/v1/public/terms", params={"kind": "dpa"})
+    assert resp.status_code == 404
+    resp = await client.get("/api/v1/public/terms", params={"kind": "cgv"})
+    assert resp.status_code == 503, "only the agreement is read that way"
+
+
+async def test_the_sub_processors_are_relayed_with_their_fallback(client, alice):
+    seen, answers = alice
+    row = {
+        "name": "OVHcloud",
+        "service": "Hébergement",
+        "data": "Toutes les données du service",
+        "location": "France",
+        "safeguards": None,
+        "products_label": "Tous les produits",
+        "website": "https://www.ovhcloud.com",
+        "effective_from": "2026-01-01",
+        "ended_on": None,
+        "internal_note": "never relayed",
+    }
+    announced = {**row, "name": "Brevo", "effective_from": "2026-11-15"}
+    answers[f"{TERMS}/subprocessors"] = httpx.Response(
+        200,
+        json={
+            "current": [row],
+            "announced": [announced],
+            "contact_email": "dpo@example.org",
+        },
+    )
+    resp = await client.get("/api/v1/public/terms/subprocessors")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert [r["name"] for r in body["current"]] == ["OVHcloud"]
+    assert body["announced"][0]["effective_from"] == "2026-11-15"
+    assert "internal_note" not in body["current"][0]
+    assert body["contact_email"] == "dpo@example.org"
+    assert seen[-1].url.params["product"] == "invest"
+
+    answers[f"{TERMS}/subprocessors"] = httpx.ConnectError("down")
+    resp = await client.get("/api/v1/public/terms/subprocessors")
+    assert resp.status_code == 503, "never « no sub-processor » for a silent Alice"
 
 
 # ── 2. Accepting ───────────────────────────────────────────────────────────────────────
@@ -309,6 +382,29 @@ async def test_the_terms_of_sale_are_the_subscribers_alone(client, db, alice):
     )
 
 
+async def test_the_agreement_is_the_subscribers_alone(client, db, alice):
+    seen, answers = alice
+    answers[f"{TERMS}/accept"] = httpx.Response(201, json={"recorded": True})
+    subscriber = await _user(db, MANAGER)
+    colleague = await _user(db, MANAGER, firm_id=subscriber.id)
+    investor = await _user(db, INVESTOR, firm_id=subscriber.id)
+    body = {"kind": "dpa", "version": "2026-10", "language": "fr"}
+    for somebody_else in (colleague, investor):
+        resp = await client.post(
+            "/api/v1/terms/accept", json=body, headers=_auth(somebody_else)
+        )
+        assert resp.status_code == 403, somebody_else.role
+        assert "accord de traitement des données" in resp.json()["detail"]
+    assert not seen, "nothing reaches Alice for an account that does not pay"
+
+    resp = await client.post(
+        "/api/v1/terms/accept", json=body, headers=_auth(subscriber)
+    )
+    assert resp.status_code == 201
+    sent = json.loads(seen[-1].content)
+    assert (sent["kind"], sent["audience"], sent["method"]) == ("dpa", "all", "update")
+
+
 async def test_a_stale_page_is_told_in_alices_words(client, db, alice):
     _, answers = alice
     manager = await _user(db, MANAGER)
@@ -354,6 +450,9 @@ async def test_a_new_version_is_pending_and_accepting_it_unblocks(client, db, al
     assert body["cgu"]["pending"] is True and body["cgu"]["version"] == "2026-11"
     assert body["cgu"]["accepted_version"] == "2026-10"
     assert body["cgv"]["pending"] is False
+    assert body["dpa"] is None, (
+        "an Alice that does not serve the agreement asks nothing"
+    )
     assert body["subscriber"] is True
     assert seen[-1].url.params["subscriber"] == "true"
     assert seen[-1].url.params["audience"] == "manager"
@@ -367,6 +466,26 @@ async def test_a_new_version_is_pending_and_accepting_it_unblocks(client, db, al
     )
     body = (await client.get("/api/v1/terms/status", headers=_auth(manager))).json()
     assert body["cgu"]["pending"] is False
+
+
+async def test_the_agreement_owed_is_in_the_subscribers_status_only(client, db, alice):
+    _, answers = alice
+    subscriber = await _user(db, MANAGER)
+    colleague = await _user(db, MANAGER, firm_id=subscriber.id)
+    owed = {
+        "cgu": _document("2026-10", up_to_date=True, accepted="2026-10"),
+        "cgv": _document("2026-09", up_to_date=True, accepted="2026-09"),
+        "dpa": {**_document("2026-10", up_to_date=False), "audience": "all"},
+    }
+    answers[_status_path(subscriber)] = httpx.Response(200, json=owed)
+    body = (await client.get("/api/v1/terms/status", headers=_auth(subscriber))).json()
+    assert body["dpa"]["pending"] is True and body["dpa"]["version"] == "2026-10"
+    assert body["cgv"]["pending"] is False
+
+    # Even were Alice to send it, an account that does not pay is never shown it.
+    answers[_status_path(colleague)] = httpx.Response(200, json=owed)
+    body = (await client.get("/api/v1/terms/status", headers=_auth(colleague))).json()
+    assert body["dpa"] is None and body["cgv"] is None
 
 
 async def test_only_the_subscriber_is_asked_the_terms_of_sale(client, db, alice):
@@ -393,7 +512,13 @@ async def test_an_outage_locks_nobody_out(client, db, alice):
     manager = await _user(db, MANAGER)
     answers[_status_path(manager)] = httpx.ConnectError("down")
     body = (await client.get("/api/v1/terms/status", headers=_auth(manager))).json()
-    assert body == {"cgu": None, "cgv": None, "unavailable": True, "subscriber": True}
+    assert body == {
+        "cgu": None,
+        "cgv": None,
+        "dpa": None,
+        "unavailable": True,
+        "subscriber": True,
+    }
 
     answers[f"{TERMS}/accounts/invest/{manager.id}/history"] = httpx.Response(503)
     body = (await client.get("/api/v1/terms/history", headers=_auth(manager))).json()
@@ -421,7 +546,13 @@ async def test_the_operator_is_never_asked(client, db, alice):
     seen, _ = alice
     admin = await _user(db, ADMIN)
     body = (await client.get("/api/v1/terms/status", headers=_auth(admin))).json()
-    assert body == {"cgu": None, "cgv": None, "unavailable": False, "subscriber": False}
+    assert body == {
+        "cgu": None,
+        "cgv": None,
+        "dpa": None,
+        "unavailable": False,
+        "subscriber": False,
+    }
     resp = await client.post(
         "/api/v1/terms/accept",
         json={"kind": "cgu", "version": "2026-10", "language": "fr"},
@@ -467,15 +598,78 @@ async def test_a_plan_change_accepts_the_terms_of_sale_first(client, db, alice):
     answers[change] = httpx.Response(200, json={"changed": True})
     resp = await client.post(
         "/api/v1/billing/change-plan",
-        json={"plan_id": "plan-pro", "cgv": "2026-09", "language": "fr"},
+        json={
+            "plan_id": "plan-pro",
+            "cgv": "2026-09",
+            "dpa": "2026-10",
+            "language": "fr",
+        },
         headers=_auth(subscriber),
     )
     assert resp.status_code == 200, resp.text
     paths = [r.url.path for r in seen]
-    assert paths == [f"{TERMS}/accept", change], "the acceptance before the change"
+    assert paths == [f"{TERMS}/accept", f"{TERMS}/accept", change], (
+        "both acceptances before the change"
+    )
     sent = json.loads(seen[0].content)
     assert (sent["kind"], sent["version"], sent["method"]) == ("cgv", "2026-09", "plan")
     assert sent["ip_address"] == "203.0.113.9"
+    sent = json.loads(seen[1].content)
+    assert (sent["kind"], sent["version"], sent["method"], sent["audience"]) == (
+        "dpa",
+        "2026-10",
+        "plan",
+        "all",
+    )
+
+
+async def test_a_plan_change_asks_no_agreement_alice_does_not_serve(client, db, alice):
+    seen, answers = alice
+    subscriber = await _user(db, MANAGER)
+    change = f"/api/v1/internal/billing/change-plan/{subscriber.id}"
+    answers[f"{TERMS}/accept"] = httpx.Response(201, json={"recorded": True})
+    answers[change] = httpx.Response(200, json={"changed": True})
+    # An Alice deployed before 13 Oct 2026: no `dpa` in her status.
+    answers[_status_path(subscriber)] = httpx.Response(
+        200,
+        json={
+            "cgu": _document("2026-10", up_to_date=True, accepted="2026-10"),
+            "cgv": _document("2026-09", up_to_date=True, accepted="2026-09"),
+        },
+    )
+    resp = await client.post(
+        "/api/v1/billing/change-plan",
+        json={"plan_id": "plan-pro", "cgv": "2026-09", "language": "fr"},
+        headers=_auth(subscriber),
+    )
+    assert resp.status_code == 200, resp.text
+    assert change in [r.url.path for r in seen]
+
+
+async def test_a_plan_change_without_the_agreement_records_nothing(client, db, alice):
+    seen, answers = alice
+    subscriber = await _user(db, MANAGER)
+    change = f"/api/v1/internal/billing/change-plan/{subscriber.id}"
+    answers[f"{TERMS}/accept"] = httpx.Response(201, json={"recorded": True})
+    answers[change] = httpx.Response(200, json={"changed": True})
+    answers[_status_path(subscriber)] = httpx.Response(
+        200,
+        json={
+            "cgu": _document("2026-10", up_to_date=True, accepted="2026-10"),
+            "cgv": _document("2026-09", up_to_date=True, accepted="2026-09"),
+            "dpa": {**_document("2026-10", up_to_date=False), "audience": "all"},
+        },
+    )
+    resp = await client.post(
+        "/api/v1/billing/change-plan",
+        json={"plan_id": "plan-pro", "cgv": "2026-09", "language": "fr"},
+        headers=_auth(subscriber),
+    )
+    assert resp.status_code == 422
+    assert "accord de traitement des données" in resp.json()["detail"]
+    paths = [r.url.path for r in seen]
+    assert f"{TERMS}/accept" not in paths, "no half acceptance: the CGV is not recorded"
+    assert change not in paths, "the plan never changed"
 
 
 async def test_a_plan_change_is_stopped_by_a_refusal_or_a_missing_tick(
@@ -490,7 +684,12 @@ async def test_a_plan_change_is_stopped_by_a_refusal_or_a_missing_tick(
     )
     resp = await client.post(
         "/api/v1/billing/change-plan",
-        json={"plan_id": "plan-pro", "cgv": "2026-01", "language": "fr"},
+        json={
+            "plan_id": "plan-pro",
+            "cgv": "2026-01",
+            "dpa": "2026-10",
+            "language": "fr",
+        },
         headers=_auth(subscriber),
     )
     assert resp.status_code == 409

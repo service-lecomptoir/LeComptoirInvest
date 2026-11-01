@@ -1,7 +1,8 @@
 import { apiClient } from './client'
 
 /**
- * The terms of use (`cgu`) and the terms of sale (`cgv`), as Alice holds them.
+ * The terms of use (`cgu`), the terms of sale (`cgv`) and the data processing agreement
+ * (`dpa`, art. 28 GDPR, the owner 13 Oct 2026), as Alice holds them.
  *
  * 🔴 THROUGH THIS PRODUCT'S SERVER, NEVER TO ALICE DIRECTLY: recording an acceptance needs
  * the internal key, and a key in a bundle is a key everyone has. This product keeps no
@@ -10,7 +11,11 @@ import { apiClient } from './client'
  * ⚠️ EVERY CALL SKIPS THE GLOBAL TOAST: each screen says the refusal in place (a stale
  * version, a console that does not answer), where the person can act on it.
  */
-export type TermsKind = 'cgu' | 'cgv'
+export type TermsKind = 'cgu' | 'cgv' | 'dpa'
+
+/** The documents only the subscriber accepts, in the order the gate asks them. */
+export const SUBSCRIBER_KINDS = ['cgv', 'dpa'] as const
+export type SubscriberKind = (typeof SUBSCRIBER_KINDS)[number]
 
 /** One text, in the reader's language or, failing that, in French (`fell_back`). */
 export interface TermsText {
@@ -54,6 +59,11 @@ export interface TermsStatus {
   cgu: TermsDocumentStatus | null
   /** The subscriber's only. */
   cgv: TermsDocumentStatus | null
+  /**
+   * The data processing agreement, the subscriber's only like the terms of sale. Absent or
+   * null while the console does not serve it: nothing is asked.
+   */
+  dpa?: TermsDocumentStatus | null
   /** The console did not answer: nothing is asked, the application opens. */
   unavailable: boolean
   /** This account holds the licence. */
@@ -88,6 +98,28 @@ export interface TermsTextQuery {
   audience?: string | null
 }
 
+/** One sub-processor, as Alice lists it (her words, in French). */
+export interface Subprocessor {
+  name: string
+  service: string
+  data: string
+  location: string
+  safeguards: string | null
+  products_label: string
+  website: string | null
+  /** A calendar day, `yyyy-MM-dd`: from when it receives data. */
+  effective_from: string
+  /** A calendar day: when it stops, when its withdrawal is announced. */
+  ended_on: string | null
+}
+
+/** The sub-processors the agreement authorises: today's, and the additions announced. */
+export interface Subprocessors {
+  current: Subprocessor[]
+  announced: Subprocessor[]
+  contact_email: string | null
+}
+
 const quiet = { skipErrorToast: true }
 
 export const termsApi = {
@@ -109,4 +141,6 @@ export const termsApi = {
   /** What a person signing up is asked: no session. 404: no box; 503: no sign-up. */
   forSignup: (kind: TermsKind, language: string) =>
     apiClient.get<TermsText>('/public/terms', { ...quiet, params: { kind, language } }),
+  /** The sub-processors, public like the text: shown under the agreement. 503: say so. */
+  subprocessors: () => apiClient.get<Subprocessors>('/public/terms/subprocessors', quiet),
 }

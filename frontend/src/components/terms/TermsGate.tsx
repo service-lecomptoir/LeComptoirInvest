@@ -10,6 +10,7 @@ import { LogoMark } from '@/components/common/Logo'
 import { Loading, Notice } from '@/components/common/Primitives'
 import { Button, Spinner } from '@/components/ui'
 import { useAuthStore } from '@/store/authStore'
+import { Subprocessors } from './Subprocessors'
 import { TermsBody } from './TermsReader'
 
 /**
@@ -74,6 +75,8 @@ export function TermsGateScreen({
             ) : (
               <Loading label={t('common.loading')} />
             )}
+            {/* Under the agreement, who else holds the data (the owner, 13 Oct 2026). */}
+            {kind === 'dpa' && <Subprocessors />}
           </div>
           <div className="space-y-2 border-t border-gray-200 bg-gray-50 px-5 py-4 sm:px-8 rounded-b-2xl">
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

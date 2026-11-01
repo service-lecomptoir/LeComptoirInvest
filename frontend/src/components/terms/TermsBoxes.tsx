@@ -43,7 +43,7 @@ export function TermsCheckbox({
           onClick={() => setReading(true)}
           className="text-sm text-brand-navy underline hover:no-underline"
         >
-          {t('terms.read')}
+          {t(text.kind === 'dpa' ? 'terms.readDpa' : 'terms.read')}
         </button>
       </div>
       <p className="mt-1 ml-6 text-xs text-gray-500">{hint}</p>
@@ -52,9 +52,16 @@ export function TermsCheckbox({
   )
 }
 
+/** The box's sentence, document by document. */
+const ACCEPT_LABEL: Record<TermsKind, string> = {
+  cgu: 'terms.signup.acceptCgu',
+  cgv: 'terms.signup.acceptCgv',
+  dpa: 'terms.signup.acceptDpa',
+}
+
 /**
- * The sign-up's boxes: the terms of use always, the terms of sale with a catalogue plan,
- * each only when Alice publishes it.
+ * The sign-up's boxes: the terms of use always, the terms of sale and the data processing
+ * agreement with a catalogue plan, each only when Alice publishes it.
  */
 export function TermsBoxes({
   boxes,
@@ -89,7 +96,7 @@ export function TermsBoxes({
           text={text}
           checked={ticked[kind]}
           onChange={(checked) => onTick(kind, checked)}
-          label={t(kind === 'cgu' ? 'terms.signup.acceptCgu' : 'terms.signup.acceptCgv')}
+          label={t(ACCEPT_LABEL[kind])}
           hint={t('terms.signup.hint', {
             version: text.version,
             date: numericDay(text.effective_from),

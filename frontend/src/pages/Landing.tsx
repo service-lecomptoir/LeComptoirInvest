@@ -40,6 +40,7 @@ const FAQ_KEYS = [
   'bank',
   'currencies',
   'security',
+  'processing',
   'audit',
   'billing',
   'demo',

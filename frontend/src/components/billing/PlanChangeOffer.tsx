@@ -361,7 +361,7 @@ function ConfirmChange({
         return
       }
       const ticked = asked || saleTerms || undefined
-      const body = { plan_id: plan.id, terms: ticked, cgv: ticked?.cgv, language: ticked?.language }
+      const body = { plan_id: plan.id, terms: ticked, cgv: ticked?.cgv, dpa: ticked?.dpa, language: ticked?.language }
       const data = await planHttp.post<{ url?: string; plan_name?: string }>(
         atPayment ? routes.checkout : routes.change,
         body,
