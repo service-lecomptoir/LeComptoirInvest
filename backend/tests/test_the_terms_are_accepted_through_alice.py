@@ -266,6 +266,52 @@ async def test_the_form_reads_the_text_a_newcomer_is_asked(client, alice):
     ), "the agreement is asked like the terms of sale"
 
 
+async def test_the_privacy_notice_is_read_by_anybody_in_force(client, alice):
+    """The page « Confidentialité et mentions légales » (the owner, 1 Nov 2026): the text
+    in force, one for every kind of account, read without an account."""
+    seen, answers = alice
+    answers[f"{TERMS}/current"] = httpx.Response(
+        200, json={"kind": "prv", "version": "2026-11", "title": "PRV", "body": "x"}
+    )
+    resp = await client.get(
+        "/api/v1/public/terms", params={"kind": "prv", "language": "en"}
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["version"] == "2026-11"
+    asked = seen[-1].url.params
+    assert (asked["kind"], asked["product"], asked["audience"], asked["language"]) == (
+        "prv",
+        "invest",
+        "all",
+        "en",
+    )
+    assert "newcomer" not in asked, "the text in force, not the latest published"
+
+
+async def test_no_privacy_notice_is_a_404_and_an_outage_a_503(client, alice):
+    """Nothing published yet (the first text is a draft): 404, the page says the text is
+    being published. A silent Alice: 503, said in one sentence."""
+    _, answers = alice
+    resp = await client.get("/api/v1/public/terms", params={"kind": "prv"})
+    assert resp.status_code == 404
+    answers[f"{TERMS}/current"] = httpx.ConnectError("silent")
+    resp = await client.get("/api/v1/public/terms", params={"kind": "prv"})
+    assert resp.status_code == 503
+
+
+async def test_nobody_accepts_the_privacy_notice(client, db, alice):
+    """Read by anybody, accepted by nobody: the account's routes refuse the word."""
+    seen, _ = alice
+    manager = await _user(db, MANAGER)
+    resp = await client.post(
+        "/api/v1/terms/accept",
+        json={"kind": "prv", "version": "2026-11", "language": "fr"},
+        headers=_auth(manager),
+    )
+    assert resp.status_code == 422
+    assert not [r for r in seen if r.url.path == f"{TERMS}/accept"]
+
+
 async def test_nothing_published_is_no_box(client, alice):
     _, answers = alice
     answers[f"{TERMS}/current"] = httpx.Response(404, json={"detail": "Aucune version"})
@@ -698,7 +744,7 @@ async def test_a_plan_change_is_stopped_by_a_refusal_or_a_missing_tick(
         200,
         json={
             "cgu": _document("2026-10", up_to_date=True, accepted="2026-10"),
-            "cgv": _document("2026-09", up_to_date=True, accepted="2026-09"),
+            "cgv": _document("2026-11", up_to_date=False, accepted="2026-09"),
         },
     )
     resp = await client.post(
@@ -706,5 +752,71 @@ async def test_a_plan_change_is_stopped_by_a_refusal_or_a_missing_tick(
         json={"plan_id": "plan-pro"},
         headers=_auth(subscriber),
     )
-    assert resp.status_code == 422, "terms of sale published: the tick is required"
+    assert resp.status_code == 422, "a new version of sale: the tick is required"
     assert change not in [r.url.path for r in seen], "the plan never changed"
+
+
+async def test_a_document_already_accepted_is_not_asked_again(client, db, alice):
+    """The owner, 1 Nov 2026 (Immo's rule): the versions in force already accepted are
+    not asked again. Alice says `anything_to_accept` as soon as a version is in force,
+    accepted or not: read alone, it refused this subscriber, who accepted both."""
+    seen, answers = alice
+    subscriber = await _user(db, MANAGER)
+    change = f"/api/v1/internal/billing/change-plan/{subscriber.id}"
+    answers[change] = httpx.Response(200, json={"changed": True})
+    answers[_status_path(subscriber)] = httpx.Response(
+        200,
+        json={
+            "cgu": _document("2026-10", up_to_date=True, accepted="2026-10"),
+            "cgv": _document("2026-09", up_to_date=True, accepted="2026-09"),
+            "dpa": {
+                **_document("2026-10", up_to_date=True, accepted="2026-10"),
+                "audience": "all",
+            },
+        },
+    )
+    resp = await client.post(
+        "/api/v1/billing/change-plan",
+        json={"plan_id": "plan-pro", "language": "fr"},
+        headers=_auth(subscriber),
+    )
+    assert resp.status_code == 200, resp.text
+    paths = [r.url.path for r in seen]
+    assert f"{TERMS}/accept" not in paths, "nothing owed, nothing recorded"
+    assert paths[-1] == change
+
+
+async def test_a_new_version_of_one_document_asks_that_one_only(client, db, alice):
+    """The terms of sale accepted in force, a new agreement published: the agreement
+    alone is asked, and the change goes through once it is ticked."""
+    seen, answers = alice
+    subscriber = await _user(db, MANAGER)
+    change = f"/api/v1/internal/billing/change-plan/{subscriber.id}"
+    answers[change] = httpx.Response(200, json={"changed": True})
+    answers[f"{TERMS}/accept"] = httpx.Response(201, json={"recorded": True})
+    answers[_status_path(subscriber)] = httpx.Response(
+        200,
+        json={
+            "cgu": _document("2026-10", up_to_date=True, accepted="2026-10"),
+            "cgv": _document("2026-09", up_to_date=True, accepted="2026-09"),
+            "dpa": {
+                **_document("2026-11", up_to_date=False, accepted="2026-10"),
+                "audience": "all",
+            },
+        },
+    )
+    refused = await client.post(
+        "/api/v1/billing/change-plan",
+        json={"plan_id": "plan-pro", "language": "fr"},
+        headers=_auth(subscriber),
+    )
+    assert refused.status_code == 422
+    assert "accord de traitement des données" in refused.json()["detail"]
+    resp = await client.post(
+        "/api/v1/billing/change-plan",
+        json={"plan_id": "plan-pro", "dpa": "2026-11", "language": "fr"},
+        headers=_auth(subscriber),
+    )
+    assert resp.status_code == 200, resp.text
+    accepted = [json.loads(r.content) for r in seen if r.url.path == f"{TERMS}/accept"]
+    assert [(a["kind"], a["version"]) for a in accepted] == [("dpa", "2026-11")]

@@ -78,6 +78,10 @@ export default function Pricing() {
       </main>
       <footer className="mx-auto max-w-6xl px-4 pb-8 text-xs text-gray-400">
         © {new Date().getFullYear()} {t('brand.full')}
+        {' · '}
+        <Link to="/privacy" className="text-gray-500 hover:text-brand-navy hover:underline">
+          {t('privacy.title')}
+        </Link>
       </footer>
     </div>
   )

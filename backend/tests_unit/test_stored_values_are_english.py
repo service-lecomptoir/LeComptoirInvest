@@ -121,6 +121,7 @@ APPROVED: dict[str, str] = {
     "USE": "cgu",
     "SALE": "cgv",
     "DPA": "dpa",
+    "PRIVACY": "prv",
     "EVERYONE": "all",
     # ⚠️ THE TWO DELIBERATE EXCEPTIONS, and they are not an oversight. Le Comptoir Immo
     # stores exactly these two words on its landlords, and an investor is very often a

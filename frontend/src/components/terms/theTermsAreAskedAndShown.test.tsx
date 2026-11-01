@@ -5,11 +5,14 @@ import { describe, expect, it } from 'vitest'
 import i18n from '@/i18n'
 import type { TermsAcceptance, TermsDocumentStatus, TermsStatus, TermsText } from '@/api/terms'
 
-import { UNTICKED, pendingDocument, readToTheEnd, termsBlock, termsGiven, type TermsBox, type TermsOverview } from '@/lib/terms'
+import {
+  UNTICKED, boxIsRead, pendingDocument, readToTheEnd, stillOwed, termsBlock, termsGiven, type TermsBox, type TermsOverview,
+} from '@/lib/terms'
 
 import { AcceptedTermsView } from './AcceptedTerms'
 import { SubprocessorsView } from './Subprocessors'
-import { TermsBoxes } from './TermsBoxes'
+import { TermsBoxes, TermsCheckbox } from './TermsBoxes'
+import BOXES from './TermsBoxes.tsx?raw'
 import { TermsGateScreen } from './TermsGate'
 import { TermsBody } from './TermsReader'
 import SIGNUP_FORM from '../signup/SignupForm.tsx?raw'
@@ -130,6 +133,67 @@ describe('the sign-up boxes', () => {
     expect(termsBlock(down, true, { cgu: true, cgv: true, dpa: true })).toBe('unavailable')
     // The agreement unreachable closes the door the same way.
     expect(termsBlock({ ...ALL, dpa: { state: 'unavailable' } }, true, { cgu: true, cgv: true, dpa: true })).toBe('unavailable')
+  })
+})
+
+describe('the terms of sale and the agreement are read before they are ticked (the owner, 1 Nov 2026)', () => {
+  it('locks the boxes of sale and of the agreement until the text is read, and says why', async () => {
+    await i18n.changeLanguage('fr')
+    const html = render(<TermsBoxes boxes={ALL} withSale ticked={UNTICKED} onTick={() => undefined} />)
+    const boxes = html.split('type="checkbox"').slice(1)
+    expect(boxes).toHaveLength(3)
+    // The terms of use stay free; the terms of sale and the agreement are locked.
+    expect(boxes[0].split('>')[0]).not.toContain('disabled=""')
+    expect(boxes[1].split('>')[0]).toContain('disabled=""')
+    expect(boxes[2].split('>')[0]).toContain('disabled=""')
+    expect(html.split(fr.terms.readToTick).length - 1).toBe(2)
+    expect(BOXES).toContain("mustRead={kind !== 'cgu'}")
+  })
+
+  it('stays unticked while locked, even ticked by its parent', async () => {
+    await i18n.changeLanguage('fr')
+    const html = render(
+      <TermsCheckbox mustRead text={CGV} checked onChange={() => undefined} label="CGV" hint="Obligatoire" />,
+    )
+    expect(html).toContain('disabled=""')
+    expect(html).not.toContain('checked=""')
+    expect(BOXES).toContain('checked={read && checked}')
+    expect(BOXES).toContain('if (!read && checked) onChange(false)')
+  })
+
+  it('opens once the text is read to the end, and a new version locks it again', () => {
+    expect(boxIsRead(true, CGV, null)).toBe(false)
+    expect(boxIsRead(true, null, null)).toBe(false)
+    expect(boxIsRead(true, CGV, CGV)).toBe(true)
+    expect(boxIsRead(true, { ...CGV, version: '2026-11' }, CGV)).toBe(false)
+    expect(boxIsRead(false, CGU, null)).toBe(true)
+    // « J'accepte » in the reader waits for the end, then ticks the box.
+    expect(BOXES).toContain('onReadToEnd: () => setReadText(text)')
+    expect(BOXES).not.toMatch(/setReadText\((false|null)\)/)
+    expect(READER).toContain('<Button type="button" onClick={onAccept} disabled={!text || !read}>')
+    expect(READER).toContain('<TermsBody text={text} onReadToEnd={onReadToEnd} />')
+    expect(en.terms.readToTick).toBeTruthy()
+  })
+
+  it('locks them at the change of plan as well', () => {
+    expect(BILLING).toMatch(/<TermsCheckbox\s+mustRead/)
+  })
+})
+
+describe('the change of plan asks only what is still owed (the owner, 1 Nov 2026)', () => {
+  it('does not ask again a version already accepted, and asks a new one', () => {
+    const accepted = owed({ version: '2026-10', accepted_version: '2026-10', up_to_date: true, pending: false })
+    expect(stillOwed(accepted)).toBeNull()
+    const newer = owed({ version: '2026-11', accepted_version: '2026-10' })
+    expect(stillOwed(newer)).toBe(newer)
+    expect(stillOwed(owed({ version: null }))).toBeNull()
+    expect(stillOwed(null)).toBeNull()
+    expect(stillOwed(undefined)).toBeNull()
+  })
+
+  it('reads the boxes of the subscription screen from what is still owed only', () => {
+    expect(BILLING).toContain('const saleVersion = stillOwed(terms?.status?.cgv)?.version ?? null')
+    expect(BILLING).toContain("if (saleVersion) void read('cgv', saleVersion)")
   })
 })
 
@@ -328,7 +392,7 @@ describe('the profile section', () => {
     expect(BILLING).toContain('{subscriber && <AcceptedTerms kind="dpa" overview={terms} />}')
     // The agreement's box: asked only when the status names a published version, ticked
     // beside the terms of sale, and its version sent with the plan.
-    expect(BILLING).toContain('const dpaVersion = terms?.status?.dpa?.version ?? null')
+    expect(BILLING).toContain('const dpaVersion = stillOwed(terms?.status?.dpa)?.version ?? null')
     expect(BILLING).toContain("{ cgv: versionTicked('cgv'), dpa: versionTicked('dpa'), language }")
     expect(BILLING).toContain("dpa: 'terms.signup.acceptDpa'")
     expect(PLAN_CHANGE).toContain('dpa: ticked?.dpa')

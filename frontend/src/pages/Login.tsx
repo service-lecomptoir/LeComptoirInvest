@@ -214,6 +214,10 @@ export default function Login() {
                   <Link to="/" className="text-brand-navy underline lg:hidden">
                     {t('login.discover')}
                   </Link>
+                  {/* The privacy notice, read before any account (1 Nov 2026). */}
+                  <Link to="/privacy" className="text-brand-navy underline">
+                    {t('privacy.title')}
+                  </Link>
                 </p>
               </div>
             </form>

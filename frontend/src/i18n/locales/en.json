@@ -1031,7 +1031,8 @@
       "objectTo": "To object to an addition, write to {{email}}.",
       "unavailableTitle": "List unavailable",
       "unavailable": "The list of sub-processors cannot be loaded at the moment: try again in a few minutes."
-    }
+    },
+    "readToTick": "Read the text to the end to be able to tick the box."
   },
   "planChange": {
     "loading": "Loading your plan…",
@@ -1089,5 +1090,14 @@
     "requestMessageHelp": "Optional: your expected usage, a date, a question.",
     "requestSend": "Send the request",
     "requestSent": "Your request has been sent to our team, who will reply quickly."
+  },
+  "privacy": {
+    "title": "Privacy and legal notice",
+    "back": "Back to the home page",
+    "loading": "Loading the text",
+    "notPublishedTitle": "Text being published",
+    "notPublished": "The privacy and legal notice is being published: it will appear here as soon as it is online.",
+    "unavailableTitle": "Text unavailable",
+    "unavailable": "The text cannot be loaded for the moment: try again in a few minutes."
   }
 }

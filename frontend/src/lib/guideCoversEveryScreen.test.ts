@@ -18,7 +18,7 @@ const LANGS = ['fr', 'en']
 
 /** The doors outside the signed-in shell (sign-in, the public pricing page), and the safety
  *  net: none is a screen to explain. */
-const NOT_SCREENS = new Set(['*', '/login', '/pricing', '/set-password/:token', GUIDE_ROUTE])
+const NOT_SCREENS = new Set(['*', '/login', '/pricing', '/privacy', '/set-password/:token', GUIDE_ROUTE])
 
 function screens(): string[] {
   const paths = [...router.matchAll(/path:\s*'([^']+)'/g)].map((m) => m[1])

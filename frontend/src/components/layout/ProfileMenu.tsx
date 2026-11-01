@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BookMarked, ChevronDown, CreditCard, LogOut, UserRound } from 'lucide-react'
+import { BookMarked, ChevronDown, CreditCard, LogOut, ShieldCheck, UserRound } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { roleKey } from '@/lib/roleLabel'
 import { confirmDialog } from '@/store/confirm'
@@ -141,6 +141,18 @@ export function ProfileMenu() {
             >
               <BookMarked size={15} className="text-gray-400" />
               {t('guide.title')}
+            </button>
+            {/* The privacy notice and legal information, public, for every account. */}
+            <button
+              role="menuitem"
+              onClick={() => {
+                setOpen(false)
+                navigate('/privacy')
+              }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <ShieldCheck size={15} className="text-gray-400" />
+              {t('privacy.title')}
             </button>
             <div className="border-t border-gray-100 my-1" />
             <button

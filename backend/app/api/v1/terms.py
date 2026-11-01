@@ -40,6 +40,9 @@ SALE = "cgv"
 #: Comptoir its processor.
 DPA = "dpa"
 KINDS: tuple[str, ...] = (USE, SALE, DPA)
+#: The privacy notice and legal information (the owner, 1 Nov 2026): read by anybody on
+#: the public page, accepted by nobody. Not in `KINDS`: no status, no acceptance, no box.
+PRIVACY = "prv"
 
 #: 🔴 THE DOCUMENTS ONLY THE SUBSCRIBER ACCEPTS, in the order the gate asks them. The
 #: agreement follows exactly the rule of the terms of sale: same account, same scope.
@@ -120,6 +123,14 @@ def _document(raw: object) -> DocumentStatus | None:
     return found
 
 
+def is_owed(raw: object) -> bool:
+    """🔴 OWED = A VERSION TO ACCEPT, NOT ACCEPTED YET (the owner, 1 Nov 2026, Immo's rule).
+    Alice's `anything_to_accept` is true as soon as a version is in force, accepted or not:
+    read alone, it refused a plan change to a subscriber who accepted that very version."""
+    found = _document(raw)
+    return found is not None and bool(found.version) and found.pending
+
+
 @router.get("/status", response_model=TermsStatus)
 async def my_terms_status(user: User = Depends(current_user)) -> TermsStatus:
     """What this account still owes, document by document."""
@@ -182,7 +193,7 @@ async def relay_text(
     )
     if reply is None:
         raise _terms_unavailable()
-    if reply.status == 404 or (reply.status == 422 and kind == DPA):
+    if reply.status == 404 or (reply.status == 422 and kind in (DPA, PRIVACY)):
         # ⚠️ A 422 ON THE AGREEMENT IS AN ALICE THAT DOES NOT KNOW IT YET (deployed before
         # 13 Oct 2026): nothing is published, so nothing is asked, as for its absence
         # from the status. Read as a silence, it would close the sign-up to everyone.

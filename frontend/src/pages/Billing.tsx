@@ -14,7 +14,7 @@ import { TermsCheckbox } from '@/components/terms/TermsBoxes'
 import { confirmDialog } from '@/store/confirm'
 import { toast } from '@/store/toast'
 import { money, day, numericDay } from '@/lib/format'
-import { termsBlock, useTermsOverview, type TermsBox } from '@/lib/terms'
+import { stillOwed, termsBlock, useTermsOverview, type TermsBox } from '@/lib/terms'
 import type {
   BillingInvoice, BillingStatus, BillingSubscription, PaymentMethods,
 } from '@/types'
@@ -82,9 +82,11 @@ export default function Billing() {
   const [termsRead, setTermsRead] = useState(0)
   const terms = useTermsOverview(termsRead)
   const subscriber = terms?.status?.subscriber ?? false
-  const saleVersion = terms?.status?.cgv?.version ?? null
-  // The agreement is asked only when the status names it with a published version.
-  const dpaVersion = terms?.status?.dpa?.version ?? null
+  // 🔴 ONLY WHAT IS STILL OWED IS ASKED (the owner, 1 Nov 2026, Immo's rule): the version
+  // in force already accepted is not asked again, a new one is; nothing owed, no box, and
+  // the change goes straight through. The server applies the same rule.
+  const saleVersion = stillOwed(terms?.status?.cgv)?.version ?? null
+  const dpaVersion = stillOwed(terms?.status?.dpa)?.version ?? null
   const [boxes, setBoxes] = useState<Record<SubscriberKind, TermsBox>>({ cgv: LOADING, dpa: LOADING })
   const [ticked, setTicked] = useState<Record<SubscriberKind, boolean>>({ cgv: false, dpa: false })
   useEffect(() => {
@@ -109,8 +111,8 @@ export default function Billing() {
         .then((box) => {
           if (live) setBoxes((was) => ({ ...was, [kind]: box }))
         })
-    setBoxes({ cgv: LOADING, dpa: dpaVersion ? LOADING : NONE })
-    void read('cgv', saleVersion)
+    setBoxes({ cgv: saleVersion ? LOADING : NONE, dpa: dpaVersion ? LOADING : NONE })
+    if (saleVersion) void read('cgv', saleVersion)
     if (dpaVersion) void read('dpa', dpaVersion)
     return () => {
       live = false
@@ -316,6 +318,7 @@ export default function Billing() {
               return (
                 <div key={kind} className="mt-3">
                   <TermsCheckbox
+                    mustRead
                     text={box.text}
                     checked={ticked[kind]}
                     onChange={(checked) => setTicked((was) => ({ ...was, [kind]: checked }))}

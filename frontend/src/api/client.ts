@@ -20,7 +20,7 @@ export const apiClient = axios.create({
 export const TOKEN_KEY = 'lecomptoirinvest-token'
 
 /** The pages open without an account: an expired session never redirects away from them. */
-const PUBLIC_DOORS = ['/login', '/pricing']
+const PUBLIC_DOORS = ['/login', '/pricing', '/privacy']
 
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEY)

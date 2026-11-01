@@ -7,6 +7,7 @@ import { loginFor } from '@/lib/nextPath'
 import Login from '@/pages/Login'
 import Landing from '@/pages/Landing'
 import Pricing from '@/pages/Pricing'
+import Privacy from '@/pages/Privacy'
 import SetPassword from '@/pages/SetPassword'
 import MyProfile from '@/pages/profile/MyProfile'
 import Dashboard from '@/pages/Dashboard'
@@ -110,6 +111,8 @@ export const router = createBrowserRouter([
   // 🔴 PUBLIC, as on Le Comptoir Immo and RH: the catalogue plans and the sign-up, no
   // account needed. Outside `RequireAuth`, so a visitor is never sent to the sign-in first.
   { path: '/pricing', element: <Pricing /> },
+  // Public as well, and outside the terms gate: the privacy notice (1 Nov 2026).
+  { path: '/privacy', element: <Privacy /> },
   // The page a password link opens (a first password, or a forgotten one): no session yet.
   { path: '/set-password/:token', element: <SetPassword /> },
   {

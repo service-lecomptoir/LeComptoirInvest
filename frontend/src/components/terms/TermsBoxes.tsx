@@ -1,37 +1,59 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TermsKind, TermsText } from '@/api/terms'
 import { numericDay } from '@/lib/format'
-import { asked, type TermsBox, type Ticked } from '@/lib/terms'
+import { asked, boxIsRead, type TermsBox, type Ticked } from '@/lib/terms'
 import { TermsReader } from './TermsReader'
 
-/** One required box, unticked, its reader one tap away, its help under it. */
+/**
+ * One required box, unticked, its reader one tap away, its help under it.
+ *
+ * 🔴 `mustRead`: READ TO THE END FIRST (the terms of sale and the data processing
+ * agreement, the owner, 1 Nov 2026). The box waits until the reader has reached the end of
+ * the text, and « J'accepte » in the reader, enabled at the end only, ticks it. What was
+ * read is the text itself (`boxIsRead`: `readText === text`), never a flag an effect
+ * resets: a new text (a new version) asks again, and a box locked again is unticked.
+ */
 export function TermsCheckbox({
   text,
   checked,
   onChange,
   label,
   hint,
+  mustRead = false,
 }: {
   text: TermsText
   checked: boolean
   onChange: (checked: boolean) => void
   label: string
   hint: string
+  /** The box cannot be ticked before the text is read to its end in the reader. */
+  mustRead?: boolean
 }) {
   const { t } = useTranslation()
   const id = useId()
   const [reading, setReading] = useState(false)
+  const [readText, setReadText] = useState<TermsText | null>(null)
+  const read = boxIsRead(mustRead, text, readText)
+  // A box locked again (a new version came) is unticked: what was ticked was another text.
+  useEffect(() => {
+    if (!read && checked) onChange(false)
+  }, [read, checked, onChange])
   return (
     <div>
       <div className="flex flex-wrap items-start gap-x-3 gap-y-1">
-        <label htmlFor={id} className="flex items-start gap-2 text-sm text-gray-800 cursor-pointer">
+        <label
+          htmlFor={id}
+          className={`flex items-start gap-2 text-sm text-gray-800 ${read ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+        >
           <input
             id={id}
             type="checkbox"
-            checked={checked}
+            checked={read && checked}
+            disabled={!read}
             onChange={(event) => onChange(event.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 accent-brand-navy"
+            aria-describedby={`${id}-help`}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-brand-navy disabled:opacity-50"
           />
           <span>
             {label}
@@ -46,8 +68,24 @@ export function TermsCheckbox({
           {t(text.kind === 'dpa' ? 'terms.readDpa' : 'terms.read')}
         </button>
       </div>
-      <p className="mt-1 ml-6 text-xs text-gray-500">{hint}</p>
-      {reading && <TermsReader text={text} onClose={() => setReading(false)} />}
+      <p id={`${id}-help`} className="mt-1 ml-6 text-xs text-gray-500">{hint}</p>
+      {!read && <p className="mt-0.5 ml-6 text-xs text-gray-500">{t('terms.readToTick')}</p>}
+      {reading && (
+        <TermsReader
+          text={text}
+          onClose={() => setReading(false)}
+          {...(mustRead
+            ? {
+                onReadToEnd: () => setReadText(text),
+                read,
+                onAccept: () => {
+                  onChange(true)
+                  setReading(false)
+                },
+              }
+            : {})}
+        />
+      )}
     </div>
   )
 }
@@ -96,6 +134,7 @@ export function TermsBoxes({
           text={text}
           checked={ticked[kind]}
           onChange={(checked) => onTick(kind, checked)}
+          mustRead={kind !== 'cgu'}
           label={t(ACCEPT_LABEL[kind])}
           hint={t('terms.signup.hint', {
             version: text.version,

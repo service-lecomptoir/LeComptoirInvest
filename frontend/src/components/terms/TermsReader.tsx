@@ -90,17 +90,29 @@ export function TermsBody({
  * The house modal: it does NOT close on a click beside it (a stray tap would throw the
  * reading away), only on the cross, « Fermer » or Escape. Given the text already loaded
  * (the sign-up holds it), or a way to load it (an acceptance from the history).
+ *
+ * With `onAccept` (a box that must be read first, `TermsCheckbox` `mustRead`), the text
+ * scrolls in its own box and « J'accepte » waits for its end (`read`, told by
+ * `onReadToEnd`), the same reading as the gate's.
  */
 export function TermsReader({
   text: given,
   load,
   onClose,
+  onReadToEnd,
+  read = false,
+  onAccept,
 }: {
   text?: TermsText
   load?: () => Promise<TermsText>
   onClose: () => void
+  onReadToEnd?: () => void
+  /** The text was read to its end: « J'accepte » is enabled. */
+  read?: boolean
+  onAccept?: () => void
 }) {
   const { t } = useTranslation()
+  const asking = !!onAccept
   const [text, setText] = useState<TermsText | null>(given ?? null)
   const [refused, setRefused] = useState<string | null>(null)
   // ⚠️ READ ONCE, ON OPENING: a caller passing an arrow function would otherwise fetch the
@@ -154,7 +166,12 @@ export function TermsReader({
             </Notice>
           ) : text ? (
             <div className="space-y-4">
-              <TermsBody text={text} scroll={false} />
+              {asking ? (
+                <TermsBody text={text} onReadToEnd={onReadToEnd} />
+              ) : (
+                <TermsBody text={text} scroll={false} />
+              )}
+              {asking && !read && <p className="text-xs text-gray-500">{t('terms.gate.scrollToAccept')}</p>}
               {/* Under the agreement, who else holds the data (the owner, 13 Oct 2026). */}
               {text.kind === 'dpa' && <Subprocessors />}
             </div>
@@ -162,10 +179,15 @@ export function TermsReader({
             <Loading label={t('common.loading')} />
           )}
         </div>
-        <div className="flex justify-end px-5 py-3 border-t border-gray-200 bg-gray-50">
+        <div className="flex flex-col-reverse gap-2 px-5 py-3 border-t border-gray-200 bg-gray-50 sm:flex-row sm:justify-end">
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.close')}
           </Button>
+          {asking && (
+            <Button type="button" onClick={onAccept} disabled={!text || !read}>
+              {t('terms.gate.accept')}
+            </Button>
+          )}
         </div>
       </div>
     </div>

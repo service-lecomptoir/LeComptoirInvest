@@ -41,6 +41,7 @@ function titled(): string[] {
   const doors = {
     '/login': 'Login.tsx',
     '/pricing': 'Pricing.tsx',
+    '/privacy': 'Privacy.tsx',
     '/set-password/:token': 'SetPassword.tsx',
   }
   const selfTitled = Object.entries(doors)

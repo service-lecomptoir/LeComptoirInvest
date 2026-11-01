@@ -12,6 +12,9 @@ import { apiClient } from './client'
  * version, a console that does not answer), where the person can act on it.
  */
 export type TermsKind = 'cgu' | 'cgv' | 'dpa'
+/** What the public route reads: the three above, and `prv`, the privacy notice and legal
+ *  information, read by anybody and accepted by nobody (the owner, 1 Nov 2026). */
+export type PublicTermsKind = TermsKind | 'prv'
 
 /** The documents only the subscriber accepts, in the order the gate asks them. */
 export const SUBSCRIBER_KINDS = ['cgv', 'dpa'] as const
@@ -19,7 +22,7 @@ export type SubscriberKind = (typeof SUBSCRIBER_KINDS)[number]
 
 /** One text, in the reader's language or, failing that, in French (`fell_back`). */
 export interface TermsText {
-  kind: TermsKind
+  kind: PublicTermsKind
   product: string
   audience: string
   version: string
@@ -138,8 +141,9 @@ export const termsApi = {
   accept: (body: { kind: TermsKind; version: string; language: string }) =>
     apiClient.post('/terms/accept', body, quiet),
   history: () => apiClient.get<TermsHistory>('/terms/history', quiet),
-  /** What a person signing up is asked: no session. 404: no box; 503: no sign-up. */
-  forSignup: (kind: TermsKind, language: string) =>
+  /** What a person signing up is asked, or the privacy notice (`prv`) anybody reads: no
+   *  session. 404: no box, or no notice published yet; 503: Alice is silent. */
+  forSignup: (kind: PublicTermsKind, language: string) =>
     apiClient.get<TermsText>('/public/terms', { ...quiet, params: { kind, language } }),
   /** The sub-processors, public like the text: shown under the agreement. 503: say so. */
   subprocessors: () => apiClient.get<Subprocessors>('/public/terms/subprocessors', quiet),

@@ -159,6 +159,46 @@ export function readToTheEnd(scrollTop: number, clientHeight: number, scrollHeig
   return scrollTop + clientHeight >= scrollHeight - 8
 }
 
+/** What the public page knows of the privacy notice: `none` is « not published yet ». */
+export function usePrivacyNotice(language: string): TermsBox {
+  const [found, setFound] = useState<TermsBox>({ state: 'loading' })
+  useEffect(() => {
+    let live = true
+    setFound({ state: 'loading' })
+    termsApi
+      .forSignup('prv', language)
+      .then(({ data }): TermsBox => ({ state: 'ready', text: data }))
+      .catch((error): TermsBox =>
+        error?.response?.status === 404 ? { state: 'none' } : { state: 'unavailable' },
+      )
+      .then((next) => {
+        if (live) setFound(next)
+      })
+    return () => {
+      live = false
+    }
+  }, [language])
+  return found
+}
+
+/**
+ * May the box be ticked? Always for a box that need not be read first (the terms of use);
+ * otherwise once THIS text was read to its end (`readText === text`). A new text (a new
+ * version, a reload) is another object: the box locks again until it is read in turn.
+ */
+export function boxIsRead(mustRead: boolean, text: TermsText | null, readText: TermsText | null): boolean {
+  return !mustRead || (!!text && readText === text)
+}
+
+/**
+ * The document a plan change still asks, or null (the owner, 1 Nov 2026, Immo's rule): a
+ * version in force not accepted yet (`pending`). The version already accepted is not asked
+ * again; a new version is. The server applies the same rule (`terms.accept_for_a_plan`).
+ */
+export function stillOwed(document: TermsDocumentStatus | null | undefined): TermsDocumentStatus | null {
+  return document?.pending && document.version ? document : null
+}
+
 /**
  * The sub-processors the data processing agreement authorises, as the console lists them.
  *

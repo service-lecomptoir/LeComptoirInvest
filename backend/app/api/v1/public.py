@@ -404,7 +404,15 @@ async def signup_terms(
     ⚠️ THE TERMS OF SALE AND THE DATA PROCESSING AGREEMENT ARE ONE TEXT FOR EVERY ACCOUNT
     (`all`), exactly the scope Alice checks a sign-up's tick against; the terms of use are
     the management's.
+
+    🔴 AND THE PRIVACY NOTICE (`prv`, the owner, 1 Nov 2026), for the public page « Privacy
+    and legal notice »: the text IN FORCE, one for every kind of account, accepted by
+    nobody. 404 while Alice has published none, 503 when she is silent.
     """
+    if kind == terms_api.PRIVACY:
+        return await terms_api.relay_text(
+            kind, language=language, audience=terms_api.EVERYONE
+        )
     terms_api.known_kind(kind)
     return await terms_api.relay_text(
         kind,

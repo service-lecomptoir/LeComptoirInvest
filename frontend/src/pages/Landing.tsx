@@ -342,9 +342,12 @@ function Footer() {
     <footer className="border-t border-gray-100 py-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
         <Brand />
-        <p className="text-center text-xs text-gray-400">
-          © {new Date().getFullYear()} {t('brand.full')}
-        </p>
+        <div className="text-center text-xs text-gray-400">
+          <p>© {new Date().getFullYear()} {t('brand.full')}</p>
+          <Link to="/privacy" className="mt-1 inline-block text-gray-500 hover:text-brand-navy hover:underline">
+            {t('privacy.title')}
+          </Link>
+        </div>
         <Link to="/login" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-navy">
           {t('pricing.signIn')} <ArrowRight size={14} />
         </Link>

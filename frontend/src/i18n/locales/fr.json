@@ -1031,7 +1031,8 @@
       "objectTo": "Pour vous opposer à un ajout, écrivez à {{email}}.",
       "unavailableTitle": "Liste indisponible",
       "unavailable": "La liste des sous-traitants ultérieurs ne peut pas être chargée pour le moment : réessayez dans quelques minutes."
-    }
+    },
+    "readToTick": "Lisez le texte jusqu'au bout pour pouvoir cocher la case."
   },
   "planChange": {
     "loading": "Chargement de votre formule…",
@@ -1089,5 +1090,14 @@
     "requestMessageHelp": "Facultatif : votre usage prévu, une date, une question.",
     "requestSend": "Envoyer la demande",
     "requestSent": "Votre demande est envoyée à notre équipe, qui vous répond rapidement."
+  },
+  "privacy": {
+    "title": "Confidentialité et mentions légales",
+    "back": "Retour à l'accueil",
+    "loading": "Chargement du texte",
+    "notPublishedTitle": "Texte en cours de publication",
+    "notPublished": "Le texte de confidentialité et des mentions légales est en cours de publication : il s'affichera ici dès sa mise en ligne.",
+    "unavailableTitle": "Texte indisponible",
+    "unavailable": "Le texte ne peut pas être chargé pour le moment : réessayez dans quelques minutes."
   }
 }

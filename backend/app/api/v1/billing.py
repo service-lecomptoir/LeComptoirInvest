@@ -176,8 +176,11 @@ async def _sale_accepted(user: User, request: Request, body: _PlanIn) -> None:
     page was open) stops the change before it reaches the payment. 🔴 THE OWNER, 13 OCT
     2026: the data processing agreement is ticked and recorded the same way, beside them.
 
-    ⚠️ THE SERVER CHECKS, NOT ONLY THE BOX: a change sent without a tick while Alice
-    publishes that document is refused, BEFORE anything is recorded (no half acceptance).
+    ⚠️ THE SERVER CHECKS, NOT ONLY THE BOX: a change sent without a tick while that
+    document is still owed is refused, BEFORE anything is recorded (no half acceptance).
+    🔴 ONLY WHAT IS STILL OWED (the owner, 1 Nov 2026, Immo's rule): the version in force
+    already accepted is not asked again, a new one is (`terms.is_owed`); nothing owed, the
+    change goes through without a tick.
     Only the subscriber is asked; another account is not the one Alice bills, and her own
     refusal answers it. An Alice that does not serve the agreement yet (no `dpa` in her
     status) asks nothing of it.
@@ -193,8 +196,7 @@ async def _sale_accepted(user: User, request: Request, body: _PlanIn) -> None:
         if owed is None:
             raise _owed_unreadable()
         for kind in missing:
-            document = owed.get(kind)
-            if isinstance(document, dict) and document.get("anything_to_accept"):
+            if terms_api.is_owed(owed.get(kind)):
                 raise _tick_required(kind)
     for kind in terms_api.SUBSCRIBER_KINDS:
         version = ticked[kind]
