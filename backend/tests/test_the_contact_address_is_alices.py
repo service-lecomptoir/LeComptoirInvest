@@ -92,3 +92,38 @@ def test_no_contact_mailbox_is_written_in_the_code():
     assert not found, (
         "the contact address is Alice's (platform_contact):\n" + "\n".join(found)
     )
+
+
+#: What `/internal/comm-config` may carry beside the contact address: none of it is public.
+FULL_COMM_CONFIG = {
+    "contact_email": "contact@lecomptoir-services.test",
+    "leads_notify_email": "equipe@lecomptoir-services.test",
+    "smtp_from_email": "no-reply@lecomptoir-services.test",
+    "smtp_password": "secret",
+}
+
+
+async def test_the_public_route_gives_the_contact_address_and_nothing_else(monkeypatch):
+    """The owner, 2 Nov 2026: Immo printed the TEAM's inbox (`leads_notify_email`, the
+    internal alerts) on its public pages. The public reads `contact_email` only; the
+    team's inbox and every other value of the e-mail settings never leave, and an empty
+    contact never falls back on another address."""
+    from app.services import alice_client
+
+    for answer, expected in (
+        (FULL_COMM_CONFIG, "contact@lecomptoir-services.test"),
+        ({**FULL_COMM_CONFIG, "contact_email": ""}, ""),
+    ):
+
+        async def _call(method, path, *args, a=answer, **kwargs):
+            return a
+
+        monkeypatch.setattr(alice_client, "_call", _call)
+        monkeypatch.setattr(platform_contact, "_known", {"value": "", "next": 0.0})
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://invest.test"
+        ) as c:
+            r = await c.get("/api/v1/public/contact")
+        assert r.status_code == 200, r.text
+        assert r.json() == {"contact_email": expected}
+        assert "equipe@" not in r.text and "secret" not in r.text
