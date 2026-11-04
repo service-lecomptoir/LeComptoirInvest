@@ -708,11 +708,11 @@
       },
       "profile": {
         "what": "Votre compte : le nom du compte, l'adresse e-mail, le rôle et le type de compte (club ou fonds, ou société de gestion).",
-        "how": "Changez votre mot de passe et choisissez l'apparence des e-mails envoyés à vos investisseurs. Le nom et l'adresse se modifient dans la console d'administration."
+        "how": "Changez votre mot de passe et choisissez l'apparence des e-mails envoyés à vos investisseurs. Dans la section Sécurité, activez la double authentification : après le mot de passe, le code à 6 chiffres de votre application d'authentification est demandé, et un code de secours le remplace sans votre téléphone. Le nom et l'adresse se modifient dans la console d'administration."
       },
       "myProfile": {
         "what": "Votre compte : le nom du compte, l'adresse e-mail et le rôle.",
-        "how": "Changez votre mot de passe. Votre identité ne se modifie pas depuis cet écran."
+        "how": "Changez votre mot de passe. Dans la section Sécurité, activez si vous le souhaitez la double authentification : après le mot de passe, le code à 6 chiffres de votre application d'authentification est demandé. Votre identité ne se modifie pas depuis cet écran."
       },
       "billing": {
         "what": "L'abonnement au Comptoir Invest : l'offre en cours, les moyens de paiement et les factures.",
@@ -726,7 +726,8 @@
       "signOut": "Déconnexion, en bas du même menu, ferme votre session après confirmation, sur le serveur et pas seulement dans le navigateur : une copie de votre session cesse aussitôt de fonctionner, et vos autres onglets ouverts reviennent à la page de connexion. Vos autres appareils restent connectés.",
       "language": "Les drapeaux en haut de l'écran passent l'application en français ou en anglais ; le choix est retenu sur cet appareil.",
       "update": "Quand une nouvelle version est mise en ligne, un bandeau en bas de l'écran le signale : Recharger l'affiche, sans vous déconnecter.",
-      "password": "Mot de passe oublié ? sur la page de connexion envoie un lien pour en choisir un nouveau, valable deux heures."
+      "password": "Mot de passe oublié ? sur la page de connexion envoie un lien pour en choisir un nouveau, valable deux heures.",
+      "privacy": "Confidentialité et mentions légales, tout en bas du menu de gauche, ouvre le texte publié par la console, avec la liste des sous-traitants ultérieurs : il se lit aussi sans être connecté, depuis la page de connexion."
     }
   },
   "pricing": {
@@ -1099,5 +1100,57 @@
     "notPublished": "Le texte de confidentialité et des mentions légales est en cours de publication : il s'affichera ici dès sa mise en ligne.",
     "unavailableTitle": "Texte indisponible",
     "unavailable": "Le texte ne peut pas être chargé pour le moment : réessayez dans quelques minutes."
+  },
+  "twoFactor": {
+    "title": "Double authentification",
+    "securityTitle": "Sécurité",
+    "info": "À chaque connexion, après le mot de passe, le code à 6 chiffres de votre application d'authentification est demandé. Un mot de passe volé ne suffit plus.",
+    "statusOn": "Activée",
+    "statusOff": "Désactivée",
+    "recommended": "Recommandée pour votre compte",
+    "backupLeft": "Codes de secours restants",
+    "backupLeftValue": "{{count}} sur 10",
+    "intro": "Installez une application d'authentification (Google Authenticator, Microsoft Authenticator…) sur votre téléphone, puis affichez le QR code.",
+    "start": "Activer la double authentification",
+    "qrAlt": "QR code à scanner avec votre application d'authentification",
+    "secretLabel": "Clé de configuration",
+    "secretInfo": "Si l'application ne lit pas le QR code, choisissez « saisir une clé » et tapez celle-ci. Elle n'est montrée qu'une fois.",
+    "codeLabel": "Code à 6 chiffres",
+    "codeHelp": "Le code affiché par l'application, renouvelé toutes les 30 secondes.",
+    "activate": "Activer",
+    "backupTitle": "Vos 10 codes de secours",
+    "backupInfo": "Sans votre téléphone, un code de secours remplace le code de l'application, une seule fois chacun. Ils ne seront plus montrés : gardez-les hors du téléphone (papier, gestionnaire de mots de passe).",
+    "copy": "Copier",
+    "copied": "Copiés",
+    "download": "Enregistrer (.txt)",
+    "fileHeader": "Le Comptoir Invest, codes de secours",
+    "kept": "J'ai mis ces codes en lieu sûr.",
+    "keptHelp": "Ils ne seront plus montrés : Terminé ferme la liste.",
+    "done": "Terminé",
+    "newCodes": "Nouveaux codes de secours",
+    "newCodesInfo": "Dix nouveaux codes remplacent les anciens, qui cessent de fonctionner.",
+    "disable": "Désactiver",
+    "disableInfo": "Vous vous connecterez de nouveau avec votre seul mot de passe.",
+    "passwordLabel": "Mot de passe",
+    "passwordHelp": "Celui de votre connexion.",
+    "backupCodeLabel": "Code de secours",
+    "backupCodeHelp": "Un des codes gardés à l'activation, utilisable une fois.",
+    "codeNowHelp": "Celui que votre application affiche en ce moment.",
+    "useBackup": "Utiliser un code de secours",
+    "useApp": "Utiliser le code de l'application",
+    "confirm": "Confirmer",
+    "enabledToast": "Double authentification activée.",
+    "disabledToast": "Double authentification désactivée.",
+    "loginTitle": "Code de vérification",
+    "loginIntro": "Saisissez le code à 6 chiffres affiché par votre application d'authentification.",
+    "loginIntroBackup": "Saisissez un de vos codes de secours. Chacun ne sert qu'une fois.",
+    "loginCodeLabel": "Code de vérification",
+    "loginCodeHelp": "Il change toutes les 30 secondes.",
+    "loginSubmit": "Valider",
+    "backToPassword": "Revenir au mot de passe",
+    "bannerText": "Protégez votre compte : activez la double authentification.",
+    "bannerAction": "Activer",
+    "bannerDismiss": "Plus tard",
+    "bannerDismissHelp": "Ne plus le rappeler pendant un mois"
   }
 }

@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore'
 
 import { EmailThemeSection } from './EmailThemeSection'
 import { PasswordSection } from './PasswordSection'
+import { SecuritySection } from './SecuritySection'
 
 /**
  * My profile: who I am here, and the settings that belong to the account.
@@ -103,6 +104,9 @@ export default function MyProfile() {
         {seesWholeFund && <EmailThemeSection />}
 
         {!mustChangePassword && <PasswordSection />}
+
+        {/* The second factor, offered to every account (the owner, 2 Nov 2026). */}
+        <SecuritySection />
       </div>
     </>
   )

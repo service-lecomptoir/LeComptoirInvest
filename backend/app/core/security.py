@@ -17,6 +17,14 @@ from app.config import get_settings
 _pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _ALGORITHM = "HS256"
 
+#: What a session token opens. 🔴 THE PASSWORD LINK AND THE SECOND STEP OF THE SIGN-IN ARE
+#: SIGNED WITH THE SAME KEY AND NAME THE SAME ACCOUNT (`sub`): until 3 Nov 2026 the door
+#: read any of them as a session, so a password link presented as a bearer opened the
+#: account for its two hours, or its week (measured: `/auth/me` answered 200). A token of
+#: another `type` is refused; a token issued before the field existed carries none and
+#: lives out its own expiry (twelve hours at most).
+ACCESS_TOKEN_TYPE = "access"
+
 
 def hash_password(raw: str) -> str:
     return _pwd.hash(raw)
@@ -36,7 +44,17 @@ def create_access_token(subject: str, role: str) -> str:
         # `sid`: the session this sign-in opens, what « Déconnexion » closes on the
         # server (`services/session_service.py`). One token, one session: nothing
         # renews it, so each token issued is a sign-in of its own.
-        {"sub": subject, "role": role, "exp": expire, "sid": uuid.uuid4().hex},
+        #
+        # `type`: what the token opens (`ACCESS_TOKEN_TYPE`, the session). Every other
+        # token signed with this key (the password link, the second step of the sign-in)
+        # names another, and the door refuses it (`deps.current_user`).
+        {
+            "sub": subject,
+            "role": role,
+            "exp": expire,
+            "sid": uuid.uuid4().hex,
+            "type": ACCESS_TOKEN_TYPE,
+        },
         settings.SECRET_KEY,
         algorithm=_ALGORITHM,
     )
@@ -48,3 +66,36 @@ def read_access_token(token: str) -> dict | None:
         return jwt.decode(token, get_settings().SECRET_KEY, algorithms=[_ALGORITHM])
     except JWTError:
         return None
+
+
+def opens_a_session(claims: dict) -> bool:
+    """Is this a session token? A token with no `type` was issued before the field existed
+    (a session, at most twelve hours old); any other `type` opens something else."""
+    return claims.get("type", ACCESS_TOKEN_TYPE) == ACCESS_TOKEN_TYPE
+
+
+# ── Second factor: the intermediate token between the password and the code ─────────
+
+
+def create_two_factor_pending_token(subject: str) -> str:
+    """A few minutes, one purpose: it opens nothing but the second step of the sign-in
+    (`opens_a_session` refuses it at every other door). No `sid`: it is no session."""
+    from app.core.two_factor import PENDING_TOKEN_MINUTES, PENDING_TOKEN_TYPE
+
+    expire = datetime.now(UTC) + timedelta(minutes=PENDING_TOKEN_MINUTES)
+    return jwt.encode(
+        {"sub": subject, "exp": expire, "type": PENDING_TOKEN_TYPE},
+        get_settings().SECRET_KEY,
+        algorithm=_ALGORITHM,
+    )
+
+
+def read_two_factor_pending_token(token: str) -> str | None:
+    """The account id an intermediate token names, or None (expired, forged, other type)."""
+    from app.core.two_factor import PENDING_TOKEN_TYPE
+
+    claims = read_access_token(token)
+    if not claims or claims.get("type") != PENDING_TOKEN_TYPE:
+        return None
+    subject = claims.get("sub")
+    return str(subject) if subject else None

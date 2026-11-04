@@ -64,7 +64,14 @@ export default function SetPassword() {
     setBusy(true)
     try {
       const { data } = await authApi.setPasswordThroughLink(token, password)
-      await adopt(data.access_token)
+      // 🔴 A LINK PROVES THE MAILBOX, NOT THE PHONE (3 Nov 2026): with a second factor on,
+      // the password is set and the code is asked at the sign-in door, never skipped.
+      if (data.two_factor_required && data.two_factor_token) {
+        toast.success(t('setPassword.done'))
+        navigate('/login', { replace: true, state: { twoFactorToken: data.two_factor_token } })
+        return
+      }
+      await adopt(data.access_token ?? '')
       toast.success(t('setPassword.done'))
       navigate('/', { replace: true })
     } catch (err) {

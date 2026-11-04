@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { ChevronRight, Lock } from 'lucide-react'
@@ -13,6 +13,7 @@ import { LogoMark } from '@/components/common/Logo'
 import { SignupForm } from '@/components/signup/SignupForm'
 import { safeNext } from '@/lib/nextPath'
 import { useFieldCheck } from '@/lib/formCheck'
+import { TwoFactorStep } from '@/components/security/TwoFactorStep'
 
 export default function Login() {
   const { t, i18n } = useTranslation()
@@ -41,6 +42,11 @@ export default function Login() {
   // 🔴 A FORGOTTEN PASSWORD HAS A WAY BACK (customer recipe, 30 Sept 2026: there was none,
   // and the only exit was writing to support). A link by e-mail, never a password.
   const [forgetting, setForgetting] = useState(false)
+  // The second step of the sign-in, when the account's second factor is on (3 Nov 2026).
+  // A password link that set the password while the factor is on lands here with its
+  // five-minute token: the code is asked here too.
+  const handed = (useLocation().state as { twoFactorToken?: string } | null) ?? {}
+  const [twoFactorToken, setTwoFactorToken] = useState<string | null>(handed.twoFactorToken ?? null)
 
   if (isAuthenticated) return <Navigate to={next} replace />
 
@@ -56,7 +62,12 @@ export default function Login() {
     if (!fine) return
     setBusy(true)
     try {
-      await login(email.trim(), password)
+      const pending = await login(email.trim(), password)
+      if (pending) {
+        setPassword('')
+        setTwoFactorToken(pending.twoFactorToken)
+        return
+      }
       navigate(next, { replace: true })
     } catch (err) {
       // Shown in place rather than as a toast: the user is looking at this form, and a
@@ -124,7 +135,17 @@ export default function Login() {
             </div>
           </div>
 
-          {forgetting ? (
+          {twoFactorToken ? (
+            <TwoFactorStep
+              twoFactorToken={twoFactorToken}
+              onSignedIn={() => navigate(next, { replace: true })}
+              onCancel={() => {
+                setTwoFactorToken(null)
+                setError(null)
+              }}
+              refusal={(err) => signInError(err, t)}
+            />
+          ) : forgetting ? (
             <ForgotPassword email={email} onBack={() => setForgetting(false)} />
           ) : signingUp ? (
             <div>

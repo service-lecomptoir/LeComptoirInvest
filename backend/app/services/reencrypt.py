@@ -92,6 +92,9 @@ FIELDS: tuple[EncryptedField, ...] = (
         derived="iban_fingerprint",
         derive=crypto.fingerprint,
     ),
+    # The TOTP secret of an account's second factor (3 Nov 2026): read back at every
+    # sign-in that asks a code, so a rotation must carry it to the new key too.
+    EncryptedField("user_two_factors", "secret_encrypted"),
 )
 
 # ─────────────────────────────────────────────────────────────────────────────

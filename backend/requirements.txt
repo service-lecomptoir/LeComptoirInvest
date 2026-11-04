@@ -24,3 +24,6 @@ aiosmtplib==5.1.2
 # conteneur. Le produit frere a fait le meme choix, pour la meme raison.
 jinja2==3.1.6
 xhtml2pdf==0.2.17
+# The second factor (3 Nov 2026): its QR code, drawn on the server as SVG (pure Python,
+# no dependency of its own).
+segno==1.6.6

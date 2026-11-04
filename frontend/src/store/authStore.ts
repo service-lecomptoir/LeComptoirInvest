@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { authApi } from '@/api'
 import { TOKEN_KEY } from '@/api/client'
+import type { TwoFactorProof } from '@/types'
 
 /**
  * Who is signed in, and what the application is allowed to draw for them.
@@ -32,7 +33,11 @@ interface AuthState {
   /** The holder must replace an id that somebody else passed on to them. */
   mustChangePassword: boolean
 
-  login: (email: string, password: string) => Promise<void>
+  /** The password. With a second factor on, no session opens: the answer is the token of
+   *  the second step (`loginTwoFactor`), null when the session is open (3 Nov 2026). */
+  login: (email: string, password: string) => Promise<{ twoFactorToken: string } | null>
+  /** The second step: the intermediate token and a code (or a backup code). */
+  loginTwoFactor: (twoFactorToken: string, proof: TwoFactorProof) => Promise<void>
   /** Open the session a password link just earned (the token the server answered). */
   adopt: (token: string) => Promise<void>
   logout: () => void
@@ -96,10 +101,17 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (email, password) => {
     const { data } = await authApi.login(email, password)
-    localStorage.setItem(TOKEN_KEY, data.access_token)
+    if (data.two_factor_required && data.two_factor_token) return { twoFactorToken: data.two_factor_token }
+    localStorage.setItem(TOKEN_KEY, data.access_token ?? '')
     // We re-read `/auth/me` rather than settling for the sign-in response: a single
     // source decides what the application draws.
     await useAuthStore.getState().refreshMe()
+    return null
+  },
+
+  loginTwoFactor: async (twoFactorToken, proof) => {
+    const { data } = await authApi.loginTwoFactor(twoFactorToken, proof)
+    await useAuthStore.getState().adopt(data.access_token ?? '')
   },
 
   adopt: async (token) => {

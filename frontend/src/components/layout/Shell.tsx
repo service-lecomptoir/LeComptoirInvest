@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import {
@@ -11,6 +11,7 @@ import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { LogoMark } from '@/components/common/Logo'
 import { ProfileMenu } from '@/components/layout/ProfileMenu'
 import { UpdateBanner } from '@/components/layout/UpdateBanner'
+import { TwoFactorBanner } from '@/components/security/TwoFactorBanner'
 
 interface Item {
   to: string
@@ -138,6 +139,26 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
+/**
+ * The very foot of the side menu: « Confidentialité et mentions légales », small and discreet.
+ *
+ * 🔴 THE OWNER, 2 NOV 2026, ON THE ACCOUNT MENU WHERE IT HAD BEEN PUT THE DAY BEFORE: « sa
+ * place n'est pas là ». A public notice is no gesture of the account: it sits under the
+ * navigation, one link (this product's `/privacy` carries both, Alice's text `prv`), and a
+ * click closes the drawer on a phone like any other entry. It stays on the sign-in page,
+ * the pricing page and at the foot of the public page.
+ */
+function RailFoot({ onNavigate }: { onNavigate?: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <div className="shrink-0 border-t border-white/10 px-4 py-3 text-[11px] text-white/45">
+      <Link to="/privacy" onClick={onNavigate} className="hover:text-white/80 hover:underline">
+        {t('privacy.title')}
+      </Link>
+    </div>
+  )
+}
+
 /** The pages a reader can be on that have no menu entry of their own.
  *
  *  ⚠️ Written out because they exist, not because a list is nice: `/profile` is reached from
@@ -195,6 +216,7 @@ export function Shell() {
     <>
       <Brand />
       <NavList onNavigate={() => setOpen(false)} />
+      <RailFoot onNavigate={() => setOpen(false)} />
     </>
   )
 
@@ -252,6 +274,9 @@ export function Shell() {
             <ProfileMenu />
           </div>
         </header>
+        {/* Recommended, never imposed: whoever runs the fund without a second factor is
+            invited (the owner, 2 Nov 2026). */}
+        <TwoFactorBanner />
         <main className="px-4 sm:px-6 lg:px-8 py-6 max-w-[1400px]">
           <Outlet />
         </main>

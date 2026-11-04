@@ -14,6 +14,7 @@ from app.api.deps import current_user
 from app.core import account_kind, audit
 from app.core.security import (
     create_access_token,
+    create_two_factor_pending_token,
     hash_password,
     read_access_token,
     verify_password,
@@ -22,7 +23,7 @@ from app.database import SESSION
 from app.models.user import User
 from app.core.i18n import pick
 from app.core.visitor_window import VisitorWindow
-from app.services import password_link_service, session_service
+from app.services import password_link_service, session_service, two_factor_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -33,10 +34,44 @@ class LoginIn(BaseModel):
 
 
 class LoginOut(BaseModel):
-    access_token: str
+    """A session, or the second step of the sign-in.
+
+    🔴 WITH A SECOND FACTOR ON, THE PASSWORD OPENS NOTHING (3 Nov 2026): `access_token` is
+    None, `two_factor_required` is true, and `two_factor_token` (five minutes, one
+    purpose) goes back with the code to `/auth/login/two-factor`, which opens the session.
+    """
+
+    access_token: str | None = None
     token_type: str = "bearer"
-    role: str
-    must_change_password: bool
+    role: str | None = None
+    must_change_password: bool = False
+    two_factor_required: bool = False
+    two_factor_token: str | None = None
+
+
+def second_step(user: User) -> LoginOut:
+    """The answer of a password (or a password link) accepted while the factor is on."""
+    return LoginOut(
+        two_factor_required=True,
+        two_factor_token=create_two_factor_pending_token(str(user.id)),
+    )
+
+
+def signed_in(user: User, *, must_change_password: bool | None = None) -> LoginOut:
+    """The sign-in is complete (the password, and the code when the factor is on): the
+    moment is kept and a session token is issued. The request's session commits it."""
+    # Kept so a password link knows whether it welcomes somebody (a week) or serves a
+    # forgotten password (two hours).
+    user.last_login_at = datetime.now(UTC)
+    return LoginOut(
+        access_token=create_access_token(str(user.id), user.role),
+        role=user.role,
+        must_change_password=(
+            user.must_change_password
+            if must_change_password is None
+            else must_change_password
+        ),
+    )
 
 
 @router.post("/login", response_model=LoginOut)
@@ -58,14 +93,9 @@ async def login(data: LoginIn, db: AsyncSession = SESSION):
             status.HTTP_403_FORBIDDEN,
             pick("Ce compte est désactivé.", "This account is disabled."),
         )
-    # Kept so a password link knows whether it welcomes somebody (a week) or serves a
-    # forgotten password (two hours).
-    user.last_login_at = datetime.now(UTC)
-    return LoginOut(
-        access_token=create_access_token(str(user.id), user.role),
-        role=user.role,
-        must_change_password=user.must_change_password,
-    )
+    if await two_factor_service.is_enabled(db, user):
+        return second_step(user)
+    return signed_in(user)
 
 
 class ForgotIn(BaseModel):
@@ -172,16 +202,18 @@ async def password_link_consume(
     token: str, data: PasswordLinkIn, db: AsyncSession = SESSION
 ):
     """Set the password the person chose and open their session at once: the link proved
-    they hold the mailbox, and asking them to type it again right away proves nothing."""
+    they hold the mailbox, and asking them to type it again right away proves nothing.
+
+    🔴 EXCEPT THE SECOND FACTOR (3 Nov 2026). A link proves the mailbox, not the phone:
+    with the factor on, the password is set and the answer is the second step of the
+    sign-in, never a session (a stolen mailbox must not be a way around the code)."""
     try:
         user = await password_link_service.consume(db, token, data.new_password)
     except password_link_service.PasswordLinkError as exc:
         raise _link_refusal(exc.reason) from None
-    return LoginOut(
-        access_token=create_access_token(str(user.id), user.role),
-        role=user.role,
-        must_change_password=False,
-    )
+    if await two_factor_service.is_enabled(db, user):
+        return second_step(user)
+    return signed_in(user, must_change_password=False)
 
 
 class MeOut(BaseModel):

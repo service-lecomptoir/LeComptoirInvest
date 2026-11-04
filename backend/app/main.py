@@ -128,8 +128,11 @@ from app.api.v1.statements import router as statements_router  # noqa: E402
 from app.api.v1.subscriptions import router as subscriptions_router  # noqa: E402
 from app.api.v1.terms import router as terms_router  # noqa: E402
 from app.api.v1.treasury import router as treasury_router  # noqa: E402
+from app.api.v1.two_factor import router as two_factor_router  # noqa: E402
 
 app.include_router(auth_router, prefix="/api/v1")
+# The second factor: the second step of the sign-in and « Sécurité » (3 Nov 2026).
+app.include_router(two_factor_router, prefix="/api/v1")
 app.include_router(account_router, prefix="/api/v1")
 app.include_router(investors_router, prefix="/api/v1")
 app.include_router(subscriptions_router, prefix="/api/v1")

@@ -108,8 +108,10 @@ async def test_rotate_reencrypt_and_the_new_key_alone_reads_everything(db, ring)
 
     ring(f"{new},{old}")
     preview = await reencrypt.measure(db)
+    # The second field is the TOTP secret of a second factor (3 Nov 2026): none here.
     assert [(f.values, f.to_reencrypt, f.stale_derived) for f in preview.fields] == [
-        (2, 2, 2)
+        (2, 2, 2),
+        (0, 0, 0),
     ]
     assert preview.journal_copies == 1
 

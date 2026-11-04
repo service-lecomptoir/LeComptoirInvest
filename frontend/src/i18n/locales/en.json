@@ -708,11 +708,11 @@
       },
       "profile": {
         "what": "Your account: the account name, the e-mail address, the role and the kind of account (club or fund, or management company).",
-        "how": "Change your password and choose the look of the e-mails sent to your investors. The name and the address are changed in the administration console."
+        "how": "Change your password and choose the look of the e-mails sent to your investors. In the Security section, turn on two-factor authentication: after the password, the 6-digit code of your authenticator app is asked, and a backup code replaces it without your phone. The name and the address are changed in the administration console."
       },
       "myProfile": {
         "what": "Your account: the account name, the e-mail address and the role.",
-        "how": "Change your password. Your identity is not changed from this screen."
+        "how": "Change your password. In the Security section, you may turn on two-factor authentication: after the password, the 6-digit code of your authenticator app is asked. Your identity is not changed from this screen."
       },
       "billing": {
         "what": "The subscription to Le Comptoir Invest: the current plan, the payment methods and the invoices.",
@@ -726,7 +726,8 @@
       "signOut": "Log out, at the bottom of the same menu, closes your session once you confirm, on the server and not only in the browser: a copy of your session stops working at once, and your other open tabs go back to the sign-in page. Your other devices stay signed in.",
       "language": "The flags at the top of the screen switch the application between French and English; the choice is remembered on this device.",
       "update": "When a new version goes live, a banner at the bottom of the screen says so: Reload shows it, without signing you out.",
-      "password": "Forgot your password? on the sign-in page sends a link to choose a new one, valid for two hours."
+      "password": "Forgot your password? on the sign-in page sends a link to choose a new one, valid for two hours.",
+      "privacy": "Privacy and legal notice, at the very foot of the left menu, opens the text the console publishes, with the list of sub-processors: it can also be read without signing in, from the sign-in page."
     }
   },
   "pricing": {
@@ -1099,5 +1100,57 @@
     "notPublished": "The privacy and legal notice is being published: it will appear here as soon as it is online.",
     "unavailableTitle": "Text unavailable",
     "unavailable": "The text cannot be loaded for the moment: try again in a few minutes."
+  },
+  "twoFactor": {
+    "title": "Two-factor authentication",
+    "securityTitle": "Security",
+    "info": "At every sign-in, after the password, the 6-digit code of your authenticator app is asked. A stolen password is no longer enough.",
+    "statusOn": "On",
+    "statusOff": "Off",
+    "recommended": "Recommended for your account",
+    "backupLeft": "Backup codes left",
+    "backupLeftValue": "{{count}} of 10",
+    "intro": "Install an authenticator app (Google Authenticator, Microsoft Authenticator…) on your phone, then show the QR code.",
+    "start": "Turn on two-factor authentication",
+    "qrAlt": "QR code to scan with your authenticator app",
+    "secretLabel": "Setup key",
+    "secretInfo": "If the app cannot read the QR code, choose “enter a setup key” and type this one. It is shown only once.",
+    "codeLabel": "6-digit code",
+    "codeHelp": "The code shown by the app, renewed every 30 seconds.",
+    "activate": "Turn on",
+    "backupTitle": "Your 10 backup codes",
+    "backupInfo": "Without your phone, a backup code replaces the app's code, once each. They will not be shown again: keep them off the phone (paper, password manager).",
+    "copy": "Copy",
+    "copied": "Copied",
+    "download": "Save (.txt)",
+    "fileHeader": "Le Comptoir Invest, backup codes",
+    "kept": "I have put these codes somewhere safe.",
+    "keptHelp": "They will not be shown again: Done closes the list.",
+    "done": "Done",
+    "newCodes": "New backup codes",
+    "newCodesInfo": "Ten new codes replace the old ones, which stop working.",
+    "disable": "Turn off",
+    "disableInfo": "You will sign in with your password alone again.",
+    "passwordLabel": "Password",
+    "passwordHelp": "The one you sign in with.",
+    "backupCodeLabel": "Backup code",
+    "backupCodeHelp": "One of the codes kept at activation, usable once.",
+    "codeNowHelp": "The one your app shows right now.",
+    "useBackup": "Use a backup code",
+    "useApp": "Use the app's code",
+    "confirm": "Confirm",
+    "enabledToast": "Two-factor authentication turned on.",
+    "disabledToast": "Two-factor authentication turned off.",
+    "loginTitle": "Verification code",
+    "loginIntro": "Enter the 6-digit code shown by your authenticator app.",
+    "loginIntroBackup": "Enter one of your backup codes. Each works only once.",
+    "loginCodeLabel": "Verification code",
+    "loginCodeHelp": "It changes every 30 seconds.",
+    "loginSubmit": "Confirm",
+    "backToPassword": "Back to the password",
+    "bannerText": "Protect your account: turn on two-factor authentication.",
+    "bannerAction": "Turn on",
+    "bannerDismiss": "Later",
+    "bannerDismissHelp": "Do not remind me for a month"
   }
 }

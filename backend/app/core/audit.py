@@ -153,6 +153,38 @@ def _collect(session: Session) -> list[tuple]:
     return entries
 
 
+async def record(
+    db, action: str, *, entity_type: str, entity_id, details: dict
+) -> None:
+    """A line the unit of work cannot write by itself: an event with no row of its own to
+    observe (a code refused at sign-in, a second factor switched on). Written by a direct
+    insert in the caller's transaction, so a rolled-back act leaves no line; and, like the
+    listeners, never raises."""
+    import uuid
+
+    from sqlalchemy import insert
+
+    from app.models.audit_log import AuditLog
+
+    actor = current_actor()
+    try:
+        await db.execute(
+            insert(AuditLog).values(
+                id=uuid.uuid4(),
+                created_at=datetime.now(UTC),
+                user_id=actor.get("user_id"),
+                user_email=actor.get("user_email"),
+                action=action,
+                entity_type=entity_type,
+                entity_id=str(entity_id) if entity_id is not None else None,
+                details={k: audit_rules.masked(k, v) for k, v in details.items()},
+                ip_address=actor.get("ip"),
+            )
+        )
+    except Exception:  # noqa: BLE001 - the journal never breaks the operation
+        logger.warning("[audit] could not record %s", action, exc_info=True)
+
+
 _installed = False
 
 
@@ -214,6 +246,7 @@ __all__ = [
     "current_actor",
     "identify",
     "install",
+    "record",
     "reset_actor",
     "set_actor",
 ]

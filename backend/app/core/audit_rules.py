@@ -54,8 +54,10 @@ AUDITED = (
 #: -- is exactly what this journal is for. So: changes and deletions, never creations.
 IMPORTED = ("bank_movements",)
 
-#: The journal does not audit itself.
-NEVER_AUDITED = ("audit_logs",)
+#: The journal does not audit itself. `user_two_factors` holds an account's second factor:
+#: its events are written by name (`two_factor.enabled`, `.disabled`, `.failed`,
+#: `.backup_code_used`, `.backup_codes_regenerated`, `.reset`), never a code.
+NEVER_AUDITED = ("audit_logs", "user_two_factors")
 
 SENSITIVE = (
     "password",

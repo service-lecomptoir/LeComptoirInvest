@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import audit
 from app.core.firm_scope import firm_of, set_current_firm
-from app.core.security import read_access_token
+from app.core.security import opens_a_session, read_access_token
 from app.database import SESSION
 from app.models.investor import Investor
 from app.models.user import User
@@ -31,7 +31,12 @@ async def current_user(
             pick("Authentification requise.", "Sign in required."),
         )
     claims = read_access_token(authorization.split(" ", 1)[1])
-    if not claims or not claims.get("sub"):
+    # 🔴 A SESSION TOKEN, AND NO OTHER (3 Nov 2026). The password link and the second step
+    # of the sign-in are signed with the same key and name the same account: without
+    # `opens_a_session` the intermediate token of the second factor, given for the
+    # password alone, would open every door, and a password link presented as a bearer
+    # did until then (measured: `/auth/me` answered 200 to one).
+    if not claims or not claims.get("sub") or not opens_a_session(claims):
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
             pick("Session expirée ou invalide.", "Session expired or invalid."),

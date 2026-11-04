@@ -1,0 +1,10 @@
+# Ruff keeps its defaults here (line length 88, the default rules): this file exists for
+# ONE exception, and says why.
+#
+# 🔴 `app/core/two_factor.py` IS THE SHARED CORE OF THE SECOND FACTOR, the same file byte
+# for byte in every product of Le Comptoir (written at 100 columns in Alice), and a test
+# checks its fingerprint (`tests/test_an_account_may_ask_a_second_factor.py`). Reformatting
+# it to this repository's 88 columns would change the fingerprint and make it a copy of
+# its own: the formatter leaves it as it is; the linter still reads it.
+[format]
+exclude = ["app/core/two_factor.py"]

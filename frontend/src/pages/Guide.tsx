@@ -54,6 +54,8 @@ export default function Guide() {
     'guide.everywhere.language',
     'guide.everywhere.update',
     'guide.everywhere.password',
+    // Where the privacy notice is read, now that it sits at the foot of the side menu.
+    'guide.everywhere.privacy',
   ]
 
   return (

@@ -5,12 +5,16 @@ import type {
   BillingSubscription, PaymentMethods, BillingInvoice, BillingStatus,
   PerformanceBlock, CapitalAccountLine, ProjectValuation, LateCall, InvestorCategory,
   CamtImport, Fund, FundNetAssetValue, CallNotice, InvestorQuota, EmailLook,
+  LoginAnswer, TwoFactorProof, TwoFactorSetup, TwoFactorStatus,
 } from '@/types'
 
 export const authApi = {
+  // With a second factor on, no session: `two_factor_required` and its token (3 Nov 2026).
   login: (email: string, password: string) =>
-    apiClient.post<{ access_token: string; role: string; must_change_password: boolean }>(
-      '/auth/login', { email, password }, { skipErrorToast: true }),
+    apiClient.post<LoginAnswer>('/auth/login', { email, password }, { skipErrorToast: true }),
+  loginTwoFactor: (twoFactorToken: string, proof: TwoFactorProof) =>
+    apiClient.post<LoginAnswer>('/auth/login/two-factor',
+      { two_factor_token: twoFactorToken, ...proof }, { skipErrorToast: true }),
   // A reload keeps only the token: the application asks again WHO it serves rather
   // than trusting a role copied into local storage, which a user can edit and which
   // stays frozen after a change decided elsewhere.
@@ -30,13 +34,25 @@ export const authApi = {
     apiClient.get<{ email: string; purpose: 'welcome' | 'reset' }>(
       `/auth/password-link/${encodeURIComponent(token)}`, { skipErrorToast: true }),
   setPasswordThroughLink: (token: string, newPassword: string) =>
-    apiClient.post<{ access_token: string; role: string; must_change_password: boolean }>(
+    apiClient.post<LoginAnswer>(
       `/auth/password-link/${encodeURIComponent(token)}`, { new_password: newPassword },
       { skipErrorToast: true }),
   changePassword: (currentPassword: string, newPassword: string) =>
     apiClient.post('/auth/change-password',
       { current_password: currentPassword, new_password: newPassword },
       { skipErrorToast: true }),
+  // « Sécurité » of « Mon profil »: the second factor of the signed-in account.
+  twoFactor: {
+    status: () => apiClient.get<TwoFactorStatus>('/auth/two-factor', { skipErrorToast: true }),
+    setup: () => apiClient.post<TwoFactorSetup>('/auth/two-factor/setup', null, { skipErrorToast: true }),
+    activate: (code: string) =>
+      apiClient.post<{ backup_codes: string[] }>('/auth/two-factor/activate', { code }, { skipErrorToast: true }),
+    backupCodes: (password: string, proof: TwoFactorProof) =>
+      apiClient.post<{ backup_codes: string[] }>('/auth/two-factor/backup-codes',
+        { password, ...proof }, { skipErrorToast: true }),
+    disable: (password: string, proof: TwoFactorProof) =>
+      apiClient.post('/auth/two-factor/disable', { password, ...proof }, { skipErrorToast: true }),
+  },
 }
 
 // The settings of the account that sends the letters. The look is the management

@@ -114,6 +114,11 @@ APPROVED: dict[str, str] = {
     # link's signed token carries (read back when the link is followed).
     "NOT_ANSWERED": "not_answered",
     "TOKEN_TYPE": "password_link",
+    # And the two other kinds of token signed with the same key (3 Nov 2026): the session,
+    # and the intermediate step of a sign-in with a second factor (its name is the shared
+    # core's, `core/two_factor.py`, the same in every product).
+    "ACCESS_TOKEN_TYPE": "access",
+    "PENDING_TOKEN_TYPE": "two_factor_pending",
     # ⚠️ ALICE'S WORDS FOR THE THREE DOCUMENTS AND FOR « EVERY KIND OF ACCOUNT » (2 Oct
     # 2026), which reach no column here: this product keeps nothing of the terms. They
     # travel on the contract with the console, which spells them so for every product,

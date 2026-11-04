@@ -11,6 +11,37 @@ export interface User {
   sees_whole_fund: boolean
 }
 
+// ── The second factor (3 Nov 2026) ─────────────────────────────────────────────────────
+
+/** What a password (or a password link) answers: a session, or the second step. */
+export interface LoginAnswer {
+  access_token: string | null
+  role: string | null
+  must_change_password: boolean
+  two_factor_required: boolean
+  /** Five minutes, one purpose: sent back with the code to `/auth/login/two-factor`. */
+  two_factor_token: string | null
+}
+
+/** A code of the authenticator app, or one backup code. */
+export type TwoFactorProof = { code: string } | { backup_code: string }
+
+export interface TwoFactorStatus {
+  enabled: boolean
+  enabled_at: string | null
+  backup_codes_remaining: number
+  /** The banner invites this account (whoever runs the fund). */
+  recommended: boolean
+  required: boolean
+}
+
+/** Shown ONCE: the secret and its QR code (an SVG data URI drawn by the server). */
+export interface TwoFactorSetup {
+  secret: string
+  otpauth_uri: string
+  qr_code: string
+}
+
 export interface Me {
   id: string
   email: string
