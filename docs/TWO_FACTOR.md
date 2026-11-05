@@ -35,7 +35,9 @@ formatage (et de lui seul) pour qu'il reste octet pour octet celui d'Alice. Le l
   - `GET /auth/two-factor`, `POST /auth/two-factor/setup | activate | backup-codes | disable` :
     la section « Sécurité » de « Mon profil ».
 - Le plafond (`core/visitor_window.py`, la fenêtre par visiteur des portes publiques) : 10
-  par minute pour la deuxième étape, 5 pour les gestes de « Sécurité ».
+  par minute pour la deuxième étape, 5 pour les gestes de « Sécurité ». Depuis le 5 nov. 2026,
+  10 par minute pour le mot de passe aussi (`auth._login_window` ; il n'en avait aucun) : au-delà,
+  429 et une phrase dans la langue du lecteur.
 - 🔴 La porte (`deps.current_user`) refuse tout jeton dont le `type` n'est pas `access` : le
   jeton intermédiaire n'ouvre rien d'autre. Elle refuse du même coup un lien de mot de passe
   présenté comme une session (`Authorization: Bearer`), ce qu'elle acceptait jusqu'au 3 nov.
@@ -71,7 +73,7 @@ passe ET code.
 |---|---|
 | Lien « Choisir mon mot de passe » (bienvenue d'un compte ouvert par la console, mot de passe oublié, lien demandé par la console) | Il ouvrait la session aussitôt. **Protégé : facteur actif, il fixe le mot de passe puis demande le code** (la page renvoie à l'étape « Code de vérification » de la connexion) ; un lien prouve la boîte mail, pas le téléphone. |
 | Le même lien présenté comme jeton de session | Refusé (401) depuis le 3 nov. 2026 : la porte ne lit plus que les jetons `access`. |
-| Lien de connexion de la console (`/internal/managers/{id}/login-link`) | Couvert : demandé par un administrateur de la console d'Alice, qui a passé sa double authentification obligatoire, derrière la clé interne, sur le réseau Docker seulement (`/internal` n'est pas publié). Le jeton rendu est une session (`type = access`). |
+| Lien de connexion de la console (`/internal/managers/{id}/login-link`) | **Protégé depuis le 5 nov. 2026** : l'administrateur de la console a passé SA double authentification, pas celle du titulaire. Facteur actif : aucune session, `{two_factor_required: true, two_factor_token, url: "/login#two_factor=<jeton>"}` (5 minutes, dans le fragment, que le navigateur n'envoie à aucun serveur) et la page de connexion ouvre l'étape « Code de vérification ». Sans facteur : `/login?token=<session>`, que la page de connexion lit enfin (elle l'ignorait : le lien n'ouvrait qu'un formulaire vide). |
 | Mot de passe posé par la console (`/internal/managers/{id}/reset-password`) | Ce n'est pas une connexion sans mot de passe : la connexion suivante demande le code. |
 | Espace investisseur ou associé par lien d'invitation | Il n'en existe pas : aucun écran ni aucune route ne crée un compte investisseur ni n'envoie d'invitation ; un compte investisseur se connecte par mot de passe (et son code s'il l'a activé). |
 | SSO entre produits, jeton d'un autre produit, impersonation | Aucun : seule Alice parle à `/internal`, avec la clé. |

@@ -383,25 +383,57 @@ async def test_the_door_opens_to_a_session_token_only(client, db):
     assert (await client.get("/api/v1/auth/me", headers=session)).status_code == 200
 
 
-async def test_the_console_s_sign_in_link_is_a_session_of_its_own(client, db):
-    """Covered, not protected: the console's administrator asked for it after passing
-    Alice's mandatory second factor, behind the internal key, on the Docker network only.
-    The token it hands is a session (`type = access`), which the door reads."""
+async def test_the_console_s_sign_in_link_leads_to_the_code_step(client, db):
+    """🔴 Protected (5 Nov 2026): the console's administrator passed THEIR second factor,
+    not the holder's. With the holder's factor on, the link opens no session but the code
+    step of the sign-in, its five-minute token in the fragment of the address."""
     manager = await _account(db)
-    await _enrol(client, manager)
+    secret, _, _ = await _enrol(client, manager)
     answer = await client.post(
         f"/internal/managers/{manager.id}/login-link",
         headers={"X-Internal-Key": KEY},
     )
     assert answer.status_code == 200, answer.text
-    token = answer.json()["token"]
-    assert jwt.get_unverified_claims(token)["type"] == "access"
+    body = answer.json()
+    assert body["two_factor_required"] is True
+    assert "token" not in body, "no session leaves with the link"
+    pending = body["two_factor_token"]
+    assert body["url"] == f"/login#two_factor={pending}"
+    assert jwt.get_unverified_claims(pending)["type"] == "two_factor_pending"
+    # The intermediate token opens nothing on its own...
     assert (
-        await client.get("/api/v1/auth/me", headers=_bearer(token))
+        await client.get("/api/v1/auth/me", headers=_bearer(pending))
+    ).status_code == 401
+    # ...and the holder's code turns it into the session.
+    opened = await client.post(
+        "/api/v1/auth/login/two-factor",
+        json={"two_factor_token": pending, "code": _code(secret)},
+    )
+    assert opened.status_code == 200, opened.text
+    assert (
+        await client.get(
+            "/api/v1/auth/me", headers=_bearer(opened.json()["access_token"])
+        )
     ).status_code == 200
     # Without the key, nobody gets one.
     refused = await client.post(f"/internal/managers/{manager.id}/login-link")
     assert refused.status_code == 401
+
+
+async def test_without_the_factor_the_console_s_link_is_a_session(client, db):
+    manager = await _account(db)
+    answer = await client.post(
+        f"/internal/managers/{manager.id}/login-link",
+        headers={"X-Internal-Key": KEY},
+    )
+    assert answer.status_code == 200, answer.text
+    body = answer.json()
+    assert body["two_factor_required"] is False
+    assert body["url"] == f"/login?token={body['token']}"
+    assert jwt.get_unverified_claims(body["token"])["type"] == "access"
+    assert (
+        await client.get("/api/v1/auth/me", headers=_bearer(body["token"]))
+    ).status_code == 200
 
 
 def test_no_route_removes_somebody_else_s_factor():

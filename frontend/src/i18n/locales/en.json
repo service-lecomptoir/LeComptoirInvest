@@ -81,7 +81,8 @@
       "invalidEmail": "This e-mail address is not valid: please check it.",
       "unavailable": "The service is briefly unavailable: try again in a moment.",
       "serverError": "The server ran into an error: try again in a moment.",
-      "unreachable": "The server does not answer: check your internet connection, then try again."
+      "unreachable": "The server does not answer: check your internet connection, then try again.",
+      "linkInvalid": "This sign-in link is no longer valid: sign in with your password."
     },
     "emailHint": "The address your account was opened with.",
     "passwordHint": "Upper and lower case count."

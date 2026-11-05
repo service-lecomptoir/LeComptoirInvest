@@ -81,7 +81,8 @@
       "invalidEmail": "Cette adresse e-mail n'est pas valide : vérifiez-la.",
       "unavailable": "Le service est momentanément indisponible : réessayez dans un instant.",
       "serverError": "Le serveur a rencontré une erreur : réessayez dans un instant.",
-      "unreachable": "Le serveur ne répond pas : vérifiez votre connexion internet, puis réessayez."
+      "unreachable": "Le serveur ne répond pas : vérifiez votre connexion internet, puis réessayez.",
+      "linkInvalid": "Ce lien de connexion n'est plus valable : connectez-vous avec votre mot de passe."
     },
     "emailHint": "L'adresse à laquelle votre compte a été ouvert.",
     "passwordHint": "Les majuscules et les minuscules comptent."

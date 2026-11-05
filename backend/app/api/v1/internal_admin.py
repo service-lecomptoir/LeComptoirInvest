@@ -28,9 +28,13 @@ from fastapi.concurrency import run_in_threadpool
 
 from app.config import get_settings
 from app.core import account_kind, audit, firm_scope
-from app.core.security import create_access_token, hash_password
+from app.core.security import (
+    create_access_token,
+    create_two_factor_pending_token,
+    hash_password,
+)
 from app.database import SESSION
-from app.services import password_link_service
+from app.services import password_link_service, two_factor_service
 from app.models.audit_log import AuditLog
 from app.models.investor import Investor
 from app.models.subscription import Subscription
@@ -677,6 +681,12 @@ async def login_link(
 
     ⚠️ A BLOCKED ACCOUNT GETS NO LINK. Otherwise the link becomes the way around the block,
     and the suspension means nothing.
+
+    🔴 THE ACCOUNT'S SECOND FACTOR IS RESPECTED (5 Nov 2026): when it is on, the link opens no
+    session but the code step of the sign-in, `/login#two_factor=<five-minute token>`. The
+    console's administrator proved their own phone, not the holder's. The token travels in
+    the FRAGMENT, which no browser sends to a server and no access log writes (as Le
+    Comptoir Market's single sign-on).
     """
     user = await _managed(db, manager_id)
     if not user.is_active:
@@ -687,8 +697,19 @@ async def login_link(
                 "This account is blocked: a sign-in link would work around the block.",
             ),
         )
+    if await two_factor_service.is_enabled(db, user):
+        pending = create_two_factor_pending_token(str(user.id))
+        return {
+            "two_factor_required": True,
+            "two_factor_token": pending,
+            "url": f"/login#two_factor={pending}",
+        }
     token = create_access_token(str(user.id), user.role)
-    return {"token": token, "url": f"/login?token={token}"}
+    return {
+        "token": token,
+        "two_factor_required": False,
+        "url": f"/login?token={token}",
+    }
 
 
 @router.get("/stats", response_model=Stats)

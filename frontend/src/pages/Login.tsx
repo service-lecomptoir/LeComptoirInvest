@@ -7,11 +7,12 @@ import { Button, Input } from '@/components/ui'
 import { Notice } from '@/components/common/Primitives'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { authApi } from '@/api'
-import { errorMessage } from '@/api/client'
+import { TOKEN_KEY, errorMessage } from '@/api/client'
 import { useAuthStore } from '@/store/authStore'
 import { LogoMark } from '@/components/common/Logo'
 import { SignupForm } from '@/components/signup/SignupForm'
 import { safeNext } from '@/lib/nextPath'
+import { readConsoleLink, withoutLink } from '@/lib/consoleLink'
 import { useFieldCheck } from '@/lib/formCheck'
 import { TwoFactorStep } from '@/components/security/TwoFactorStep'
 
@@ -24,11 +25,15 @@ export default function Login() {
   useEffect(() => {
     document.title = `Le Comptoir Invest | ${t('login.title')}`
   }, [t, i18n.language])
-  const { login, isAuthenticated } = useAuthStore()
+  const { login, adopt, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
+  const location = useLocation()
   // Where the reader was sent away from, if it is a path of this site (`lib/nextPath`).
   const [params] = useSearchParams()
   const next = safeNext(params.get('next')) ?? '/'
+  // 🔴 THE CONSOLE'S SIGN-IN LINK (`lib/consoleLink`), read once at the opening: a session,
+  // or the code step when the holder's second factor is on.
+  const [link] = useState(() => readConsoleLink(location.search, location.hash))
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -45,10 +50,29 @@ export default function Login() {
   // The second step of the sign-in, when the account's second factor is on (3 Nov 2026).
   // A password link that set the password while the factor is on lands here with its
   // five-minute token: the code is asked here too.
-  const handed = (useLocation().state as { twoFactorToken?: string } | null) ?? {}
-  const [twoFactorToken, setTwoFactorToken] = useState<string | null>(handed.twoFactorToken ?? null)
+  const handed = (location.state as { twoFactorToken?: string } | null) ?? {}
+  const [twoFactorToken, setTwoFactorToken] = useState<string | null>(
+    handed.twoFactorToken ?? link.twoFactor,
+  )
 
-  if (isAuthenticated) return <Navigate to={next} replace />
+  useEffect(() => {
+    if (!link.session && !link.twoFactor) return
+    // Nothing of the link stays in the address bar, where a reload would replay it.
+    navigate({ pathname: '/login', search: withoutLink(location.search) }, { replace: true, state: location.state })
+    if (!link.session) return
+    adopt(link.session)
+      .then(() => navigate(next, { replace: true }))
+      .catch(() => {
+        // A refused link leaves nothing behind: the next visit starts signed out.
+        localStorage.removeItem(TOKEN_KEY)
+        setError(t('login.errors.linkInvalid'))
+      })
+    // Once per link: a change of language must not replay it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [link])
+
+  // A link opens ITS account, even over a session already open in this browser.
+  if (isAuthenticated && !link.session && !link.twoFactor) return <Navigate to={next} replace />
 
   const secured = window.location.protocol === 'https:'
 
