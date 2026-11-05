@@ -217,6 +217,17 @@ async def db(migrated_schema: str) -> AsyncSession:
 
 
 @pytest.fixture(autouse=True)
+def the_password_window_starts_empty():
+    """The password's ceiling (`auth._login_window`) counts every sign-in of the suite under
+    the test client's one address: each test starts with an empty window."""
+    from app.api.v1 import auth
+
+    auth._login_window.clear()
+    yield
+    auth._login_window.clear()
+
+
+@pytest.fixture(autouse=True)
 def the_language_never_survives_one_test():
     """🔴 THE LEAK THIS PRODUCT'S OWN GUARD WARNS ABOUT, CAUGHT BY ITS OWN TEST SUITE.
 

@@ -74,8 +74,23 @@ def signed_in(user: User, *, must_change_password: bool | None = None) -> LoginO
     )
 
 
+#: At most this many password attempts a minute from one visitor (there was no ceiling until
+#: 5 Nov 2026: a password could be tried without limit). The same window as every public
+#: door of the product (`core/visitor_window`), counted on the visitor behind the proxy.
+LOGIN_PER_MINUTE = 10
+_login_window = VisitorWindow(LOGIN_PER_MINUTE)
+
+
 @router.post("/login", response_model=LoginOut)
-async def login(data: LoginIn, db: AsyncSession = SESSION):
+async def login(data: LoginIn, request: Request, db: AsyncSession = SESSION):
+    if not _login_window.admit(request):
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            pick(
+                "Trop de tentatives d'un coup : réessayez dans une minute.",
+                "Too many attempts at once: try again in a minute.",
+            ),
+        )
     user = (
         await db.execute(select(User).where(User.email == data.email.lower()))
     ).scalar_one_or_none()
