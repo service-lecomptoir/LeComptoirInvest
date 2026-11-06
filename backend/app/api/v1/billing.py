@@ -347,7 +347,21 @@ async def invoice_pdf(
     """⚠️ THE MANAGER'S ID IS THE SESSION'S, never a parameter. The console files invoices
     by manager: accepting an id from the request would let another fund's invoice be read
     by changing one digit in the address."""
-    found = await alice_client.invoice_pdf(user.id, invoice_id)
+    return _pdf(await alice_client.invoice_pdf(user.id, invoice_id))
+
+
+@router.get("/invoices/credit-notes/{note_id}/pdf", summary="A credit note as a PDF")
+async def credit_note_pdf(
+    note_id: uuid.UUID, user: User = Depends(current_manager)
+) -> Response:
+    """A credit note on one of the manager's subscription invoices, shown in
+    « Mon abonnement » (the owner, 6 Nov 2026). The manager's id is the SESSION's, as for
+    an invoice: Alice refuses a note that is not on one of theirs."""
+    return _pdf(await alice_client.credit_note_pdf(user.id, note_id))
+
+
+def _pdf(found: tuple[bytes, str] | None) -> Response:
+    """An invoice or a credit note relayed with Alice's filename; one refusal for both."""
     if found is None:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,

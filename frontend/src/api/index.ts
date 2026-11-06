@@ -212,6 +212,7 @@ export const billingApi = {
   // Changing plan: `components/billing/PlanChangeOffer`, from Alice's offer.
   invoices: () => apiClient.get<BillingInvoice[]>('/billing/invoices'),
   invoicePdfUrl: (id: string) => `/billing/invoices/${id}/pdf`,
+  creditNotePdfUrl: (id: string) => `/billing/invoices/credit-notes/${id}/pdf`,
 }
 
 export const performanceApi = {

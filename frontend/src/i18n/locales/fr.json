@@ -500,6 +500,13 @@
     "noInvoice": "Aucune facture pour l'instant",
     "noInvoiceHint": "Vos factures d'abonnement apparaîtront ici dès le premier règlement.",
     "invoiceUnavailable": "Cette facture n'a pas pu être ouverte.",
+    "creditPartial": "Avoir partiel",
+    "creditTotal": "Avoir total",
+    "creditNotes": "Avoirs de cette facture",
+    "creditNote": "Avoir {{number}}",
+    "creditNoteReason": "Motif : {{reason}}",
+    "creditNoteDownload": "Télécharger l'avoir",
+    "creditNoteUnavailable": "Cet avoir n'a pas pu être ouvert.",
     "actionRefused": "L'opération n'a pas abouti",
     "unavailable": "Le service d'abonnement est momentanément indisponible. Réessayez dans un instant.",
     "noPaymentPage": "La page de paiement n'a pas pu être ouverte. Réessayez dans un instant.",
@@ -717,7 +724,7 @@
       },
       "billing": {
         "what": "L'abonnement au Comptoir Invest : l'offre en cours, les moyens de paiement et les factures.",
-        "how": "Payez par carte ou par prélèvement SEPA, ou déclarez un virement. Changez d'offre (le montant au prorata est estimé avant de confirmer) et téléchargez vos factures en PDF."
+        "how": "Payez par carte ou par prélèvement SEPA, ou déclarez un virement. Changez d'offre (le montant au prorata est estimé avant de confirmer) et téléchargez vos factures en PDF ; un avoir s'affiche sous la facture qu'il corrige, avec son PDF."
       }
     },
     "everywhere": {

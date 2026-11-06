@@ -310,9 +310,19 @@ export interface BillingInvoice {
   number?: string | null
   period?: string | null
   issued_at?: string | null
+  /** Before tax, kept for an invoice older than `amount_ttc`. */
   amount?: number | null
   status?: string | null
   paid_at?: string | null
+  // What Alice actually sends (`/internal/invoices/{user_id}`): the month billed, the
+  // amount including tax (0 on the oldest invoices), and the credit notes read by
+  // `components/billing/invoiceCredits.ts`. All optional: an older Alice omits some.
+  period_year?: number | null
+  period_month?: number | null
+  amount_ttc?: number | string | null
+  created_at?: string | null
+  credit_notes?: unknown
+  credit_state?: string | null
 }
 
 export interface BillingStatus {

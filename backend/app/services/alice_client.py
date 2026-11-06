@@ -385,6 +385,32 @@ async def invoice_pdf(user_id: UUID, invoice_id: str) -> tuple[bytes, str] | Non
     )
 
 
+async def credit_note_pdf(user_id: UUID, note_id: UUID) -> tuple[bytes, str] | None:
+    """The PDF bytes of one credit note on a subscription invoice, and its filename.
+
+    🔴 THE OWNER, 6 NOV 2026: the credit notes shown in « Mon abonnement ».
+    Alice answers 404 unless the note corrects a subscription invoice of THIS manager.
+    """
+    target = _target()
+    if target is None:
+        return None
+    base, headers = target
+    try:
+        async with httpx.AsyncClient(timeout=_ACTION_TIMEOUT, verify=_tls()) as client:
+            resp = await client.get(
+                f"{base}/api/v1/internal/invoices/{user_id}/credit-notes/{note_id}/pdf",
+                headers=headers,
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Alice credit note pdf unreachable: %s", exc)
+        return None
+    if resp.status_code != 200:
+        return None
+    return resp.content, resp.headers.get(
+        "content-disposition", 'attachment; filename="AVOIR.pdf"'
+    )
+
+
 # ── Terms of use, terms of sale and data processing agreement ─────────────────────────
 #
 # 🔴 ALICE HOLDS THE TEXTS AND THE PROOF; THIS PRODUCT KEEPS NOTHING (the manager, 2 Oct

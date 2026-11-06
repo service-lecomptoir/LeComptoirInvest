@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { CreditCard, Landmark, ExternalLink, FileText } from 'lucide-react'
@@ -19,6 +19,23 @@ import type {
   BillingInvoice, BillingStatus, BillingSubscription, PaymentMethods,
 } from '@/types'
 import { PlanChangeOffer } from '@/components/billing/PlanChangeOffer'
+import { creditsOf, nothingLeftToPay, type InvoiceCreditNote } from '@/components/billing/invoiceCredits'
+
+/**
+ * The month an invoice bills, « MM/YYYY », from what Alice sends (`period_month`,
+ * `period_year`). Until 6 Nov 2026 this screen read `period` and `issued_at`, which Alice
+ * never sent: the column came out empty. Both stay as fallbacks.
+ */
+function periodOf(invoice: BillingInvoice): string {
+  const { period_month: month, period_year: year } = invoice
+  if (month && year) return `${String(month).padStart(2, '0')}/${year}`
+  return invoice.period || day(invoice.issued_at || invoice.created_at)
+}
+
+/** What the invoice asked, tax included; the amount before tax only on the oldest ones. */
+function amountOf(invoice: BillingInvoice): number | string | null | undefined {
+  return Number(invoice.amount_ttc) > 0 ? invoice.amount_ttc : invoice.amount
+}
 
 /**
  * What the manager pays to use this product, and by what means.
@@ -247,6 +264,21 @@ export default function Billing() {
     }
   }
 
+  /** A credit note's PDF, the same way (the owner, 6 Nov 2026: the credit notes shown). */
+  const openCreditNote = async (note: InvoiceCreditNote) => {
+    try {
+      const response = await apiClient.get(billingApi.creditNotePdfUrl(note.id), {
+        responseType: 'blob',
+        skipErrorToast: true,
+      })
+      const url = URL.createObjectURL(response.data as Blob)
+      window.open(url, '_blank', 'noopener')
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch {
+      toast.error(t('billing.creditNoteUnavailable'))
+    }
+  }
+
   if (loading) return <Loading label={t('common.loading')} />
 
   const currency = methods?.currency || 'eur'
@@ -449,29 +481,74 @@ export default function Billing() {
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices.map((invoice) => (
-                    <tr key={invoice.id}>
-                      <Td>{invoice.number || '-'}</Td>
-                      <Td>{invoice.period || day(invoice.issued_at)}</Td>
-                      <Td right>{money(invoice.amount, currency)}</Td>
-                      <Td>
-                        {invoice.paid_at ? (
-                          <Pill tone="good">{t('billing.paid')}</Pill>
-                        ) : (
-                          <Pill tone="warn">{t('billing.due')}</Pill>
+                  {invoices.map((invoice) => {
+                    // 🔴 THE CREDIT NOTES UNDER THEIR INVOICE (the owner, 6 Nov 2026): a badge
+                    // beside the status, then one line per note; a total one leaves nothing due.
+                    const credits = creditsOf(invoice)
+                    return (
+                      <Fragment key={invoice.id}>
+                        <tr>
+                          <Td>{invoice.number || '-'}</Td>
+                          <Td>{periodOf(invoice)}</Td>
+                          <Td right>{money(amountOf(invoice), currency)}</Td>
+                          <Td>
+                            <span className="inline-flex flex-wrap items-center gap-1.5">
+                              {invoice.paid_at ? (
+                                <Pill tone="good">{t('billing.paid')}</Pill>
+                              ) : (
+                                !nothingLeftToPay(credits) && <Pill tone="warn">{t('billing.due')}</Pill>
+                              )}
+                              {credits.state === 'partial' && <Pill tone="info">{t('billing.creditPartial')}</Pill>}
+                              {credits.state === 'total' && <Pill tone="info">{t('billing.creditTotal')}</Pill>}
+                            </span>
+                          </Td>
+                          <Td right>
+                            <button
+                              type="button"
+                              onClick={() => openInvoice(invoice)}
+                              className="text-sm font-medium text-brand-teal hover:underline"
+                            >
+                              {t('billing.downloadPdf')}
+                            </button>
+                          </Td>
+                        </tr>
+                        {credits.notes.length > 0 && (
+                          <tr>
+                            <td colSpan={5} className="px-4 pb-3 pt-0 border-b border-gray-100 bg-gray-50/60">
+                              <ul className="pt-2 space-y-1.5" aria-label={t('billing.creditNotes')}>
+                                {credits.notes.map((note) => (
+                                  <li key={note.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-600">
+                                    <span className="font-medium text-gray-800">
+                                      {t('billing.creditNote', { number: note.number })}
+                                    </span>
+                                    <span>{day(note.issuedOn)}</span>
+                                    <span className="tabular-nums font-medium text-gray-800">
+                                      {'− '}{money(note.amount, note.currency)}
+                                    </span>
+                                    {note.reason && (
+                                      <span
+                                        className="min-w-0 max-w-full sm:max-w-xs truncate"
+                                        title={t('billing.creditNoteReason', { reason: note.reason })}
+                                      >
+                                        {note.reason}
+                                      </span>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => openCreditNote(note)}
+                                      className="font-medium text-brand-teal hover:underline"
+                                    >
+                                      {t('billing.creditNoteDownload')}
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            </td>
+                          </tr>
                         )}
-                      </Td>
-                      <Td right>
-                        <button
-                          type="button"
-                          onClick={() => openInvoice(invoice)}
-                          className="text-sm font-medium text-brand-teal hover:underline"
-                        >
-                          {t('billing.downloadPdf')}
-                        </button>
-                      </Td>
-                    </tr>
-                  ))}
+                      </Fragment>
+                    )
+                  })}
                 </tbody>
               </TableWrap>
             )}

@@ -500,6 +500,13 @@
     "noInvoice": "No invoice yet",
     "noInvoiceHint": "Your subscription invoices will appear here from the first payment.",
     "invoiceUnavailable": "This invoice could not be opened.",
+    "creditPartial": "Partial credit note",
+    "creditTotal": "Fully credited",
+    "creditNotes": "Credit notes on this invoice",
+    "creditNote": "Credit note {{number}}",
+    "creditNoteReason": "Reason: {{reason}}",
+    "creditNoteDownload": "Download the credit note",
+    "creditNoteUnavailable": "This credit note could not be opened.",
     "actionRefused": "The operation did not go through",
     "unavailable": "The subscription service is momentarily unavailable. Please try again shortly.",
     "noPaymentPage": "The payment page could not be opened. Please try again shortly.",
@@ -717,7 +724,7 @@
       },
       "billing": {
         "what": "The subscription to Le Comptoir Invest: the current plan, the payment methods and the invoices.",
-        "how": "Pay by card or SEPA direct debit, or declare a bank transfer. Change plan (the prorated amount is estimated before you confirm) and download your invoices as PDF."
+        "how": "Pay by card or SEPA direct debit, or declare a bank transfer. Change plan (the prorated amount is estimated before you confirm) and download your invoices as PDF; a credit note shows under the invoice it corrects, with its PDF."
       }
     },
     "everywhere": {
