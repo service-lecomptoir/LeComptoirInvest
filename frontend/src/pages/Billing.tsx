@@ -32,9 +32,14 @@ function periodOf(invoice: BillingInvoice): string {
   return invoice.period || day(invoice.issued_at || invoice.created_at)
 }
 
-/** What the invoice asked, tax included; the amount before tax only on the oldest ones. */
-function amountOf(invoice: BillingInvoice): number | string | null | undefined {
-  return Number(invoice.amount_ttc) > 0 ? invoice.amount_ttc : invoice.amount
+/**
+ * What the invoice asked, tax included (the amount before tax only on the oldest ones), in
+ * ITS currency, the one Alice billed it in, never the one of the payment methods (8 Nov 2026,
+ * Le Comptoir Immo's fix of 7 Nov). An older Alice that names none billed in euros only.
+ */
+function invoiceAmountSaid(invoice: BillingInvoice): string {
+  const amount = Number(invoice.amount_ttc) > 0 ? invoice.amount_ttc : invoice.amount
+  return money(amount, invoice.currency || 'EUR')
 }
 
 /**
@@ -281,7 +286,6 @@ export default function Billing() {
 
   if (loading) return <Loading label={t('common.loading')} />
 
-  const currency = methods?.currency || 'eur'
   const current = subscription
   const noConsole = current && !current.managed
 
@@ -490,7 +494,7 @@ export default function Billing() {
                         <tr>
                           <Td>{invoice.number || '-'}</Td>
                           <Td>{periodOf(invoice)}</Td>
-                          <Td right>{money(amountOf(invoice), currency)}</Td>
+                          <Td right>{invoiceAmountSaid(invoice)}</Td>
                           <Td>
                             <span className="inline-flex flex-wrap items-center gap-1.5">
                               {invoice.paid_at ? (

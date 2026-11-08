@@ -320,6 +320,8 @@ export interface BillingInvoice {
   period_year?: number | null
   period_month?: number | null
   amount_ttc?: number | string | null
+  /** The invoice's OWN currency (ISO 4217), served by Alice since 7 Nov 2026. */
+  currency?: string | null
   created_at?: string | null
   credit_notes?: unknown
   credit_state?: string | null
