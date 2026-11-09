@@ -4,6 +4,13 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 import { billingApi } from '@/api'
+import {
+  closeInvoiceForTheSession,
+  invoiceAmount,
+  invoiceClosedForTheSession,
+  invoiceDueOf,
+  invoicePeriod,
+} from '@/components/billing/invoiceDue'
 import { day } from '@/lib/format'
 import { subscriptionBannerOf } from '@/lib/subscriptionBanner'
 import { useAuthStore } from '@/store/authStore'
@@ -34,11 +41,12 @@ function dismissedForTheSession(): boolean {
  * Silent on failure: an informational banner must not add an error to the screen.
  */
 export function SubscriptionBanner() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const role = useAuthStore((s) => s.role)
   const [info, setInfo] = useState<BillingSubscription | null>(null)
   const [isDemo, setIsDemo] = useState<boolean | null>(null)
   const [closed, setClosed] = useState(dismissedForTheSession)
+  const [, setInvoiceClosed] = useState(0)
 
   useEffect(() => {
     if (role !== 'manager') return
@@ -55,14 +63,23 @@ export function SubscriptionBanner() {
   const kind = subscriptionBannerOf(info, isDemo)
   if (!info || !kind) return null
   if (kind === 'billing-starts' && closed) return null
+  const invoice = invoiceDueOf(info.invoice_due)
+  if (kind === 'invoice-due' && invoice && invoiceClosedForTheSession(invoice.number)) return null
 
   const tone =
     kind === 'suspended' || kind === 'ended'
       ? 'bg-red-50 text-red-800'
-      : kind === 'payment-failed'
+      : kind === 'payment-failed' || kind === 'invoice-overdue'
         ? 'bg-amber-50 text-amber-900'
         : 'bg-blue-50 text-blue-900'
-  const Icon = kind === 'billing-starts' ? CreditCard : AlertTriangle
+  const Icon = kind === 'billing-starts' || kind === 'invoice-due' ? CreditCard : AlertTriangle
+  // The month in full and the amount in the invoice's currency, in the reader's language.
+  const locale = i18n.resolvedLanguage || i18n.language || 'fr'
+  const owed = invoice && {
+    period: invoicePeriod(invoice, locale),
+    amount: invoiceAmount(invoice, locale),
+    date: day(invoice.due_on),
+  }
   const text =
     kind === 'ended'
       ? t('subscriptionBanner.ended')
@@ -77,7 +94,11 @@ export function SubscriptionBanner() {
                 deadline: day(info.suspension_on),
               })
             : t('subscriptionBanner.paymentFailedNoDeadline', { failed: day(info.payment_failed_on) })
-          : t('subscriptionBanner.billingStarts', { date: day(info.billing_starts_on) })
+          : kind === 'invoice-overdue' && owed
+            ? t('subscriptionBanner.invoiceOverdue', owed)
+            : kind === 'invoice-due' && owed
+              ? t('subscriptionBanner.invoiceDue', owed)
+              : t('subscriptionBanner.billingStarts', { date: day(info.billing_starts_on) })
 
   return (
     <div role="status" className={`flex items-start gap-2 px-4 sm:px-6 lg:px-8 py-2.5 text-sm ${tone}`}>
@@ -88,12 +109,17 @@ export function SubscriptionBanner() {
           {kind === 'ended' ? t('subscriptionBanner.subscribeAgain') : t('subscriptionBanner.open')}
         </Link>
       </p>
-      {kind === 'billing-starts' && (
+      {(kind === 'billing-starts' || kind === 'invoice-due') && (
         <button
           type="button"
           aria-label={t('subscriptionBanner.close')}
           title={t('subscriptionBanner.close')}
           onClick={() => {
+            if (kind === 'invoice-due' && invoice) {
+              closeInvoiceForTheSession(invoice.number)
+              setInvoiceClosed((n) => n + 1)
+              return
+            }
             try {
               sessionStorage.setItem(DISMISSED, '1')
             } catch {

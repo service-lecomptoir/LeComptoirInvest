@@ -89,6 +89,51 @@ def _instant(value: Any) -> datetime | None:
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
 
 
+def _invoice_due(value: Any) -> dict | None:
+    """The invoice still to pay, as Alice names it (`invoice_due`), or None.
+
+    The oldest invoice still owed (billed period, credit notes deducted), with no transfer
+    declared and no Stripe debit on its way (the owner, 9 Nov 2026: after the billing start,
+    a subscriber paying by transfer, or with no means of payment, had nothing on screen
+    between the invoice e-mail and the suspension). Relayed as she sends it; a malformed
+    answer is none, so the banner never draws half a sentence.
+    """
+    if not isinstance(value, dict):
+        return None
+    number, year, month = (
+        value.get("number"),
+        value.get("period_year"),
+        value.get("period_month"),
+    )
+    left, currency, overdue = (
+        value.get("left_ttc"),
+        value.get("currency"),
+        value.get("overdue"),
+    )
+    due_on = _day(value.get("due_on"))
+    if not (
+        isinstance(number, str) and number and isinstance(currency, str) and currency
+    ):
+        return None
+    if isinstance(year, bool) or isinstance(month, bool):
+        return None
+    if not (isinstance(year, int) and isinstance(month, int) and 1 <= month <= 12):
+        return None
+    if isinstance(left, bool) or not isinstance(left, int | float) or due_on is None:
+        return None
+    if not isinstance(overdue, bool):
+        return None
+    return {
+        "number": number,
+        "period_year": year,
+        "period_month": month,
+        "left_ttc": float(left),
+        "currency": currency.upper(),
+        "due_on": due_on.isoformat(),
+        "overdue": overdue,
+    }
+
+
 @dataclass(frozen=True)
 class LicenceState:
     is_blocked: bool
@@ -99,6 +144,8 @@ class LicenceState:
     has_payment_method: bool | None
     payment_failed_on: date | None
     suspension_on: date | None
+    #: The invoice the holder's banner asks to pay (`_invoice_due`), or None.
+    invoice_due: dict | None = None
 
     @property
     def suspended(self) -> bool:
@@ -121,6 +168,7 @@ def read(lic: dict | None, *, now: datetime | None = None) -> LicenceState | Non
         has_payment_method=method if isinstance(method, bool) else None,
         payment_failed_on=_day(lic.get("payment_failed_on")),
         suspension_on=_day(lic.get("suspension_on")),
+        invoice_due=_invoice_due(lic.get("invoice_due")),
     )
 
 

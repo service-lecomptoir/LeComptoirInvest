@@ -298,6 +298,8 @@ export interface BillingSubscription {
   has_payment_method?: boolean | null
   payment_failed_on?: string | null
   suspension_on?: string | null
+  /** The invoice still to pay, as Alice names it (`components/billing/invoiceDue`), or null. */
+  invoice_due?: unknown
 }
 
 export interface PaymentMethods {

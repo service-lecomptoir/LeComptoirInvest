@@ -155,3 +155,21 @@ the bank transfer is not offered unless an invoice already issued is still owed 
 as before). The next payment is the one Alice's offer announces (`next_due_date`, on the billing
 start). An older Alice leaves the field out: the month is billed
 (`nothingIsOwedBeforeTheBillingStart.test.ts`).
+
+🔴 THE INVOICE STILL TO PAY IS SAID ON EVERY SCREEN (the owner, 9 November 2026: after the
+billing start, a subscriber paying by transfer, or with no means of payment, had nothing on
+screen between the invoice e-mail and the suspension). Alice serves `invoice_due` in
+`/internal/license/{id}` (`number`, `period_year`, `period_month`, `left_ttc`, `currency`,
+`due_on`, `overdue`; LeComptoirAlice, docs/BILLING_CONTRACT.md): the oldest invoice still owed,
+credit notes deducted, with no transfer declared and no Stripe debit on its way; null when
+nothing is to pay, and for a demonstration account. The licence state keeps it as she sends it
+(a malformed answer is none) and `api/v1/billing.py (`_as_info`)` relays it. `components/layout/SubscriptionBanner.tsx` tells the holder alone (the
+team does not pay): « Votre facture de janvier 2027 (120,00 €) est à régler avant le … » in
+blue, closable for the session for THAT invoice; once `overdue`, « Votre facture de … (…) n'est
+pas réglée : elle était due le … » in amber, never closable; both link to « Mon abonnement ».
+A suspension, an ended subscription and a refused debit go first; « devient payant » shows
+before the start only, never beside it (lib/subscriptionBanner.ts; four keys in French and English). The month is in full, without a capital
+in French, and the amount in the invoice's currency, in the reader's format, through
+`components/billing/invoiceDue.ts`, the same file in Séjour, Invest, Market, Compta, Syndic,
+BTP and PDF under the fingerprint of `invoiceDue.test.ts`.
+

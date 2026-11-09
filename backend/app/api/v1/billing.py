@@ -80,6 +80,10 @@ class SubscriptionInfo(BaseModel):
     has_payment_method: bool | None = None
     payment_failed_on: str | None = None
     suspension_on: str | None = None
+    #: The invoice still to pay, as Alice names it (`invoice_due`: number, period, what is
+    #: left to pay and its currency, the last day, overdue), for the holder's banner (the
+    #: owner, 9 Nov 2026); None when nothing is to pay.
+    invoice_due: dict | None = None
 
 
 def _iso(day) -> str | None:
@@ -98,6 +102,7 @@ def _as_info(license_: dict | None) -> SubscriptionInfo:
         has_payment_method=state.has_payment_method if state else None,
         payment_failed_on=_iso(state.payment_failed_on) if state else None,
         suspension_on=_iso(state.suspension_on) if state else None,
+        invoice_due=state.invoice_due if state else None,
         plan_name=license_.get("plan_name"),
         monthly_price=license_.get("monthly_price"),
         is_blocked=bool(license_.get("is_blocked")),
