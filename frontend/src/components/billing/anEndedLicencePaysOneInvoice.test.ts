@@ -18,8 +18,7 @@ describe('an ended licence pays one invoice', () => {
     expect(API).toContain('`/billing/invoices/${id}/pay`')
   })
 
-  it('is what « Payer par carte » does on an invoice of an ended licence', () => {
-    expect(PAGE).toContain('current?.ended ? (')
+  it('is what « Régler » does on an invoice, of an ended licence or any other (the recipe, 9 Nov 2026)', () => {
     expect(PAGE).toContain('onClick={() => payInvoice(invoice)}')
     expect(PAGE).toContain('billingApi.payInvoice(invoice.id)')
   })

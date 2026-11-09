@@ -221,8 +221,10 @@ export default function Billing() {
     }
   }
 
-  /** An ended licence settles ONE invoice, never subscribes again by paying it (the owner,
-   *  9 Nov 2026): Alice's `pay-invoice`, not the Checkout of the plan nor the portal. */
+  /** ONE invoice, paid alone (the owner, 9 Nov 2026): never the Checkout of the plan, which
+   *  subscribed again (a closed licence) or opened a second subscription with a proration
+   *  (an open one, the recipe of 9 Nov). Alice's `pay-invoice` decides the way: the open
+   *  Stripe invoice of a subscription that runs, else a one-off payment of THAT invoice. */
   const payInvoice = async (invoice: BillingInvoice) => {
     setBusy('checkout')
     setRefusal(null)
@@ -321,7 +323,18 @@ export default function Billing() {
   // month nobody owes; an invoice already issued and unpaid is still owed.
   const startsLater =
     !status?.has_subscription && !status?.is_demo && !current?.ended && !paymentFailed && !periodBilled(status)
-  const transferShown = periodBilled(status) || invoices.some(owes)
+  // 🔴 WHAT IS OFFERED IS WHAT IS OWED (the owner's recipe, 9 Nov 2026), Immo's rule
+  // (`owesCurrent`): a payer by transfer whose month is paid, and a demonstration account,
+  // read « Paiement à mettre en place », « Payer maintenant » and the bank details. A closed
+  // licence holds no subscription, whatever an older answer still says.
+  const isDemo = !!status?.is_demo
+  const subscribed = !current?.ended && !!status?.has_subscription
+  const owesCurrent = !current?.ended && periodBilled(status) && !isDemo && !subscribed && !status?.current_period_paid && status?.monthly_price !== 0
+  const transferShown = owesCurrent || (!isDemo && invoices.some(owes))
+  // The plan's Checkout, never for a subscriber: « Changer de moyen de paiement » opened a
+  // SECOND subscription (Alice refuses it since, 409 `already_subscribed`); his means of
+  // payment changes in the portal. A closed licence subscribes again.
+  const payShown = !subscribed && !isDemo && (!!current?.ended || owesCurrent || startsLater)
   const nothingChargedBefore = t('billing.nothingChargedBefore', { day: numericDay(billingStartsOn(status)) })
 
   return (
@@ -378,6 +391,10 @@ export default function Billing() {
                 <Badge variant="orange">{t('billing.paymentFailed')}</Badge>
               ) : status?.has_subscription || startsLater ? (
                 <Badge variant="green">{t('billing.active')}</Badge>
+              ) : status?.current_period_paid ? (
+                <Badge variant="green">{t('billing.upToDate')}</Badge>
+              ) : isDemo ? (
+                <Badge variant="gray">{t('billing.demoAccount')}</Badge>
               ) : (
                 <Badge variant="gray">{t('billing.notSubscribed')}</Badge>
               )}
@@ -439,18 +456,13 @@ export default function Billing() {
                         {startsLater ? nothingChargedBefore : t('billing.byCardHint')}
                       </p>
                       {/* Never a silent grey button: what it waits for is said here. */}
-                      {payHeld && <p className="mt-2 text-xs text-amber-800">{t('billing.termsFirst')}</p>}
+                      {payShown && payHeld && <p className="mt-2 text-xs text-amber-800">{t('billing.termsFirst')}</p>}
                       <div className="mt-4 flex flex-wrap gap-2">
-                        <Button
-                          onClick={() => goToPayment()}
-                          disabled={busy === 'checkout' || payHeld}
-                        >
-                          {status?.has_subscription
-                            ? t('billing.updateCard')
-                            : planPayment(status) === 'add-method'
-                              ? t('billing.addMethod')
-                              : t('billing.payNow')}
-                        </Button>
+                        {payShown && (
+                          <Button onClick={() => goToPayment()} disabled={busy === 'checkout' || payHeld}>
+                            {planPayment(status) === 'add-method' ? t('billing.addMethod') : t('billing.payNow')}
+                          </Button>
+                        )}
                         {status?.has_subscription && (
                           <Button variant="secondary" onClick={openPortal} disabled={busy === 'portal'}>
                             <ExternalLink size={14} /> {t('billing.openPortal')}
@@ -567,41 +579,24 @@ export default function Billing() {
                             <span className="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
                               {/* 🔴 « À RÉGLER » WITH NOTHING TO CLICK (the owner, 8 Nov 2026): an
                                   unpaid invoice offers its way out, on its own line. */}
-                              {owes(invoice) && !status?.is_demo && (
+                              {owes(invoice) && !isDemo && (
                                 status?.transfer_pending ? (
                                   <span className="text-xs text-amber-800">{t('billing.transferPending')}</span>
                                 ) : (
                                   <>
-                                    {current?.ended ? (
-                                      methods?.card_enabled ? (
-                                        <button
-                                          type="button"
-                                          onClick={() => payInvoice(invoice)}
-                                          disabled={busy === 'checkout'}
-                                          className="text-sm font-medium text-brand-teal hover:underline disabled:opacity-60"
-                                        >
-                                          {t('billing.invoicePayByCard')}
-                                        </button>
-                                      ) : null
-                                    ) : status?.has_subscription ? (
+                                    {/* 🔴 THAT INVOICE, PAID ALONE, whoever holds the licence
+                                        (the recipe, 9 Nov 2026): the plan's Checkout subscribed
+                                        again and charged a proration. */}
+                                    {methods?.card_enabled && (
                                       <button
                                         type="button"
-                                        onClick={openPortal}
-                                        disabled={busy === 'portal'}
+                                        onClick={() => payInvoice(invoice)}
+                                        disabled={busy === 'checkout'}
                                         className="text-sm font-medium text-brand-teal hover:underline disabled:opacity-60"
                                       >
                                         {t('billing.invoiceSettle')}
                                       </button>
-                                    ) : methods?.card_enabled ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => goToPayment()}
-                                        disabled={busy === 'checkout' || payHeld}
-                                        className="text-sm font-medium text-brand-teal hover:underline disabled:opacity-60"
-                                      >
-                                        {t('billing.invoicePayByCard')}
-                                      </button>
-                                    ) : null}
+                                    )}
                                     {methods?.transfer_enabled && (
                                       <button
                                         type="button"

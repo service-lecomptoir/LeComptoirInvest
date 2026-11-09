@@ -364,6 +364,8 @@ export interface BillingStatus {
    *  (9 Nov 2026). An older Alice leaves it out (billed). Read through `billedPeriod.ts`. */
   current_period_billed?: boolean
   billing_starts_on?: string | null
+  /** The current month is paid already (a validated transfer, a card): nothing is owed. */
+  current_period_paid?: boolean
 }
 
 // ── Performance ─────────────────────────────────────────────────────────────────────

@@ -281,6 +281,17 @@ def _unavailable(exc: AliceUnavailable) -> HTTPException:
     this product's words, in the reader's language.
     """
     if isinstance(exc, AliceRefused):
+        if exc.refusal == "already_subscribed":
+            # 🔴 A SUBSCRIBER IS NEVER SOLD A SECOND SUBSCRIPTION (the owner's recipe, 9 Nov
+            # 2026): a second Checkout opened a second Stripe subscription, the first one
+            # kept charging. Her sentence is French only and names another product's button.
+            return HTTPException(
+                status.HTTP_409_CONFLICT,
+                pick(
+                    "Votre abonnement est déjà actif\u00a0: changez de moyen de paiement depuis « Gérer mon abonnement ».",
+                    "Your subscription is already active: change your payment method from « Manage my subscription ».",
+                ),
+            )
         kind = _TERMS_REFUSALS.get(exc.refusal or "")
         if kind is not None:
             return HTTPException(status.HTTP_409_CONFLICT, _terms_sentence(kind))

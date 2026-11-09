@@ -129,7 +129,7 @@ network answer 503 « Le service de facturation est momentanément indisponible 
 sentence; a business refusal she wrote for the subscriber is relayed with her status.
 
 🔴 AN ENDED LICENCE PAYS ONE INVOICE, NEVER SUBSCRIBES AGAIN BY PAYING IT (the owner, 9 Nov
-2026). On an invoice still due of an ended licence, « Payer par carte » calls
+2026). On an invoice still due of an ended licence, « Régler » calls
 `POST /api/v1/billing/invoices/{invoice_id}/pay`, which relays Alice's
 `POST /internal/billing/pay-invoice/{firm}` with the invoice and the page's return addresses
 (`PUBLIC_APP_URL/billing?paiement=succes|annule`) and sends the subscriber to the `url` she
@@ -173,3 +173,31 @@ in French, and the amount in the invoice's currency, in the reader's format, thr
 `components/billing/invoiceDue.ts`, the same file in Séjour, Invest, Market, Compta, Syndic,
 BTP and PDF under the fingerprint of `invoiceDue.test.ts`.
 
+## What is offered is what is owed (the owner's recipe, 9 Nov 2026)
+
+« Tous les cas doivent être gérés »: measured on this page before it was corrected.
+
+- 🔴 A SUBSCRIBER GETS THE PORTAL, NOTHING ELSE. « Changer de moyen de paiement » opened
+  Alice's Checkout for a licence holding a running Stripe subscription: a second
+  subscription, the licence followed it and the first one kept charging. The Checkout button
+  is drawn only for whoever holds no subscription (`payShown` in `pages/Billing.tsx`); a
+  subscriber has « Gérer mon abonnement » (`billing/portal`). Alice refuses that Checkout
+  anyway (409 `X-Refusal: already_subscribed`, her sentence in French only):
+  `api/v1/billing._unavailable` says it in French or English, naming « Gérer mon
+  abonnement », as a 409.
+- 🔴 « RÉGLER » PAYS THAT INVOICE ALONE, for every licence. It opened the plan's Checkout for
+  whoever held no subscription (it subscribed again and charged a proration) and the portal
+  for a subscriber (which has nothing to charge for an invoice issued before the card). It
+  calls `POST /api/v1/billing/invoices/{invoice_id}/pay` (Alice's `pay-invoice`), which sends
+  a subscriber to his own open Stripe invoice and anybody else to a one-off payment of THAT
+  invoice; never for a demonstration account.
+- 🔴 A MONTH PAID, OR A DEMONSTRATION ACCOUNT, OWES NOTHING (Immo's `owesCurrent`): a payer
+  by transfer whose month is paid read « Paiement à mettre en place », « Payer maintenant »,
+  the bank details and « J'ai fait le virement » (answered « Aucune facture à régler »).
+  `owesCurrent` in `pages/Billing.tsx`, beside `components/billing/billedPeriod.ts`: billed,
+  not paid (`current_period_paid`), not a demo (`is_demo`), not held by a subscription, not
+  free (`monthly_price`), the licence not ended. Badges « À jour » and « Compte de
+  démonstration, non facturé »; no Checkout button; the bank details only for the month owed
+  or an invoice still to pay (never for a demo).
+
+French and English.

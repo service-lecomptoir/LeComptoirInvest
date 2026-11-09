@@ -37,7 +37,10 @@ describe('« Mon abonnement » before the billing start', () => {
   })
 
   it('shows no transfer to declare for a month not billed, unless an issued invoice is owed', () => {
-    expect(PAGE).toContain('const transferShown = periodBilled(status) || invoices.some(owes)')
+    // The month owed is Immo's rule since the owner's recipe of 9 Nov 2026 (`owesCurrent`): billed
+    // first, then neither paid, nor a demonstration account, nor held by a subscription.
+    expect(PAGE).toMatch(/const owesCurrent = !current\?\.ended && periodBilled\(status\) && /)
+    expect(PAGE).toContain('const transferShown = owesCurrent || (!isDemo && invoices.some(owes))')
     expect(PAGE).toContain('methods?.transfer_enabled && methods.transfer && transferShown && (')
   })
 })
