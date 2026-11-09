@@ -139,3 +139,19 @@ payment never reopens a closed licence; subscribing again is the plans' business
 409 (a transfer declared, awaiting validation) and 400 (nothing left to pay on that invoice)
 are said in this product's words, in French and English; the rest as every billing gesture.
 Licences active or suspended keep their way out (portal, or the Checkout of the plan).
+
+🔴 BEFORE THE BILLING START NOTHING IS OWED (the owner, 9 November 2026: « À régler », « Payer
+mon abonnement » and the transfer details on 9 November in Immo, for a first invoice on
+1 January 2027). This page drew no « À régler » for the month, but said « Paiement à mettre
+en place », « Payer maintenant » (« Paiement immédiat ») and showed the bank transfer with its
+declaration for a month nobody owes. `GET /billing/status` relays Alice's
+`current_period_billed` and `billing_starts_on` (LeComptoirAlice, docs/BILLING_CONTRACT.md
+« Before the billing start, nothing is owed »), read through `components/billing/billedPeriod.ts`,
+the same file in Séjour, Invest, Market and Compta under the fingerprint of
+`billedPeriod.test.ts`. While the month is not billed, the plan reads « Actif », the card button
+« Ajouter un moyen de paiement » (Alice's Checkout sets a trial until the start) with « Rien
+n'est prélevé avant le début de la facturation, le … » in place of « Paiement immédiat », and
+the bank transfer is not offered unless an invoice already issued is still owed (it stays owed,
+as before). The next payment is the one Alice's offer announces (`next_due_date`, on the billing
+start). An older Alice leaves the field out: the month is billed
+(`nothingIsOwedBeforeTheBillingStart.test.ts`).

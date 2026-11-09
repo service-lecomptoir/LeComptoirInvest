@@ -358,6 +358,10 @@ export interface BillingStatus {
   monthly_price?: number | null
   /** A demonstration account: never asked for a payment method. */
   is_demo?: boolean
+  /** False while the current month is before the billing start: nothing is owed for it
+   *  (9 Nov 2026). An older Alice leaves it out (billed). Read through `billedPeriod.ts`. */
+  current_period_billed?: boolean
+  billing_starts_on?: string | null
 }
 
 // ── Performance ─────────────────────────────────────────────────────────────────────

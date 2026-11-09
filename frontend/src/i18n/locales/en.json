@@ -475,6 +475,8 @@
     "byCard": "Card or SEPA direct debit",
     "byCardHint": "Immediate payment and automatic renewal, cancellable at any time.",
     "payNow": "Pay now",
+    "addMethod": "Add a payment method",
+    "nothingChargedBefore": "Nothing is charged before billing starts, on {{day}}.",
     "updateCard": "Change payment method",
     "openPortal": "Manage my subscription",
     "byTransfer": "Bank transfer",

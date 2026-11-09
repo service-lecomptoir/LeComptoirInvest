@@ -20,6 +20,7 @@ import type {
 } from '@/types'
 import { PlanChangeOffer } from '@/components/billing/PlanChangeOffer'
 import { creditsOf, nothingLeftToPay, type InvoiceCreditNote } from '@/components/billing/invoiceCredits'
+import { billingStartsOn, periodBilled, planPayment } from '@/components/billing/billedPeriod'
 
 /**
  * The month an invoice bills, « MM/YYYY », from what Alice sends (`period_month`,
@@ -312,6 +313,15 @@ export default function Billing() {
   const payHeld = subscriber && saleHold !== null
   /** An issued invoice still to pay: not paid, and not cancelled by its credit notes. */
   const owes = (invoice: BillingInvoice) => !invoice.paid_at && !nothingLeftToPay(creditsOf(invoice))
+  // 🔴 BEFORE THE BILLING START NOTHING IS OWED (the owner, 9 Nov 2026: « À régler », « Payer
+  // mon abonnement » and the transfer details on 9 November for a first invoice on 1 January
+  // 2027). Alice says whether the month is billed: before the start the plan is « Actif »,
+  // the card adds a means of payment (nothing charged), and no transfer is declared for a
+  // month nobody owes; an invoice already issued and unpaid is still owed.
+  const startsLater =
+    !status?.has_subscription && !status?.is_demo && !current?.ended && !paymentFailed && !periodBilled(status)
+  const transferShown = periodBilled(status) || invoices.some(owes)
+  const nothingChargedBefore = t('billing.nothingChargedBefore', { day: numericDay(billingStartsOn(status)) })
 
   return (
     <>
@@ -365,7 +375,7 @@ export default function Billing() {
               <>
               {paymentFailed ? (
                 <Badge variant="orange">{t('billing.paymentFailed')}</Badge>
-              ) : status?.has_subscription ? (
+              ) : status?.has_subscription || startsLater ? (
                 <Badge variant="green">{t('billing.active')}</Badge>
               ) : (
                 <Badge variant="gray">{t('billing.notSubscribed')}</Badge>
@@ -424,7 +434,9 @@ export default function Billing() {
                         <CreditCard size={16} className="text-brand-teal" />
                         <span className="text-sm font-medium">{t('billing.byCard')}</span>
                       </div>
-                      <p className="mt-1.5 text-sm text-gray-600 flex-1">{t('billing.byCardHint')}</p>
+                      <p className="mt-1.5 text-sm text-gray-600 flex-1">
+                        {startsLater ? nothingChargedBefore : t('billing.byCardHint')}
+                      </p>
                       {/* Never a silent grey button: what it waits for is said here. */}
                       {payHeld && <p className="mt-2 text-xs text-amber-800">{t('billing.termsFirst')}</p>}
                       <div className="mt-4 flex flex-wrap gap-2">
@@ -432,7 +444,11 @@ export default function Billing() {
                           onClick={() => goToPayment()}
                           disabled={busy === 'checkout' || payHeld}
                         >
-                          {status?.has_subscription ? t('billing.updateCard') : t('billing.payNow')}
+                          {status?.has_subscription
+                            ? t('billing.updateCard')
+                            : planPayment(status) === 'add-method'
+                              ? t('billing.addMethod')
+                              : t('billing.payNow')}
                         </Button>
                         {status?.has_subscription && (
                           <Button variant="secondary" onClick={openPortal} disabled={busy === 'portal'}>
@@ -443,7 +459,7 @@ export default function Billing() {
                     </div>
                   )}
 
-                  {methods?.transfer_enabled && methods.transfer && (
+                  {methods?.transfer_enabled && methods.transfer && transferShown && (
                     <div className="rounded-xl border border-gray-200 p-4 flex flex-col">
                       <div className="flex items-center gap-2 text-gray-900">
                         <Landmark size={16} className="text-brand-teal" />
@@ -492,6 +508,10 @@ export default function Billing() {
                   it spoke of a payment nobody could make. */}
               {methods?.card_enabled && (
                 <p className="mt-4 text-xs text-gray-500">{t('billing.methodsHint')}</p>
+              )}
+              {/* Without the card, the month not billed yet is said here. */}
+              {startsLater && !methods?.card_enabled && (
+                <p className="mt-4 text-xs text-gray-500">{nothingChargedBefore}</p>
               )}
             </div>
           </Card>

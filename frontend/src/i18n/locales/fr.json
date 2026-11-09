@@ -475,6 +475,8 @@
     "byCard": "Carte bancaire ou prélèvement SEPA",
     "byCardHint": "Paiement immédiat et renouvellement automatique, résiliable à tout moment.",
     "payNow": "Payer maintenant",
+    "addMethod": "Ajouter un moyen de paiement",
+    "nothingChargedBefore": "Rien n'est prélevé avant le début de la facturation, le {{day}}.",
     "updateCard": "Changer de moyen de paiement",
     "openPortal": "Gérer mon abonnement",
     "byTransfer": "Virement bancaire",
