@@ -75,7 +75,11 @@ into `users.is_active`:
   `subscription_suspended`;
 - terminated (`access_until` passed, written by Alice on a termination only): the whole team
   is refused, 401 `licence_ended`;
-- investors keep their space in both cases.
+- investors keep their space in both cases (the owner, 8 and 9 November 2026: a closed
+  licence leaves the end users their access in every tool, exactly as a suspension does). ONE
+  rule says who is held to the licence: the manager accounts (`licence_state.gate`, `role !=
+  MANAGER` lets anyone else through). Proven by `test_a_terminated_licence_keeps_its_investors`
+  (password sign-in and their space, 200; a colleague 401 `licence_ended`).
 
 The machine code travels in `X-Error-Code`. The client carries a closed firm's sentence to
 the sign-in page (`lib/sessionNotice.ts`) and sends a suspended subscriber to `/billing`

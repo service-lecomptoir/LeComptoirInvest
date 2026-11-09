@@ -271,6 +271,33 @@ async def test_a_terminated_licence_refuses_the_subscriber_as_well(
     assert resp.headers.get("X-Error-Code") == licence_state.LICENCE_ENDED
 
 
+async def test_a_terminated_licence_keeps_its_investors(client, db, monkeypatch):
+    """The owner, 9 Nov 2026: a closed licence leaves the end users their access, in every
+    tool, exactly as a suspension does. The investors sign in and keep their space; the
+    team stays refused."""
+    ended = (datetime.now(UTC) - timedelta(days=1)).isoformat()
+    _console(monkeypatch, _licence(is_blocked=True, access_until=ended))
+    colleague = await _colleague(db)
+    holder_of_units = await _account(db, role=INVESTOR, firm=TEST_FIRM)
+    investor = await _register(db)
+    investor.user_id = holder_of_units.id
+    await db.flush()
+
+    login = await client.post(
+        "/api/v1/auth/login",
+        json={"email": holder_of_units.email, "password": "Motdepasse-1234"},
+    )
+    assert login.status_code == 200, login.text
+    own = await client.get("/api/v1/investors/me", headers=_auth(holder_of_units))
+    assert own.status_code == 200
+    me = await client.get("/api/v1/auth/me", headers=_auth(holder_of_units))
+    assert me.status_code == 200
+
+    team = await client.get("/api/v1/investors", headers=_auth(colleague))
+    assert team.status_code == 401
+    assert team.headers.get("X-Error-Code") == licence_state.LICENCE_ENDED
+
+
 async def test_block_switches_nobody_off_and_speaks_alices_key(client, db):
     subscriber = await _subscriber(db)
     await _colleague(db)
