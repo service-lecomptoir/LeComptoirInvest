@@ -17,6 +17,7 @@ import {
 } from './planOffer'
 import { PLAN_ACCENT, planHttp, usePlanWords } from './planOfferHost'
 import { PlanBubble, PlanButton, PlanDialog, PlanSelect, PlanTextarea } from './planOfferKit'
+import { leaveFor } from '@/lib/pageLeaving'
 
 /**
  * « Ma formule » on every « Mon abonnement » page: the plan, its quantity, its next payment,
@@ -367,7 +368,7 @@ function ConfirmChange({
         body,
       )
       if (data?.url) {
-        window.location.href = data.url
+        leaveFor(data.url)
         return
       }
       onDone(data?.plan_name ?? plan.name)

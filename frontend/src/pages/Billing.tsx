@@ -21,6 +21,7 @@ import type {
 import { PlanChangeOffer } from '@/components/billing/PlanChangeOffer'
 import { creditsOf, nothingLeftToPay, type InvoiceCreditNote } from '@/components/billing/invoiceCredits'
 import { billingStartsOn, periodBilled, planPayment } from '@/components/billing/billedPeriod'
+import { leaveFor } from '@/lib/pageLeaving'
 
 /**
  * The month an invoice bills, « MM/YYYY », from what Alice sends (`period_month`,
@@ -211,7 +212,7 @@ export default function Billing() {
       // A plan named here is subscribed to, and paying the plan in place is a sale too (the
       // owner, 8 Nov 2026): the terms ticked travel with it, and the server checks them.
       const { data } = await billingApi.checkout(planId, sale)
-      if (data?.url) window.location.href = data.url
+      if (data?.url) leaveFor(data.url)
       else setRefusal(t('billing.noPaymentPage'))
     } catch (error) {
       setRefusal(refusalOf(error))
@@ -227,7 +228,7 @@ export default function Billing() {
     setRefusal(null)
     try {
       const { data } = await billingApi.payInvoice(invoice.id)
-      if (data?.url) window.location.href = data.url
+      if (data?.url) leaveFor(data.url)
       else setRefusal(t('billing.noPaymentPage'))
     } catch (error) {
       setRefusal(refusalOf(error))
@@ -241,7 +242,7 @@ export default function Billing() {
     setRefusal(null)
     try {
       const { data } = await billingApi.portal()
-      if (data?.url) window.location.href = data.url
+      if (data?.url) leaveFor(data.url)
       else setRefusal(t('billing.noPortal'))
     } catch (error) {
       setRefusal(refusalOf(error))

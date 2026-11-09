@@ -1,6 +1,7 @@
 import axios from 'axios'
 import i18n from '@/i18n'
 import { toast } from '@/store/toast'
+import { sayUnlessLeaving, watchPageLeaving } from '@/lib/pageLeaving'
 import { loginFor } from '@/lib/nextPath'
 import { leaveSessionNotice } from '@/lib/sessionNotice'
 
@@ -64,6 +65,10 @@ export function errorMessage(error: any): string {
   return error?.message || i18n.t('errors.generic')
 }
 
+// A page restored from the back-forward cache reloads, instead of showing what it held
+// when it left (`lib/pageLeaving.ts`, the owner, 9 Nov 2026).
+if (typeof window !== 'undefined') watchPageLeaving(() => location.reload())
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -102,7 +107,14 @@ apiClient.interceptors.response.use(
     const isQuestion = error?.response?.status === 402
     // A read's failure is the screen's problem; a write's failure is news the user is
     // owed, because they asked for something and it did not happen.
-    if (!isRead && !isQuestion && !config.skipErrorToast) toast.error(errorMessage(error))
+    if (!isRead && !isQuestion && !config.skipErrorToast) {
+      const message = errorMessage(error)
+      // A response-less error may be a request cut short by leaving the page (a payment
+      // button sends the browser to Stripe): said a beat later, unless the page is gone
+      // by then (`lib/pageLeaving.ts`, the owner, 9 Nov 2026).
+      if (!error?.response) sayUnlessLeaving(() => toast.error(message))
+      else toast.error(message)
+    }
     return Promise.reject(error)
   },
 )
