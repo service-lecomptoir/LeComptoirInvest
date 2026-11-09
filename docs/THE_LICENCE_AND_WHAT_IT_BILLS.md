@@ -71,10 +71,18 @@ into `users.is_active`:
 
 - suspended (unpaid invoice, or blocked by hand): a colleague is refused, 401
   `agency_suspended`; the subscriber signs in and reaches `/api/v1/billing`, `/api/v1/auth/`
-  and `/api/v1/terms` alone (`licence_state.SUSPENDED_SUBSCRIBER_PREFIXES`), elsewhere 403
+  and `/api/v1/terms` alone (`licence_state.HELD_SUBSCRIBER_PREFIXES`), elsewhere 403
   `subscription_suspended`;
-- terminated (`access_until` passed, written by Alice on a termination only): the whole team
-  is refused, 401 `licence_ended`;
+- terminated (`access_until` passed, written by Alice on a termination only): the colleagues
+  are refused, 401 `licence_ended`; the subscriber is held to « Mon abonnement » exactly as in
+  a suspension (the owner, 9 Nov 2026, « oui fais le »): he signs in (password, second factor,
+  password link), reads and downloads his invoices and credit notes, settles what is still
+  due (card or transfer) and subscribes again; elsewhere 403 `licence_ended`. Before, he was
+  refused at every door, « Mon abonnement » included. ONE rule holds the subscriber, whatever
+  the reason: `licence_state.gate` answers why he is held (`subscription_suspended` or
+  `licence_ended`), `deps.current_user` keeps him to `held_subscriber_may_reach` and
+  `held_subscriber_refusal` says why. Proven by
+  `test_a_terminated_licence_keeps_the_subscriber_on_his_subscription`;
 - investors keep their space in both cases (the owner, 8 and 9 November 2026: a closed
   licence leaves the end users their access in every tool, exactly as a suspension does). ONE
   rule says who is held to the licence: the manager accounts (`licence_state.gate`, `role !=
@@ -82,8 +90,10 @@ into `users.is_active`:
   (password sign-in and their space, 200; a colleague 401 `licence_ended`).
 
 The machine code travels in `X-Error-Code`. The client carries a closed firm's sentence to
-the sign-in page (`lib/sessionNotice.ts`) and sends a suspended subscriber to `/billing`
-without a toast; `/auth/me` says `subscription_suspended` and the router keeps them there.
+the sign-in page (`lib/sessionNotice.ts`) on a 401, and sends a held subscriber to `/billing`
+without a toast on a 403 `subscription_suspended` or `licence_ended` (the status tells the
+team's 401 `licence_ended` from the subscriber's 403); `/auth/me` says
+`subscription_suspended` or `subscription_ended` and the router keeps them there.
 
 `/internal/managers/{id}/block` switches nobody off and answers an empty `blocked_user_ids`
 (it answered `user_ids`, a key Alice does not read: her `unblock` came back with an empty list
@@ -96,11 +106,15 @@ that does not answer lets the account in.
 
 `GET /billing` relays the firm's licence and Alice's billing calendar, each key optional:
 `billing_starts_on`, `has_payment_method`, `payment_failed_on`, `suspension_on`, plus
-`is_holder`, `suspended` and `unavailable` (Alice answered neither 200 nor 404). The banner at
+`is_holder`, `suspended`, `ended` (the termination has run out) and `unavailable` (Alice
+answered neither 200 nor 404). The banner at
 the top of the shell (`components/layout/SubscriptionBanner.tsx`, decided by
 `lib/subscriptionBanner.ts`) speaks to the licence holder only:
 
 - suspended: red, since when, link to « Mon abonnement »;
+- ended: red, « Votre abonnement a pris fin », link « Se réabonner » to « Mon abonnement »,
+  where the page says the same above the plans Alice offers to subscribe again (her offer
+  answers `mode: subscribe` for a cancelled subscription, 9 Nov 2026);
 - a debit failed, still in the grace period: amber, until when to settle;
 - billing starts on a coming date, the plan is paid, the account is not a demonstration and
   no payment method is on file: blue, closable for the session.

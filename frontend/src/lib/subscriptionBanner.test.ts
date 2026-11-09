@@ -56,6 +56,7 @@ describe('the banner speaks to the subscriber alone', () => {
     expect(subscriptionBannerOf(info({ payment_failed_on: '2026-11-02' }), false, TODAY)).toBe('payment-failed')
     expect(subscriptionBannerOf(info({ is_blocked: true, suspended: true }), false, TODAY)).toBe('suspended')
     expect(subscriptionBannerOf(info({ is_blocked: true, suspended: false }), false, TODAY)).toBeNull()
+    expect(subscriptionBannerOf(info({ is_blocked: true, suspended: false, ended: true }), false, TODAY)).toBe('ended')
     expect(subscriptionBannerOf(info({ unavailable: true, payment_failed_on: '2026-11-02' }), false, TODAY)).toBeNull()
   })
 })
@@ -66,8 +67,14 @@ describe('the screens around a suspension', () => {
   })
 
   it('keeps a suspended subscriber on « Mon abonnement »', () => {
-    expect(router).toContain('subscriptionSuspended && location.pathname !== SUBSCRIPTION_ROUTE')
-    expect(client).toContain("code === SUSPENDED_SUBSCRIBER")
+    expect(router).toContain('subscriptionSuspended || subscriptionEnded')
+  })
+
+  it('keeps the subscriber of an ended licence on « Mon abonnement », to subscribe again (9 Nov 2026)', () => {
+    expect(router).toContain('(subscriptionSuspended || subscriptionEnded) && location.pathname !== SUBSCRIPTION_ROUTE')
+    expect(client).toContain('HELD_SUBSCRIBER.includes(code)')
+    expect(client).toMatch(/HELD_SUBSCRIBER = \['subscription_suspended', 'licence_ended'\]/)
+    expect(billing).toContain("t('billing.ended')")
   })
 
   it("carries a closed firm's sentence to the sign-in page", () => {

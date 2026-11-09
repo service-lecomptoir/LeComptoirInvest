@@ -57,6 +57,9 @@ export interface Me {
   /** The subscriber of a firm suspended for an unpaid invoice: only « Mon abonnement »
    *  is served to them (8 Nov 2026). Absent from an older server. */
   subscription_suspended?: boolean
+  /** The subscriber of a firm whose licence has ended: « Mon abonnement » alone as well, to
+   *  read the invoices, settle what is due and subscribe again (9 Nov 2026). */
+  subscription_ended?: boolean
 }
 
 /** One family of e-mail looks, as Alice's catalogue names it (French display text). */
@@ -288,6 +291,8 @@ export interface BillingSubscription {
   is_holder?: boolean
   /** Blocked for an unpaid invoice (or by hand), not by a termination run out. */
   suspended?: boolean
+  /** Blocked because the termination has run out: « Votre abonnement a pris fin » (9 Nov 2026). */
+  ended?: boolean
   /** Alice's billing calendar (8 Nov 2026), each absent or null when she does not say. */
   billing_starts_on?: string | null
   has_payment_method?: boolean | null

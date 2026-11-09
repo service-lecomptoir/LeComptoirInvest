@@ -68,6 +68,10 @@ class SubscriptionInfo(BaseModel):
     #: Blocked for an unpaid invoice (or by hand), not by a termination run out: the
     #: subscriber may come in, and reaches « Mon abonnement » alone.
     suspended: bool = False
+    #: Blocked because the termination has run out (the owner, 9 Nov 2026): the subscriber
+    #: reaches « Mon abonnement » alone, to read his invoices, settle what is due and
+    #: subscribe again; the screen says « Votre abonnement a pris fin ».
+    ended: bool = False
     #: Alice's billing calendar (her side, 8 Nov 2026), each null when she does not say
     #: (an older Alice sends none of them): when billing starts, whether a payment method
     #: is on file, when a debit failed, and the day of the suspension.
@@ -88,6 +92,7 @@ def _as_info(license_: dict | None) -> SubscriptionInfo:
     return SubscriptionInfo(
         managed=True,
         suspended=bool(state and state.suspended),
+        ended=bool(state and state.terminated),
         billing_starts_on=_iso(state.billing_starts_on) if state else None,
         has_payment_method=state.has_payment_method if state else None,
         payment_failed_on=_iso(state.payment_failed_on) if state else None,

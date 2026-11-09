@@ -465,6 +465,8 @@
     "notSubscribed": "Paiement à mettre en place",
     "blocked": "Accès suspendu",
     "blockedHint": "Le règlement de l'abonnement n'a pas été constaté. Payer ci-dessous rétablit l'accès.",
+    "ended": "Votre abonnement a pris fin",
+    "endedHint": "Vos factures et vos avoirs restent ici, avec ce qui reste à régler. Choisissez une formule ci-dessous pour vous réabonner : l'accès revient dès le paiement.",
     "notManaged": "Aucun abonnement piloté ici",
     "notManagedHint": "Cette instance n'est rattachée à aucune console d'abonnement : il n'y a rien à payer depuis cet écran.",
     "howToPay": "Moyens de paiement",
@@ -1173,6 +1175,8 @@
     "paymentFailed": "Le prélèvement du {{failed}} a échoué. Régularisez avant le {{deadline}} pour éviter la suspension.",
     "paymentFailedNoDeadline": "Le prélèvement du {{failed}} a échoué. Régularisez au plus vite pour éviter la suspension.",
     "billingStarts": "Votre abonnement devient payant le {{date}} : ajoutez un moyen de paiement.",
+    "ended": "Votre abonnement a pris fin : réabonnez-vous pour retrouver l'accès.",
+    "subscribeAgain": "Se réabonner",
     "open": "Mon abonnement",
     "close": "Fermer"
   }

@@ -465,6 +465,8 @@
     "notSubscribed": "Payment to set up",
     "blocked": "Access suspended",
     "blockedHint": "No payment has been recorded for this subscription. Paying below restores access.",
+    "ended": "Your subscription has ended",
+    "endedHint": "Your invoices and credit notes stay here, with what is still due. Choose a plan below to subscribe again: access comes back as soon as it is paid.",
     "notManaged": "No subscription is managed here",
     "notManagedHint": "This instance is not attached to any subscription console: there is nothing to pay from this screen.",
     "howToPay": "Payment methods",
@@ -1173,6 +1175,8 @@
     "paymentFailed": "The payment of {{failed}} failed. Settle it before {{deadline}} to avoid the suspension.",
     "paymentFailedNoDeadline": "The payment of {{failed}} failed. Settle it as soon as possible to avoid the suspension.",
     "billingStarts": "Your subscription becomes paid on {{date}}: add a payment method.",
+    "ended": "Your subscription has ended: subscribe again to get access back.",
+    "subscribeAgain": "Subscribe again",
     "open": "My subscription",
     "close": "Close"
   }

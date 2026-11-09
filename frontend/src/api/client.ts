@@ -25,8 +25,10 @@ const PUBLIC_DOORS = ['/login', '/pricing', '/privacy']
 
 /** The machine codes of a refusal under the firm's licence (`X-Error-Code`, 8 Nov 2026). */
 const CLOSED_FIRM = ['agency_suspended', 'licence_ended']
-const SUSPENDED_SUBSCRIBER = 'subscription_suspended'
-/** The one screen a suspended subscriber is served. */
+/** The subscriber held to « Mon abonnement », suspended or ended (403, 9 Nov 2026). A 401
+ *  `licence_ended` is the team's, signed out; a 403 is the subscriber's, sent to his page. */
+const HELD_SUBSCRIBER = ['subscription_suspended', 'licence_ended']
+/** The one screen a held subscriber is served. */
 export const SUBSCRIPTION_ROUTE = '/billing'
 
 apiClient.interceptors.request.use((config) => {
@@ -82,8 +84,9 @@ apiClient.interceptors.response.use(
       return Promise.reject(error)
     }
     // 🔴 A SUSPENDED SUBSCRIBER IS SENT TO « MON ABONNEMENT », WITHOUT A TOAST: the
-    // server serves them nothing else until they settle (8 Nov 2026).
-    if (error?.response?.status === 403 && code === SUSPENDED_SUBSCRIBER) {
+    // server serves them nothing else until they settle (8 Nov 2026), nor the subscriber
+    // of an ended licence until they subscribe again (9 Nov 2026).
+    if (error?.response?.status === 403 && HELD_SUBSCRIBER.includes(code)) {
       if (!window.location.pathname.startsWith(SUBSCRIPTION_ROUTE)) {
         window.location.href = SUBSCRIPTION_ROUTE
       }

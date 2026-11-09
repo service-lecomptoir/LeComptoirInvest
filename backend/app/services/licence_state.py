@@ -5,7 +5,10 @@ Decisions of the owner, 8 Nov 2026 (the same as Le Comptoir Immo's):
 - a licence blocked for an unpaid invoice (or blocked by hand) SUSPENDS the firm: its team
   (the colleagues attached to it) loses access, the subscriber keeps « Mon abonnement »
   alone, to settle; the investors keep their space;
-- a licence whose termination has run out CLOSES it: the subscriber is refused as well;
+- a licence whose termination has run out CLOSES it: the team is refused, and the
+  subscriber keeps « Mon abonnement » alone, exactly as in a suspension (the owner, 9 Nov
+  2026, « oui fais le »): his invoices and credit notes, what is still due, and subscribing
+  again;
 - nothing is written into `users.is_active`: the licence is read on every request.
 
 The contract Alice serves on `/internal/license/{id}` (her side, 8 Nov 2026), every key read
@@ -40,26 +43,29 @@ ERROR_CODE_HEADER = "X-Error-Code"
 
 #: A colleague of a firm suspended for an unpaid invoice: refused, with the reason.
 AGENCY_SUSPENDED = "agency_suspended"
-#: Anyone of the firm's team once its termination has run out: refused.
+#: The firm's licence once its termination has run out: the team refused (401), the
+#: subscriber held to « Mon abonnement » (403 anywhere else).
 LICENCE_ENDED = "licence_ended"
 #: The subscriber of a suspended firm, on any route but « Mon abonnement »: 403.
 SUBSCRIPTION_SUSPENDED = "subscription_suspended"
 
-#: What the subscriber of a SUSPENDED firm may still reach: their subscription (read it,
-#: pay, declare a transfer, download invoices and credit notes), their own session (who am
-#: I, sign out, the second factor) and the terms the sign-in asks for. Everything else
-#: answers 403 `subscription_suspended`, held HERE and not only by a screen.
-SUSPENDED_SUBSCRIBER_PREFIXES: tuple[str, ...] = (
+#: What the subscriber HELD to « Mon abonnement » may still reach, whether the firm is
+#: suspended or its licence has ended (ONE rule, the owner, 9 Nov 2026): their subscription
+#: (read it, pay, declare a transfer, download invoices and credit notes, subscribe again),
+#: their own session (who am I, sign out, the second factor) and the terms the sign-in asks
+#: for. Everything else answers 403 with the reason's code, held HERE and not only by a
+#: screen.
+HELD_SUBSCRIBER_PREFIXES: tuple[str, ...] = (
     "/api/v1/billing",
     "/api/v1/auth/",
     "/api/v1/terms",
 )
 
 
-def suspended_subscriber_may_reach(path: str) -> bool:
+def held_subscriber_may_reach(path: str) -> bool:
     return any(
         path == prefix.rstrip("/") or path.startswith(prefix)
-        for prefix in SUSPENDED_SUBSCRIBER_PREFIXES
+        for prefix in HELD_SUBSCRIBER_PREFIXES
     )
 
 
@@ -124,21 +130,36 @@ def _refused(sentence: str, code: str) -> HTTPException:
     )
 
 
-def subscriber_suspended_refusal() -> HTTPException:
-    return HTTPException(
-        status.HTTP_403_FORBIDDEN,
+def held_subscriber_refusal(reason: str) -> HTTPException:
+    """403 for the held subscriber anywhere but « Mon abonnement », with the reason's code
+    (`subscription_suspended` or `licence_ended`): the screen sends him back there and says
+    why."""
+    sentence = (
         pick(
+            "Votre abonnement a pris fin : réabonnez-vous depuis « Mon abonnement » pour "
+            "retrouver l'accès.",
+            "Your subscription has ended: subscribe again from « My subscription » to get "
+            "access back.",
+        )
+        if reason == LICENCE_ENDED
+        else pick(
             "Votre compte est suspendu pour impayé : réglez votre abonnement pour "
             "retrouver l'accès.",
             "Your account is suspended for an unpaid invoice: pay your subscription to "
             "get access back.",
-        ),
-        headers={ERROR_CODE_HEADER: SUBSCRIPTION_SUSPENDED},
+        )
+    )
+    return HTTPException(
+        status.HTTP_403_FORBIDDEN, sentence, headers={ERROR_CODE_HEADER: reason}
     )
 
 
-async def gate(user: User) -> bool:
-    """Admit or refuse an account under its firm's licence; True for a SUSPENDED subscriber.
+async def gate(user: User) -> str | None:
+    """Admit or refuse an account under its firm's licence.
+
+    Answers the reason the account is HELD to « Mon abonnement » (`SUBSCRIPTION_SUSPENDED`
+    or `LICENCE_ENDED`) for the subscriber of a blocked firm, None for an account let in
+    freely; raises 401 for the team of a blocked firm.
 
     🔴 THE TEAM IS EVERY MANAGER ACCOUNT, the subscriber and the colleagues attached to it
     (`firm_id`), all read on the firm's ONE licence (`firm_of`). Before 8 Nov 2026 nothing
@@ -150,13 +171,18 @@ async def gate(user: User) -> bool:
     Alice; a fund that cannot work because its billing service is down is the worse error.
     """
     if user.role != MANAGER:
-        return False
+        return None
     try:
         state = read(await alice_client.get_license(firm_of(user)))
     except Exception:  # noqa: BLE001 - see the docstring: the gate fails open
-        return False
+        return None
     if state is None or not state.is_blocked:
-        return False
+        return None
+    if user.holds_the_licence:
+        # 🔴 THE SUBSCRIBER COMES IN, SUSPENDED OR ENDED (the owner, 9 Nov 2026): before,
+        # an ended licence refused him at every door, « Mon abonnement » included, and left
+        # him no way to read his invoices, settle what was due or subscribe again.
+        return LICENCE_ENDED if state.terminated else SUBSCRIPTION_SUSPENDED
     if state.terminated:
         raise _refused(
             pick(
@@ -165,8 +191,6 @@ async def gate(user: User) -> bool:
             ),
             LICENCE_ENDED,
         )
-    if user.holds_the_licence:
-        return True
     raise _refused(
         pick(
             "L'accès de votre société est suspendu pour impayé. Le titulaire de "

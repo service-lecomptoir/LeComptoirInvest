@@ -56,12 +56,14 @@ async def current_user(
         )
 
     # 🔴 THE FIRM'S LICENCE, ON EVERY REQUEST (the owner, 8 Nov 2026). A colleague of a
-    # suspended firm is refused here, mid-session as at the sign-in; its subscriber keeps
-    # « Mon abonnement » and nothing else; the investors are not concerned.
-    if await licence_state.gate(user):
-        user.licence_suspended = True
-        if not licence_state.suspended_subscriber_may_reach(request.url.path):
-            raise licence_state.subscriber_suspended_refusal()
+    # suspended or ended firm is refused here, mid-session as at the sign-in; its subscriber
+    # keeps « Mon abonnement » and nothing else, suspended or ended alike (9 Nov 2026); the
+    # investors are not concerned.
+    user.licence_held = await licence_state.gate(user)
+    if user.licence_held and not licence_state.held_subscriber_may_reach(
+        request.url.path
+    ):
+        raise licence_state.held_subscriber_refusal(user.licence_held)
 
     # 🔴 THE MANAGEMENT COMPANY IS ESTABLISHED HERE, AND NOWHERE ELSE.
     #

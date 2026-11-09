@@ -2,7 +2,7 @@ import type { BillingSubscription } from '@/types'
 import { todayIso } from '@/lib/day'
 
 /** Which reminder the subscriber is shown, if any (`components/layout/SubscriptionBanner`). */
-export type SubscriptionBannerKind = 'suspended' | 'payment-failed' | 'billing-starts'
+export type SubscriptionBannerKind = 'suspended' | 'ended' | 'payment-failed' | 'billing-starts'
 
 /**
  * The decision, apart from the drawing so it can be read and tested on its own (decisions
@@ -18,7 +18,9 @@ export function subscriptionBannerOf(
   today: string = todayIso(),
 ): SubscriptionBannerKind | null {
   if (!info || !info.managed || !info.is_holder || info.unavailable) return null
-  if (info.is_blocked) return info.suspended ? 'suspended' : null
+  // An ended licence keeps its subscriber on « Mon abonnement », to subscribe again (the
+  // owner, 9 Nov 2026); an older server that says neither shows nothing.
+  if (info.is_blocked) return info.suspended ? 'suspended' : info.ended ? 'ended' : null
   if (info.payment_failed_on) return 'payment-failed'
   const startsLater = !!info.billing_starts_on && info.billing_starts_on.slice(0, 10) > today
   if (startsLater && info.has_payment_method === false && (info.monthly_price ?? 0) > 0) {

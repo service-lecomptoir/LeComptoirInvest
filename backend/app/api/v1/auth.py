@@ -114,8 +114,8 @@ async def login(data: LoginIn, request: Request, db: AsyncSession = SESSION):
             pick("Ce compte est désactivé.", "This account is disabled."),
         )
     # 🔴 THE FIRM'S LICENCE, BEFORE ANY SESSION OR SECOND STEP (the owner, 8 Nov 2026): a
-    # colleague of a suspended firm, or anyone of its team once it is terminated, is told
-    # why here; the suspended subscriber comes in and reaches « Mon abonnement » alone.
+    # colleague of a suspended or terminated firm is told why here; the subscriber comes in,
+    # suspended or ended alike (9 Nov 2026), and reaches « Mon abonnement » alone.
     await licence_state.gate(user)
     if await two_factor_service.is_enabled(db, user):
         return second_step(user)
@@ -258,6 +258,9 @@ class MeOut(BaseModel):
     #: The subscriber of a firm suspended for an unpaid invoice: the screen keeps them on
     #: « Mon abonnement », the only place the server still serves them (8 Nov 2026).
     subscription_suspended: bool = False
+    #: The subscriber of a firm whose licence has ended: the same, to read the invoices,
+    #: settle what is due and subscribe again (the owner, 9 Nov 2026).
+    subscription_ended: bool = False
 
 
 @router.post("/logout", status_code=204)
@@ -292,7 +295,9 @@ async def me(user: User = Depends(current_user)):
         must_change_password=user.must_change_password,
         account_kind=user.account_kind,
         account_kind_label=account_kind.label_of(user.account_kind),
-        subscription_suspended=user.licence_suspended,
+        subscription_suspended=user.licence_held
+        == licence_state.SUBSCRIPTION_SUSPENDED,
+        subscription_ended=user.licence_held == licence_state.LICENCE_ENDED,
     )
 
 

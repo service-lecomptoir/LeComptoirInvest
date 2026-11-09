@@ -42,6 +42,7 @@ function RequireAuth() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const mustChangePassword = useAuthStore((s) => s.mustChangePassword)
   const subscriptionSuspended = useAuthStore((s) => s.subscriptionSuspended)
+  const subscriptionEnded = useAuthStore((s) => s.subscriptionEnded)
   const location = useLocation()
 
   // ⚠️ THE WAY BACK TRAVELS WITH THE READER (`?next=`): the « Mon abonnement » link the
@@ -67,9 +68,11 @@ function RequireAuth() {
     return <Navigate to={`${PROFILE_ROUTE}${query}`} replace />
   }
   // 🔴 THE SUBSCRIBER OF A SUSPENDED FIRM REACHES « MON ABONNEMENT » ALONE, to settle (the
-  // owner, 8 Nov 2026). The server refuses the rest anyway (403 `subscription_suspended`);
-  // this keeps the screen from drawing what it cannot load.
-  if (subscriptionSuspended && location.pathname !== SUBSCRIPTION_ROUTE) {
+  // owner, 8 Nov 2026), AND SO DOES THE SUBSCRIBER OF AN ENDED LICENCE, to read his
+  // invoices, settle what is due and subscribe again (9 Nov 2026). The server refuses the
+  // rest anyway (403 `subscription_suspended` / `licence_ended`); this keeps the screen
+  // from drawing what it cannot load.
+  if ((subscriptionSuspended || subscriptionEnded) && location.pathname !== SUBSCRIPTION_ROUTE) {
     return <Navigate to={SUBSCRIPTION_ROUTE} replace />
   }
   // 🔴 AND THE TERMS, AT THE SAME DOOR (the manager, 2 Oct 2026): a version owed is

@@ -26,6 +26,7 @@ function dismissedForTheSession(): boolean {
  * does not.
  *
  *  - suspended for an unpaid invoice: red, where to settle, never closable;
+ *  - the licence has ended: red, where to subscribe again, never closable (9 Nov 2026);
  *  - a debit that failed, in the grace period: amber, until when to settle;
  *  - the plan becomes paid on a coming date and no payment method is on file: blue,
  *    closable for the session.
@@ -56,25 +57,27 @@ export function SubscriptionBanner() {
   if (kind === 'billing-starts' && closed) return null
 
   const tone =
-    kind === 'suspended'
+    kind === 'suspended' || kind === 'ended'
       ? 'bg-red-50 text-red-800'
       : kind === 'payment-failed'
         ? 'bg-amber-50 text-amber-900'
         : 'bg-blue-50 text-blue-900'
   const Icon = kind === 'billing-starts' ? CreditCard : AlertTriangle
   const text =
-    kind === 'suspended'
-      ? info.suspension_on
-        ? t('subscriptionBanner.suspendedSince', { date: day(info.suspension_on) })
-        : t('subscriptionBanner.suspended')
-      : kind === 'payment-failed'
+    kind === 'ended'
+      ? t('subscriptionBanner.ended')
+      : kind === 'suspended'
         ? info.suspension_on
-          ? t('subscriptionBanner.paymentFailed', {
-              failed: day(info.payment_failed_on),
-              deadline: day(info.suspension_on),
-            })
-          : t('subscriptionBanner.paymentFailedNoDeadline', { failed: day(info.payment_failed_on) })
-        : t('subscriptionBanner.billingStarts', { date: day(info.billing_starts_on) })
+          ? t('subscriptionBanner.suspendedSince', { date: day(info.suspension_on) })
+          : t('subscriptionBanner.suspended')
+        : kind === 'payment-failed'
+          ? info.suspension_on
+            ? t('subscriptionBanner.paymentFailed', {
+                failed: day(info.payment_failed_on),
+                deadline: day(info.suspension_on),
+              })
+            : t('subscriptionBanner.paymentFailedNoDeadline', { failed: day(info.payment_failed_on) })
+          : t('subscriptionBanner.billingStarts', { date: day(info.billing_starts_on) })
 
   return (
     <div role="status" className={`flex items-start gap-2 px-4 sm:px-6 lg:px-8 py-2.5 text-sm ${tone}`}>
@@ -82,7 +85,7 @@ export function SubscriptionBanner() {
       <p className="flex-1 min-w-0">
         {text}{' '}
         <Link to="/billing" className="font-semibold underline underline-offset-2">
-          {t('subscriptionBanner.open')}
+          {kind === 'ended' ? t('subscriptionBanner.subscribeAgain') : t('subscriptionBanner.open')}
         </Link>
       </p>
       {kind === 'billing-starts' && (

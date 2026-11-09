@@ -132,9 +132,10 @@ class User(Base, TimestampMixin):
     email_theme: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
     #: NOT A COLUMN: set for the length of one request by `licence_state.gate`, when this
-    #: account is the subscriber of a firm suspended for an unpaid invoice (it then reaches
-    #: « Mon abonnement » alone). Never stored: the licence is read again on each request.
-    licence_suspended = False
+    #: account is the subscriber of a blocked firm: why it reaches « Mon abonnement » alone
+    #: (`subscription_suspended` for an unpaid invoice, `licence_ended` once the termination
+    #: has run out), None otherwise. Never stored: the licence is read on each request.
+    licence_held = None
 
     @property
     def sees_whole_fund(self) -> bool:

@@ -324,9 +324,14 @@ export default function Billing() {
         <Notice tone="info" title={t('billing.notManaged')}>{t('billing.notManagedHint')}</Notice>
       ) : (
         <div className="space-y-5">
-          {current?.is_blocked && (
-            <Notice tone="bad" title={t('billing.blocked')}>{t('billing.blockedHint')}</Notice>
-          )}
+          {/* An ended licence keeps « Mon abonnement »: its invoices, what is still due, and
+              the plans below to subscribe again (the owner, 9 Nov 2026). */}
+          {current?.is_blocked &&
+            (current.ended ? (
+              <Notice tone="bad" title={t('billing.ended')}>{t('billing.endedHint')}</Notice>
+            ) : (
+              <Notice tone="bad" title={t('billing.blocked')}>{t('billing.blockedHint')}</Notice>
+            ))}
 
           {/* ── The plan: ONE card in every product (the owner, 12 Oct 2026) ─────── */}
           {/* 🔴 The plan, its quantity, its next payment, then the plans by price or the

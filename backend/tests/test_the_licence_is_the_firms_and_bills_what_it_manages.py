@@ -260,15 +260,59 @@ async def test_a_suspended_firm_refuses_its_team_and_keeps_its_investors(
     assert "suspendu" in login.json()["detail"]
 
 
-async def test_a_terminated_licence_refuses_the_subscriber_as_well(
+async def test_a_terminated_licence_keeps_the_subscriber_on_his_subscription(
     client, db, monkeypatch
 ):
+    """The owner, 9 Nov 2026 (« oui fais le »): once the termination has run out, the
+    subscriber keeps « Mon abonnement », and that screen alone, exactly as the subscriber of
+    a suspended firm: his invoices and credit notes, what is still due, subscribing again.
+    He signs in; anywhere else he is refused with `licence_ended`, so the screen tells an
+    ended subscription from a suspension. The team stays refused."""
     ended = (datetime.now(UTC) - timedelta(days=1)).isoformat()
     _console(monkeypatch, _licence(is_blocked=True, access_until=ended))
     subscriber = await _subscriber(db)
-    resp = await client.get("/api/v1/billing", headers=_auth(subscriber))
-    assert resp.status_code == 401
-    assert resp.headers.get("X-Error-Code") == licence_state.LICENCE_ENDED
+    colleague = await _colleague(db)
+
+    login = await client.post(
+        "/api/v1/auth/login",
+        json={"email": subscriber.email, "password": "Motdepasse-1234"},
+    )
+    assert login.status_code == 200, login.text
+
+    billing = await client.get("/api/v1/billing", headers=_auth(subscriber))
+    assert billing.status_code == 200, billing.text
+    assert billing.json()["ended"] is True
+    assert billing.json()["suspended"] is False
+    me = await client.get("/api/v1/auth/me", headers=_auth(subscriber))
+    assert me.status_code == 200
+    assert me.json()["subscription_ended"] is True
+    assert me.json()["subscription_suspended"] is False
+
+    elsewhere = await client.get("/api/v1/investors", headers=_auth(subscriber))
+    assert elsewhere.status_code == 403
+    assert elsewhere.headers.get("X-Error-Code") == licence_state.LICENCE_ENDED
+    assert "pris fin" in elsewhere.json()["detail"]
+
+    team = await client.get("/api/v1/billing", headers=_auth(colleague))
+    assert team.status_code == 401
+    assert team.headers.get("X-Error-Code") == licence_state.LICENCE_ENDED
+    refused = await client.post(
+        "/api/v1/auth/login",
+        json={"email": colleague.email, "password": "Motdepasse-1234"},
+    )
+    assert refused.status_code == 401
+    assert refused.headers.get("X-Error-Code") == licence_state.LICENCE_ENDED
+
+
+async def test_the_suspended_and_the_ended_subscriber_share_one_rule():
+    """ONE rule holds the subscriber to « Mon abonnement », whatever the reason."""
+    import inspect
+
+    from app.api import deps
+
+    source = inspect.getsource(deps.current_user)
+    assert source.count("licence_state.held_subscriber_may_reach") == 1
+    assert not hasattr(licence_state, "suspended_subscriber_may_reach")
 
 
 async def test_a_terminated_licence_keeps_its_investors(client, db, monkeypatch):
