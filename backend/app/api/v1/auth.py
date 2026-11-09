@@ -23,7 +23,12 @@ from app.database import SESSION
 from app.models.user import User
 from app.core.i18n import pick
 from app.core.visitor_window import VisitorWindow
-from app.services import password_link_service, session_service, two_factor_service
+from app.services import (
+    licence_state,
+    password_link_service,
+    session_service,
+    two_factor_service,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -108,6 +113,10 @@ async def login(data: LoginIn, request: Request, db: AsyncSession = SESSION):
             status.HTTP_403_FORBIDDEN,
             pick("Ce compte est désactivé.", "This account is disabled."),
         )
+    # 🔴 THE FIRM'S LICENCE, BEFORE ANY SESSION OR SECOND STEP (the owner, 8 Nov 2026): a
+    # colleague of a suspended firm, or anyone of its team once it is terminated, is told
+    # why here; the suspended subscriber comes in and reaches « Mon abonnement » alone.
+    await licence_state.gate(user)
     if await two_factor_service.is_enabled(db, user):
         return second_step(user)
     return signed_in(user)
@@ -226,6 +235,7 @@ async def password_link_consume(
         user = await password_link_service.consume(db, token, data.new_password)
     except password_link_service.PasswordLinkError as exc:
         raise _link_refusal(exc.reason) from None
+    await licence_state.gate(user)
     if await two_factor_service.is_enabled(db, user):
         return second_step(user)
     return signed_in(user, must_change_password=False)
@@ -245,6 +255,9 @@ class MeOut(BaseModel):
     #: for an account nobody qualified, and the screen says so rather than guessing.
     account_kind: str | None = None
     account_kind_label: str | None = None
+    #: The subscriber of a firm suspended for an unpaid invoice: the screen keeps them on
+    #: « Mon abonnement », the only place the server still serves them (8 Nov 2026).
+    subscription_suspended: bool = False
 
 
 @router.post("/logout", status_code=204)
@@ -279,6 +292,7 @@ async def me(user: User = Depends(current_user)):
         must_change_password=user.must_change_password,
         account_kind=user.account_kind,
         account_kind_label=account_kind.label_of(user.account_kind),
+        subscription_suspended=user.licence_suspended,
     )
 
 

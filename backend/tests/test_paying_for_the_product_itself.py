@@ -78,9 +78,10 @@ async def test_no_console_means_unknown_and_never_free(client, db, monkeypatch):
     and nobody granted them one.
     """
 
-    async def _absent(_user_id):
+    async def _absent(_user_id, *, strict: bool = False):
         return None
 
+    monkeypatch.setattr(alice_client, "console_configured", lambda: True)
     monkeypatch.setattr(alice_client, "get_license", _absent)
     manager = await _user(db, MANAGER)
     body = (await client.get("/api/v1/billing", headers=_auth(manager))).json()
@@ -122,7 +123,11 @@ async def test_a_read_degrades_but_a_payment_refuses(client, db, monkeypatch):
             )
         return None
 
+    async def _nothing_owed(*_args, **_kwargs):
+        return {"cgu": None, "cgv": None, "dpa": None}
+
     monkeypatch.setattr(alice_client, "billing", _down)
+    monkeypatch.setattr(alice_client, "terms_status", _nothing_owed)
     manager = await _user(db, MANAGER)
 
     lecture = await client.get("/api/v1/billing/plans", headers=_auth(manager))

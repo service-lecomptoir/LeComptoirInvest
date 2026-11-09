@@ -1,0 +1,28 @@
+import type { BillingSubscription } from '@/types'
+import { todayIso } from '@/lib/day'
+
+/** Which reminder the subscriber is shown, if any (`components/layout/SubscriptionBanner`). */
+export type SubscriptionBannerKind = 'suspended' | 'payment-failed' | 'billing-starts'
+
+/**
+ * The decision, apart from the drawing so it can be read and tested on its own (decisions
+ * of the owner, 8 Nov 2026, as on Le Comptoir Immo). Only the licence HOLDER is concerned;
+ * an Alice that does not send a field yet shows no banner for it.
+ *
+ * `isDemo`: a demonstration account is never asked for a payment method; null while the
+ * billing status has not said (no reminder until it does).
+ */
+export function subscriptionBannerOf(
+  info: BillingSubscription | null,
+  isDemo: boolean | null,
+  today: string = todayIso(),
+): SubscriptionBannerKind | null {
+  if (!info || !info.managed || !info.is_holder || info.unavailable) return null
+  if (info.is_blocked) return info.suspended ? 'suspended' : null
+  if (info.payment_failed_on) return 'payment-failed'
+  const startsLater = !!info.billing_starts_on && info.billing_starts_on.slice(0, 10) > today
+  if (startsLater && info.has_payment_method === false && (info.monthly_price ?? 0) > 0) {
+    return isDemo === false ? 'billing-starts' : null
+  }
+  return null
+}

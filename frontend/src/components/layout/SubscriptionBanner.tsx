@@ -1,0 +1,108 @@
+import { AlertTriangle, CreditCard, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
+
+import { billingApi } from '@/api'
+import { day } from '@/lib/format'
+import { subscriptionBannerOf } from '@/lib/subscriptionBanner'
+import { useAuthStore } from '@/store/authStore'
+import type { BillingSubscription } from '@/types'
+
+/** Closed for this tab only: the reminder comes back at the next visit (the owner, 8 Nov 2026). */
+const DISMISSED = 'lecomptoirinvest-billing-start-banner-closed'
+
+function dismissedForTheSession(): boolean {
+  try {
+    return sessionStorage.getItem(DISMISSED) === '1'
+  } catch {
+    return false
+  }
+}
+
+/**
+ * What the SUBSCRIBER is told about their own subscription, at the top of every screen
+ * (decisions of the owner, 8 Nov 2026), and only them: the licence holder pays, the team
+ * does not.
+ *
+ *  - suspended for an unpaid invoice: red, where to settle, never closable;
+ *  - a debit that failed, in the grace period: amber, until when to settle;
+ *  - the plan becomes paid on a coming date and no payment method is on file: blue,
+ *    closable for the session.
+ *
+ * Silent on failure: an informational banner must not add an error to the screen.
+ */
+export function SubscriptionBanner() {
+  const { t } = useTranslation()
+  const role = useAuthStore((s) => s.role)
+  const [info, setInfo] = useState<BillingSubscription | null>(null)
+  const [isDemo, setIsDemo] = useState<boolean | null>(null)
+  const [closed, setClosed] = useState(dismissedForTheSession)
+
+  useEffect(() => {
+    if (role !== 'manager') return
+    billingApi
+      .mine()
+      .then((r) => setInfo(r.data))
+      .catch(() => setInfo(null))
+    billingApi
+      .status()
+      .then((r) => setIsDemo(!!r.data.is_demo))
+      .catch(() => setIsDemo(null))
+  }, [role])
+
+  const kind = subscriptionBannerOf(info, isDemo)
+  if (!info || !kind) return null
+  if (kind === 'billing-starts' && closed) return null
+
+  const tone =
+    kind === 'suspended'
+      ? 'bg-red-50 text-red-800'
+      : kind === 'payment-failed'
+        ? 'bg-amber-50 text-amber-900'
+        : 'bg-blue-50 text-blue-900'
+  const Icon = kind === 'billing-starts' ? CreditCard : AlertTriangle
+  const text =
+    kind === 'suspended'
+      ? info.suspension_on
+        ? t('subscriptionBanner.suspendedSince', { date: day(info.suspension_on) })
+        : t('subscriptionBanner.suspended')
+      : kind === 'payment-failed'
+        ? info.suspension_on
+          ? t('subscriptionBanner.paymentFailed', {
+              failed: day(info.payment_failed_on),
+              deadline: day(info.suspension_on),
+            })
+          : t('subscriptionBanner.paymentFailedNoDeadline', { failed: day(info.payment_failed_on) })
+        : t('subscriptionBanner.billingStarts', { date: day(info.billing_starts_on) })
+
+  return (
+    <div role="status" className={`flex items-start gap-2 px-4 sm:px-6 lg:px-8 py-2.5 text-sm ${tone}`}>
+      <Icon size={16} className="mt-0.5 shrink-0" />
+      <p className="flex-1 min-w-0">
+        {text}{' '}
+        <Link to="/billing" className="font-semibold underline underline-offset-2">
+          {t('subscriptionBanner.open')}
+        </Link>
+      </p>
+      {kind === 'billing-starts' && (
+        <button
+          type="button"
+          aria-label={t('subscriptionBanner.close')}
+          title={t('subscriptionBanner.close')}
+          onClick={() => {
+            try {
+              sessionStorage.setItem(DISMISSED, '1')
+            } catch {
+              // Storage refused: closed until the next reload, which is still a close.
+            }
+            setClosed(true)
+          }}
+          className="shrink-0 rounded p-0.5 hover:bg-blue-100"
+        >
+          <X size={16} />
+        </button>
+      )}
+    </div>
+  )
+}

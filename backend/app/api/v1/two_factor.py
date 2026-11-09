@@ -25,7 +25,7 @@ from app.core.security import read_two_factor_pending_token, verify_password
 from app.core.visitor_window import VisitorWindow
 from app.database import SESSION
 from app.models.user import User
-from app.services import two_factor_service
+from app.services import licence_state, two_factor_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -146,6 +146,8 @@ async def login_two_factor(
         # exception, and the line « two_factor.failed » would leave with it.
         await db.commit()
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, _wrong_code())
+    # The firm's licence, as at the password step (`licence_state.gate`).
+    await licence_state.gate(user)
     return signed_in(user)
 
 

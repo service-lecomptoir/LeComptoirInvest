@@ -518,7 +518,13 @@
     "usage_one": "{{count}} investisseur sur {{limit}}",
     "usage_other": "{{count}} investisseurs sur {{limit}}",
     "usageUnlimited_one": "{{count}} investisseur, sans limite",
-    "usageUnlimited_other": "{{count}} investisseurs, sans limite"
+    "usageUnlimited_other": "{{count}} investisseurs, sans limite",
+    "paymentFailed": "Paiement en échec",
+    "infoUnavailable": "Les informations de votre abonnement sont momentanément indisponibles. Réessayez dans quelques minutes.",
+    "invoiceSettle": "Régler",
+    "invoicePayByCard": "Payer par carte",
+    "invoiceByTransfer": "J'ai payé par virement",
+    "termsFirst": "Cochez d'abord les conditions ci-dessus : payer votre formule vaut acceptation."
   },
   "performance": {
     "title": "Performance",
@@ -1160,5 +1166,14 @@
     "bannerAction": "Activer",
     "bannerDismiss": "Plus tard",
     "bannerDismissHelp": "Ne plus le rappeler pendant un mois"
+  },
+  "subscriptionBanner": {
+    "suspendedSince": "Votre compte est suspendu pour impayé depuis le {{date}} : réglez pour retrouver l'accès.",
+    "suspended": "Votre compte est suspendu pour impayé : réglez pour retrouver l'accès.",
+    "paymentFailed": "Le prélèvement du {{failed}} a échoué. Régularisez avant le {{deadline}} pour éviter la suspension.",
+    "paymentFailedNoDeadline": "Le prélèvement du {{failed}} a échoué. Régularisez au plus vite pour éviter la suspension.",
+    "billingStarts": "Votre abonnement devient payant le {{date}} : ajoutez un moyen de paiement.",
+    "open": "Mon abonnement",
+    "close": "Fermer"
   }
 }

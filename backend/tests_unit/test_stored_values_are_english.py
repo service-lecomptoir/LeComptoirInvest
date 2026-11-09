@@ -128,6 +128,12 @@ APPROVED: dict[str, str] = {
     "DPA": "dpa",
     "PRIVACY": "prv",
     "EVERYONE": "all",
+    # ⚠️ PUBLISHED WORDS, NOT COLUMNS (8 Nov 2026): the machine codes of a refusal under
+    # the firm's licence, sent in `X-Error-Code` and read by the screen. The same three
+    # codes as Le Comptoir Immo's.
+    "AGENCY_SUSPENDED": "agency_suspended",
+    "LICENCE_ENDED": "licence_ended",
+    "SUBSCRIPTION_SUSPENDED": "subscription_suspended",
     # ⚠️ THE TWO DELIBERATE EXCEPTIONS, and they are not an oversight. Le Comptoir Immo
     # stores exactly these two words on its landlords, and an investor is very often a
     # landlord. A second vocabulary would have to be translated wherever the two products

@@ -2,6 +2,7 @@ import axios from 'axios'
 import i18n from '@/i18n'
 import { toast } from '@/store/toast'
 import { loginFor } from '@/lib/nextPath'
+import { leaveSessionNotice } from '@/lib/sessionNotice'
 
 declare module 'axios' {
   export interface AxiosRequestConfig {
@@ -21,6 +22,12 @@ export const TOKEN_KEY = 'lecomptoirinvest-token'
 
 /** The pages open without an account: an expired session never redirects away from them. */
 const PUBLIC_DOORS = ['/login', '/pricing', '/privacy']
+
+/** The machine codes of a refusal under the firm's licence (`X-Error-Code`, 8 Nov 2026). */
+const CLOSED_FIRM = ['agency_suspended', 'licence_ended']
+const SUSPENDED_SUBSCRIBER = 'subscription_suspended'
+/** The one screen a suspended subscriber is served. */
+export const SUBSCRIPTION_ROUTE = '/billing'
 
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEY)
@@ -61,13 +68,24 @@ apiClient.interceptors.response.use(
     const config = error?.config || {}
     const method = (config.method || 'get').toLowerCase()
     const isRead = method === 'get' || method === 'head'
+    const code = error?.response?.headers?.['x-error-code']
     if (error?.response?.status === 401) {
+      // 🔴 A CLOSED FIRM SAYS WHY ON THE SIGN-IN PAGE (8 Nov 2026), never an empty form.
+      if (CLOSED_FIRM.includes(code)) leaveSessionNotice(errorMessage(error))
       localStorage.removeItem(TOKEN_KEY)
       // ⚠️ NOT FROM A PUBLIC DOOR: a visitor on the pricing page holding a stale token
       // would be thrown to the sign-in while reading the prices.
       if (!PUBLIC_DOORS.some((door) => window.location.pathname.startsWith(door))) {
         const { pathname, search, hash } = window.location
         window.location.href = loginFor(`${pathname}${search}${hash}`)
+      }
+      return Promise.reject(error)
+    }
+    // 🔴 A SUSPENDED SUBSCRIBER IS SENT TO « MON ABONNEMENT », WITHOUT A TOAST: the
+    // server serves them nothing else until they settle (8 Nov 2026).
+    if (error?.response?.status === 403 && code === SUSPENDED_SUBSCRIBER) {
+      if (!window.location.pathname.startsWith(SUBSCRIPTION_ROUTE)) {
+        window.location.href = SUBSCRIPTION_ROUTE
       }
       return Promise.reject(error)
     }

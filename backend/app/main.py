@@ -105,6 +105,9 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    # A refusal's machine code (`licence_state.ERROR_CODE_HEADER`): how the screen tells a
+    # suspended firm from an expired session.
+    expose_headers=["X-Error-Code"],
 )
 
 

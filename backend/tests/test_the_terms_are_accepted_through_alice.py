@@ -73,7 +73,10 @@ def alice(monkeypatch):
     answers: dict[str, httpx.Response | Exception] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
-        seen.append(request)
+        # The firm's licence, read on every request since 8 Nov 2026 (`licence_state`),
+        # is not what these tests watch.
+        if "/internal/license/" not in request.url.path:
+            seen.append(request)
         answer = answers.get(request.url.path, httpx.Response(404, json={}))
         if isinstance(answer, Exception):
             raise answer

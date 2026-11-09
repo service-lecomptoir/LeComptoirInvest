@@ -130,19 +130,30 @@ async def test_the_guard_and_the_invoice_count_the_same_thing(client, db, monkey
     await _register(db, status=kyc.REFUSED)
     manager = await _manager(db)
 
-    counted = await license_service.count_investors(db)
+    counted = await license_service.count_investors(db, TEST_FIRM)
     assert counted == 2, "a refused file is not an investor under management"
 
+    # 🔴 Reported on the account that IS the firm (8 Nov 2026); `manager` is a colleague
+    # of the suite's firm and answers 0, so the firm's investors are billed once.
+    firm = User(
+        id=TEST_FIRM,
+        email=f"societe-{uuid.uuid4().hex[:8]}@fonds.fr",
+        hashed_password="h",
+        role=MANAGER,
+    )
+    db.add(firm)
+    await db.flush()
     key = {"X-Internal-Key": INTERNAL_KEY}
     listing = await client.get("/internal/managers", headers=key)
     assert listing.status_code == 200
-    reported = {row["managed_count"] for row in listing.json()}
-    assert reported == {counted}
+    reported = {row["id"]: row["managed_count"] for row in listing.json()}
+    assert reported[str(TEST_FIRM)] == counted
+    assert reported[str(manager.id)] == 0
 
     # 🔴 AND THE SINGLE-MANAGER ROUTE TOO. It answered 0 for every account — the default of
     # a Pydantic field, in the exact shape of a real answer. Only the listing is read for
     # billing today; a second reader would have been billed on nothing.
-    one = await client.get(f"/internal/managers/{manager.id}", headers=key)
+    one = await client.get(f"/internal/managers/{TEST_FIRM}", headers=key)
     assert one.status_code == 200
     assert one.json()["managed_count"] == counted
 
@@ -207,13 +218,13 @@ async def test_the_ceiling_reached_with_overage_asks_and_announces_the_price(
     assert "12" in detail, "the price must be in the sentence, not only in the plan"
 
     # Nothing was written while the question was pending.
-    assert await license_service.count_investors(db) == 2
+    assert await license_service.count_investors(db, TEST_FIRM) == 2
 
     said_yes = await client.post(
         "/api/v1/investors?accept_overage=true", json=_body(), headers=_auth(manager)
     )
     assert said_yes.status_code == 201
-    assert await license_service.count_investors(db) == 3
+    assert await license_service.count_investors(db, TEST_FIRM) == 3
 
 
 # ── The console ──────────────────────────────────────────────────────────────────
@@ -299,7 +310,7 @@ async def test_un_refusing_a_file_goes_through_the_allowance_too(
         headers=_auth(manager),
     )
     assert said_yes.status_code == 200
-    assert await license_service.count_investors(db) == 3
+    assert await license_service.count_investors(db, TEST_FIRM) == 3
 
 
 async def test_refusing_somebody_never_asks_the_console(client, db, monkeypatch):
@@ -313,7 +324,10 @@ async def test_refusing_somebody_never_asks_the_console(client, db, monkeypatch)
     calls: list[str] = []
 
     async def _watch(_user_id, *, strict: bool = False):
-        calls.append("asked")
+        # Only the quota's read is strict; the licence read on every request
+        # (`licence_state.gate`, 8 Nov 2026) is not what this test is about.
+        if strict:
+            calls.append("asked")
         raise alice_client.AliceUnavailable("Indisponible.")
 
     monkeypatch.setattr(alice_client, "console_configured", lambda: True)

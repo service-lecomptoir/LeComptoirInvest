@@ -8,7 +8,7 @@ fund » — there is no third answer, and no endpoint decides for itself.
 
 import uuid
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,12 +18,14 @@ from app.core.security import opens_a_session, read_access_token
 from app.database import SESSION
 from app.models.investor import Investor
 from app.models.user import User
-from app.services import session_service
+from app.services import licence_state, session_service
 from app.core.i18n import pick
 
 
 async def current_user(
-    authorization: str | None = Header(default=None), db: AsyncSession = SESSION
+    request: Request,
+    authorization: str | None = Header(default=None),
+    db: AsyncSession = SESSION,
 ) -> User:
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(
@@ -52,6 +54,14 @@ async def current_user(
             status.HTTP_401_UNAUTHORIZED,
             pick("Compte inactif.", "This account is inactive."),
         )
+
+    # 🔴 THE FIRM'S LICENCE, ON EVERY REQUEST (the owner, 8 Nov 2026). A colleague of a
+    # suspended firm is refused here, mid-session as at the sign-in; its subscriber keeps
+    # « Mon abonnement » and nothing else; the investors are not concerned.
+    if await licence_state.gate(user):
+        user.licence_suspended = True
+        if not licence_state.suspended_subscriber_may_reach(request.url.path):
+            raise licence_state.subscriber_suspended_refusal()
 
     # 🔴 THE MANAGEMENT COMPANY IS ESTABLISHED HERE, AND NOWHERE ELSE.
     #

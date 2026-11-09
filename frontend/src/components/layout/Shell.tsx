@@ -11,6 +11,7 @@ import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { LogoMark } from '@/components/common/Logo'
 import { ProfileMenu } from '@/components/layout/ProfileMenu'
 import { UpdateBanner } from '@/components/layout/UpdateBanner'
+import { SubscriptionBanner } from '@/components/layout/SubscriptionBanner'
 import { TwoFactorBanner } from '@/components/security/TwoFactorBanner'
 
 interface Item {
@@ -276,6 +277,9 @@ export function Shell() {
         </header>
         {/* Recommended, never imposed: whoever runs the fund without a second factor is
             invited (the owner, 2 Nov 2026). */}
+        {/* The subscriber's own subscription: billing start, a failed debit, a
+            suspension (the owner, 8 Nov 2026). */}
+        <SubscriptionBanner />
         <TwoFactorBanner />
         <main className="px-4 sm:px-6 lg:px-8 py-6 max-w-[1400px]">
           <Outlet />

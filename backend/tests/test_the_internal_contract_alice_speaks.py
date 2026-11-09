@@ -326,10 +326,14 @@ class TestTheGuardProtectsTheOutcomeNotTheRole:
         assert r.status_code == 409
         assert "dernier" in r.json()["detail"]
 
-    async def test_the_last_active_administrator_cannot_be_blocked(self, client, db):
+    async def test_blocking_the_last_administrator_locks_nobody_out(self, client, db):
+        """Since 8 Nov 2026 a block switches nobody off (`licence_state` reads the licence
+        on each request): the last administrator stays able to come in and settle."""
         user = await _manager(db, "seul@fonds.fr")
         r = await client.post(f"/internal/managers/{user.id}/block", headers=auth())
-        assert r.status_code == 409
+        assert r.status_code == 200
+        await db.refresh(user)
+        assert user.is_active is True
 
     async def test_but_they_can_be_renamed_and_have_their_password_reset(
         self, client, db
@@ -377,13 +381,14 @@ class TestTheGuardProtectsTheOutcomeNotTheRole:
 
 class TestBlockAndUnblockAreSymmetrical:
     async def test_block_returns_exactly_what_it_deactivated(self, client, db):
+        """Nothing, under the key Alice reads (`blocked_user_ids`, 8 Nov 2026)."""
         await _manager(db, "autre@fonds.fr")
         user = await _manager(db, "cible@fonds.fr")
         r = await client.post(f"/internal/managers/{user.id}/block", headers=auth())
         assert r.status_code == 200
-        assert r.json()["user_ids"] == [str(user.id)]
+        assert r.json()["blocked_user_ids"] == []
         await db.refresh(user)
-        assert user.is_active is False
+        assert user.is_active is True
 
     async def test_unblock_restores_only_the_listed_accounts(self, client, db):
         await _manager(db, "autre@fonds.fr")

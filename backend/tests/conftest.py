@@ -287,3 +287,15 @@ def the_email_looks_are_never_kept_between_tests():
     email_themes.forget()
     yield
     email_themes.forget()
+
+
+@pytest.fixture(autouse=True)
+def no_licence_is_kept_between_tests():
+    """⚠️ THE LICENCE IS KEPT IN MEMORY for a minute (`alice_client._licence_cache`, read on
+    every request since 8 Nov 2026). A licence one test's fake console answered must not
+    block or open the next test's accounts."""
+    from app.services import alice_client
+
+    alice_client.invalidate_license_cache()
+    yield
+    alice_client.invalidate_license_cache()

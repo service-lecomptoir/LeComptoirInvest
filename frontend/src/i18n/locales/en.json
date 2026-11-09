@@ -518,7 +518,13 @@
     "usage_one": "{{count}} investor out of {{limit}}",
     "usage_other": "{{count}} investors out of {{limit}}",
     "usageUnlimited_one": "{{count}} investor, no limit",
-    "usageUnlimited_other": "{{count}} investors, no limit"
+    "usageUnlimited_other": "{{count}} investors, no limit",
+    "paymentFailed": "Payment failed",
+    "infoUnavailable": "Your subscription details are unavailable right now. Try again in a few minutes.",
+    "invoiceSettle": "Pay",
+    "invoicePayByCard": "Pay by card",
+    "invoiceByTransfer": "I paid by bank transfer",
+    "termsFirst": "Tick the terms above first: paying your plan accepts them."
   },
   "performance": {
     "title": "Performance",
@@ -1160,5 +1166,14 @@
     "bannerAction": "Turn on",
     "bannerDismiss": "Later",
     "bannerDismissHelp": "Do not remind me for a month"
+  },
+  "subscriptionBanner": {
+    "suspendedSince": "Your account has been suspended for an unpaid invoice since {{date}}: pay to get access back.",
+    "suspended": "Your account is suspended for an unpaid invoice: pay to get access back.",
+    "paymentFailed": "The payment of {{failed}} failed. Settle it before {{deadline}} to avoid the suspension.",
+    "paymentFailedNoDeadline": "The payment of {{failed}} failed. Settle it as soon as possible to avoid the suspension.",
+    "billingStarts": "Your subscription becomes paid on {{date}}: add a payment method.",
+    "open": "My subscription",
+    "close": "Close"
   }
 }

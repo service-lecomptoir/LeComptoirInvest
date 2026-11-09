@@ -201,11 +201,12 @@ export const billingApi = {
   status: () => apiClient.get<BillingStatus>('/billing/status'),
   // The refusal is SHOWN IN PLACE, next to the button: an unreachable console is
   // useful information, not a fleeting red banner at the top of the screen.
-  // A plan chosen here is subscribed to: the terms of sale ticked travel with it
-  // (`sale`), and the server has Alice record them before anything is paid.
+  // A plan chosen here is subscribed to, and paying the plan in place is a sale too
+  // (8 Nov 2026): the terms ticked travel with it (`sale`), and the server has Alice
+  // record them before anything is paid.
   checkout: (planId?: string, sale?: SaleTicked) =>
     apiClient.post<{ url?: string }>('/billing/checkout',
-      planId ? { plan_id: planId, ...sale } : {}, { skipErrorToast: true }),
+      planId ? { plan_id: planId, ...sale } : { ...sale }, { skipErrorToast: true }),
   portal: () => apiClient.post<{ url?: string }>('/billing/portal', {}, { skipErrorToast: true }),
   declareTransfer: () => apiClient.post('/billing/declare-transfer', {}, { skipErrorToast: true }),
   cancelTransfer: () => apiClient.post('/billing/cancel-transfer', {}, { skipErrorToast: true }),

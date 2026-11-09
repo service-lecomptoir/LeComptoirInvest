@@ -32,6 +32,8 @@ interface AuthState {
   seesWholeFund: boolean
   /** The holder must replace an id that somebody else passed on to them. */
   mustChangePassword: boolean
+  /** The subscriber of a firm suspended for an unpaid invoice: « Mon abonnement » alone. */
+  subscriptionSuspended: boolean
 
   /** The password. With a second factor on, no session opens: the answer is the token of
    *  the second step (`loginTwoFactor`), null when the session is open (3 Nov 2026). */
@@ -53,6 +55,7 @@ const CLEARED = {
   isAuthenticated: false,
   seesWholeFund: false,
   mustChangePassword: false,
+  subscriptionSuspended: false,
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -69,6 +72,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       isAuthenticated: true,
       seesWholeFund: data.sees_whole_fund,
       mustChangePassword: data.must_change_password,
+      subscriptionSuspended: !!data.subscription_suspended,
     })
   },
 

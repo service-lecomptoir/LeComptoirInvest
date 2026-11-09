@@ -15,7 +15,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.api.v1 import billing
-from app.services.alice_client import AliceUnavailable
+from app.services.alice_client import AliceRefused, AliceUnavailable
 
 SALE_HELPER = "_sale_accepted"
 HOLDS = "holds_the_licence"
@@ -24,6 +24,7 @@ HOLDS = "holds_the_licence"
 def _user(subscriber: bool = True) -> SimpleNamespace:
     return SimpleNamespace(
         id=uuid.uuid4(),
+        firm_id=None,
         email="titulaire@example.test",
         account_name="Titulaire",
         **{HOLDS: subscriber},
@@ -113,7 +114,8 @@ async def test_a_change_takes_the_terms_first_and_is_journaled(alice):
 
 async def test_alice_s_refusal_reaches_the_page_and_nothing_is_journaled(alice):
     sentence = "La formule Solo permet 5 unités et vous en avez 25 : réduisez d'abord."
-    alice.answers["change-plan"] = AliceUnavailable(sentence)
+    # A business refusal Alice wrote for the subscriber (a 4xx), relayed with her status.
+    alice.answers["change-plan"] = AliceRefused(sentence, 409)
     with pytest.raises(HTTPException) as refused:
         await billing.change_plan(_plan(), REQUEST, user=_user())
     assert refused.value.detail == sentence

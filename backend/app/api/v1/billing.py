@@ -31,8 +31,9 @@ from app.core import audit
 from app.database import AsyncSessionLocal
 from app.models.audit_log import AuditLog
 from app.models.user import User
-from app.services import alice_client
-from app.services.alice_client import AliceUnavailable
+from app.core.firm_scope import firm_of
+from app.services import alice_client, licence_state
+from app.services.alice_client import AliceRefused, AliceUnavailable
 from app.core.i18n import pick
 
 logger = logging.getLogger(__name__)
@@ -58,13 +59,39 @@ class SubscriptionInfo(BaseModel):
     #: How many INVESTORS the plan includes, when it sets a limit at all: the billed unit
     #: of this product (Alice's registry), never a number of funds or vehicles.
     investor_limit: int | None = None
+    #: 🔴 ALICE DID NOT ANSWER (8 Nov 2026): an outage, or an answer other than 200/404.
+    #: The screen says the information is unavailable, never « no plan ».
+    unavailable: bool = False
+    #: This account holds and pays the licence (`User.holds_the_licence`): the banners
+    #: speak to it alone.
+    is_holder: bool = False
+    #: Blocked for an unpaid invoice (or by hand), not by a termination run out: the
+    #: subscriber may come in, and reaches « Mon abonnement » alone.
+    suspended: bool = False
+    #: Alice's billing calendar (her side, 8 Nov 2026), each null when she does not say
+    #: (an older Alice sends none of them): when billing starts, whether a payment method
+    #: is on file, when a debit failed, and the day of the suspension.
+    billing_starts_on: str | None = None
+    has_payment_method: bool | None = None
+    payment_failed_on: str | None = None
+    suspension_on: str | None = None
+
+
+def _iso(day) -> str | None:
+    return day.isoformat() if day else None
 
 
 def _as_info(license_: dict | None) -> SubscriptionInfo:
     if not license_:
         return SubscriptionInfo(managed=False)
+    state = licence_state.read(license_)
     return SubscriptionInfo(
         managed=True,
+        suspended=bool(state and state.suspended),
+        billing_starts_on=_iso(state.billing_starts_on) if state else None,
+        has_payment_method=state.has_payment_method if state else None,
+        payment_failed_on=_iso(state.payment_failed_on) if state else None,
+        suspension_on=_iso(state.suspension_on) if state else None,
         plan_name=license_.get("plan_name"),
         monthly_price=license_.get("monthly_price"),
         is_blocked=bool(license_.get("is_blocked")),
@@ -85,7 +112,15 @@ def _as_info(license_: dict | None) -> SubscriptionInfo:
     "", response_model=SubscriptionInfo, summary="The manager's own subscription"
 )
 async def my_subscription(user: User = Depends(current_manager)) -> SubscriptionInfo:
-    return _as_info(await alice_client.get_license(user.id))
+    """The FIRM's licence (`firm_of`), the one Alice files under the subscriber's id: a
+    colleague reads the plan they work under, not an absent licence of their own."""
+    if not alice_client.console_configured():
+        return SubscriptionInfo(managed=False)
+    try:
+        licence = await alice_client.get_license(_payer(user), strict=True)
+    except AliceUnavailable:
+        return SubscriptionInfo(managed=True, unavailable=True, is_holder=_holds(user))
+    return _as_info(licence).model_copy(update={"is_holder": _holds(user)})
 
 
 @router.get("/payment-methods", summary="Payment methods on offer")
@@ -115,7 +150,7 @@ async def payment_methods(_: User = Depends(current_manager)) -> dict:
 @router.get("/status", summary="State of the paid subscription")
 async def billing_status(user: User = Depends(current_manager)) -> dict:
     """The Stripe subscription in force, if there is one. Degrades softly."""
-    data = await alice_client.billing("GET", "status", user.id, strict=False)
+    data = await alice_client.billing("GET", "status", _payer(user), strict=False)
     return data or {"stripe_enabled": False, "has_subscription": False}
 
 
@@ -126,7 +161,9 @@ async def available_plans(user: User = Depends(current_manager)) -> list:
     ⚠️ The console does the per-product filtering: asking for the list without saying who
     we are would surface the sister products' offers on this screen.
     """
-    data = await alice_client.billing("GET", "available-plans", user.id, strict=False)
+    data = await alice_client.billing(
+        "GET", "available-plans", _payer(user), strict=False
+    )
     return data if isinstance(data, list) else []
 
 
@@ -152,19 +189,26 @@ def _owed_unreadable() -> HTTPException:
     )
 
 
-def _tick_required(kind: str) -> HTTPException:
-    return HTTPException(
-        status.HTTP_422_UNPROCESSABLE_ENTITY,
+def _terms_sentence(kind: str) -> str:
+    """What the subscriber is asked: a plan, changed OR paid in place, is a sale."""
+    return (
         pick(
-            "Acceptez l'accord de traitement des données pour changer de formule.",
-            "Accept the data processing agreement to change plan.",
+            "Acceptez l'accord de traitement des données en vigueur avant de payer ou "
+            "de changer de formule.",
+            "Accept the data processing agreement in force before paying or changing "
+            "plan.",
         )
         if kind == terms_api.DPA
         else pick(
-            "Acceptez les conditions générales de vente pour changer de formule.",
-            "Accept the terms of sale to change plan.",
-        ),
+            "Acceptez les conditions générales de vente en vigueur avant de payer ou de "
+            "changer de formule.",
+            "Accept the terms of sale in force before paying or changing plan.",
+        )
     )
+
+
+def _tick_required(kind: str) -> HTTPException:
+    return HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, _terms_sentence(kind))
 
 
 async def _sale_accepted(user: User, request: Request, body: _PlanIn) -> None:
@@ -211,10 +255,28 @@ async def _sale_accepted(user: User, request: Request, body: _PlanIn) -> None:
             )
 
 
+#: Alice's `X-Refusal` on a Checkout asked before the terms were accepted, by document.
+_TERMS_REFUSALS = {"terms_cgv": terms_api.SALE, "terms_dpa": terms_api.DPA}
+
+
 def _unavailable(exc: AliceUnavailable) -> HTTPException:
-    # 503 rather than 500: the request was valid, it is the downstream that is missing.
-    # The message is the one the user will read, never a bare « Erreur ».
-    return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc))
+    """What the subscriber reads when Alice did not do what was asked.
+
+    🔴 THE OWNER, 8 NOV 2026: her key refused, her insides or the network give ONE sentence,
+    503 « service de facturation indisponible », never hers (« Clé interne invalide » is
+    about the link between two services). A business refusal she wrote for the subscriber
+    (a cap under the use, a plan that cannot be taken) is relayed with her status; her
+    refusal for terms not accepted (409 `X-Refusal: terms_cgv` / `terms_dpa`) is said in
+    this product's words, in the reader's language.
+    """
+    if isinstance(exc, AliceRefused):
+        kind = _TERMS_REFUSALS.get(exc.refusal or "")
+        if kind is not None:
+            return HTTPException(status.HTTP_409_CONFLICT, _terms_sentence(kind))
+        return HTTPException(exc.status, str(exc))
+    return HTTPException(
+        status.HTTP_503_SERVICE_UNAVAILABLE, alice_client.billing_unavailable()
+    )
 
 
 @router.post("/checkout", summary="Pay by card or SEPA direct debit")
@@ -226,16 +288,21 @@ async def checkout(
     """Opens a payment session and returns the address where the manager completes it.
 
     A plan named here is a subscription to it: its terms of sale are accepted first.
+    🔴 AND PAYING THE PLAN IN PLACE IS A SALE TOO (the owner, 8 Nov 2026): the terms of sale
+    and the agreement still owed are checked here as for a plan change, BEFORE Alice's
+    Checkout (she refuses it otherwise, 409 `X-Refusal`). This path checked nothing.
     """
     payload: dict = {"currency": "eur"}
     if body and body.plan_id:
         _subscriber_only(user)
-        await _sale_accepted(user, request, body)
+    await _sale_accepted(user, request, body or _PlanIn())
+    if body and body.plan_id:
         await _journal(user, "subscription.checkout_started", {"plan_id": body.plan_id})
         payload["plan_id"] = body.plan_id
     try:
         return (
-            await alice_client.billing("POST", "checkout", user.id, json=payload) or {}
+            await alice_client.billing("POST", "checkout", _payer(user), json=payload)
+            or {}
         )
     except AliceUnavailable as exc:
         raise _unavailable(exc)
@@ -245,7 +312,7 @@ async def checkout(
 async def portal(user: User = Depends(current_manager)) -> dict:
     """The portal where a card is changed, receipts read, and the subscription stopped."""
     try:
-        return await alice_client.billing("POST", "portal", user.id) or {}
+        return await alice_client.billing("POST", "portal", _payer(user)) or {}
     except AliceUnavailable as exc:
         raise _unavailable(exc)
 
@@ -258,7 +325,9 @@ async def declare_transfer(user: User = Depends(current_manager)) -> dict:
     announcement, matched afterwards by the console against the actual bank movement.
     """
     try:
-        return await alice_client.billing("POST", "declare-transfer", user.id) or {}
+        return (
+            await alice_client.billing("POST", "declare-transfer", _payer(user)) or {}
+        )
     except AliceUnavailable as exc:
         raise _unavailable(exc)
 
@@ -266,7 +335,7 @@ async def declare_transfer(user: User = Depends(current_manager)) -> dict:
 @router.post("/cancel-transfer", summary="Cancel a declared transfer")
 async def cancel_transfer(user: User = Depends(current_manager)) -> dict:
     try:
-        return await alice_client.billing("POST", "cancel-transfer", user.id) or {}
+        return await alice_client.billing("POST", "cancel-transfer", _payer(user)) or {}
     except AliceUnavailable as exc:
         raise _unavailable(exc)
 
@@ -292,13 +361,15 @@ async def change_plan(
             await alice_client.billing(
                 "POST",
                 "change-plan",
-                user.id,
+                _payer(user),
                 json={"plan_id": body.plan_id, "currency": "eur"},
             )
             or {}
         )
     except AliceUnavailable as exc:
         raise _unavailable(exc)
+    # The ceiling changed with the plan: what this process remembers is stale.
+    alice_client.invalidate_license_cache(_payer(user))
     await _journal(
         user,
         "subscription.plan_changed",
@@ -328,7 +399,7 @@ async def change_plan_preview(
     data = await alice_client.billing(
         "POST",
         "change-plan-preview",
-        user.id,
+        _payer(user),
         json={"plan_id": body.plan_id, "currency": "eur"},
         strict=False,
     )
@@ -337,7 +408,7 @@ async def change_plan_preview(
 
 @router.get("/invoices", summary="The manager's own invoices")
 async def invoices(user: User = Depends(current_manager)) -> list:
-    return await alice_client.invoices(user.id)
+    return await alice_client.invoices(_payer(user))
 
 
 @router.get("/invoices/{invoice_id}/pdf", summary="An invoice as a PDF")
@@ -347,7 +418,7 @@ async def invoice_pdf(
     """⚠️ THE MANAGER'S ID IS THE SESSION'S, never a parameter. The console files invoices
     by manager: accepting an id from the request would let another fund's invoice be read
     by changing one digit in the address."""
-    return _pdf(await alice_client.invoice_pdf(user.id, invoice_id))
+    return _pdf(await alice_client.invoice_pdf(_payer(user), invoice_id))
 
 
 @router.get("/invoices/credit-notes/{note_id}/pdf", summary="A credit note as a PDF")
@@ -357,7 +428,7 @@ async def credit_note_pdf(
     """A credit note on one of the manager's subscription invoices, shown in
     « Mon abonnement » (the owner, 6 Nov 2026). The manager's id is the SESSION's, as for
     an invoice: Alice refuses a note that is not on one of theirs."""
-    return _pdf(await alice_client.credit_note_pdf(user.id, note_id))
+    return _pdf(await alice_client.credit_note_pdf(_payer(user), note_id))
 
 
 def _pdf(found: tuple[bytes, str] | None) -> Response:
@@ -377,7 +448,7 @@ def _pdf(found: tuple[bytes, str] | None) -> Response:
 
 @router.get("/payments", summary="Payment history")
 async def payments(user: User = Depends(current_manager)) -> list:
-    data = await alice_client.billing("GET", "payments", user.id, strict=False)
+    data = await alice_client.billing("GET", "payments", _payer(user), strict=False)
     return data if isinstance(data, list) else []
 
 
@@ -392,6 +463,14 @@ async def payments(user: User = Depends(current_manager)) -> list:
 def _holds(user: User) -> bool:
     """The subscriber: the account that holds the licence and pays."""
     return bool(user.holds_the_licence)
+
+
+def _payer(user: User) -> uuid.UUID:
+    """The id Alice files the licence under: the FIRM's (`firm_of`), whoever asks.
+
+    ⚠️ ALWAYS THE SESSION'S FIRM, never an id from the request: another fund's invoice
+    must not be one digit away in an address. For the subscriber it is their own id."""
+    return firm_of(user)
 
 
 def _subscriber_only(user: User) -> None:
@@ -433,7 +512,7 @@ async def _journal(user: User, action: str, details: dict) -> None:
 async def plan_offer(user: User = Depends(current_manager)) -> dict:
     """Alice's offer for this licence, and whether THIS account may act on it."""
     try:
-        data = await alice_client.billing("GET", "plan-offer", user.id)
+        data = await alice_client.billing("GET", "plan-offer", _payer(user))
     except AliceUnavailable as exc:
         raise _unavailable(exc)
     if not isinstance(data, dict):
@@ -466,7 +545,7 @@ async def change_request(
         answer = await alice_client.billing(
             "POST",
             "change-request",
-            user.id,
+            _payer(user),
             json={
                 "plan_id": body.plan_id,
                 "message": (body.message or "").strip() or None,

@@ -131,6 +131,11 @@ class User(Base, TimestampMixin):
     #: freeze it at the day of the copy.
     email_theme: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
+    #: NOT A COLUMN: set for the length of one request by `licence_state.gate`, when this
+    #: account is the subscriber of a firm suspended for an unpaid invoice (it then reaches
+    #: « Mon abonnement » alone). Never stored: the licence is read again on each request.
+    licence_suspended = False
+
     @property
     def sees_whole_fund(self) -> bool:
         """One place answers it, so no endpoint decides on its own."""

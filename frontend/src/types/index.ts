@@ -54,6 +54,9 @@ export interface Me {
   account_kind: string | null
   /** Its label, translated by the server like every label the server owns. */
   account_kind_label: string | null
+  /** The subscriber of a firm suspended for an unpaid invoice: only « Mon abonnement »
+   *  is served to them (8 Nov 2026). Absent from an older server. */
+  subscription_suspended?: boolean
 }
 
 /** One family of e-mail looks, as Alice's catalogue names it (French display text). */
@@ -279,6 +282,17 @@ export interface BillingSubscription {
   access_until: string | null
   /** The investors the plan includes: the billed unit. `null`: no ceiling. */
   investor_limit: number | null
+  /** Alice did not answer: the screen says so, never « no plan » (8 Nov 2026). */
+  unavailable?: boolean
+  /** This account holds and pays the licence: the banners speak to it alone. */
+  is_holder?: boolean
+  /** Blocked for an unpaid invoice (or by hand), not by a termination run out. */
+  suspended?: boolean
+  /** Alice's billing calendar (8 Nov 2026), each absent or null when she does not say. */
+  billing_starts_on?: string | null
+  has_payment_method?: boolean | null
+  payment_failed_on?: string | null
+  suspension_on?: string | null
 }
 
 export interface PaymentMethods {
@@ -337,6 +351,8 @@ export interface BillingStatus {
   transfer_pending?: boolean
   /** The plan's price as the console bills it: the licence does not carry it. */
   monthly_price?: number | null
+  /** A demonstration account: never asked for a payment method. */
+  is_demo?: boolean
 }
 
 // ── Performance ─────────────────────────────────────────────────────────────────────

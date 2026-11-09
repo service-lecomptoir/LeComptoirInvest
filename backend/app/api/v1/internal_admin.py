@@ -39,7 +39,7 @@ from app.models.audit_log import AuditLog
 from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.user import FUND_WIDE_ROLES, MANAGER, User
-from app.services import license_service
+from app.services import alice_client, license_service
 from app.core.i18n import pick
 
 router = APIRouter(prefix="/internal", tags=["internal"])
@@ -163,8 +163,10 @@ class ManagerOut(BaseModel):
     #: register; the day two firms shared an installation, each was billed for the other's
     #: investors, and nothing anywhere looked broken.
     #:
-    #: ⚠️ TWO ACCOUNTS OF THE SAME FIRM do report the same number, and rightly so: they
-    #: manage the same register, and Alice bills one licence per account.
+    #: 🔴 REPORTED ON THE ACCOUNT THAT IS THE FIRM, AND ON NO OTHER (8 Nov 2026). Every
+    #: account of a firm reported its whole count, colleagues included: the list Alice
+    #: shows carried the firm's investors once per colleague. Alice files ONE licence, the
+    #: subscriber's; a colleague (`firm_id` set) answers 0, and an investor counts once.
     #: 🔴 THE GENERIC NAME, the one this platform is moving to. It pairs with Alice's
     #: registry, which already carries each product's WORD (`managed_one` /
     #: `managed_many`): this is the count of it.
@@ -290,10 +292,13 @@ class Stats(BaseModel):
 
 
 class BlockResult(BaseModel):
-    #: What was actually deactivated, so `unblock` restores exactly that and nothing more.
-    #: Reactivating « every account of this manager » would revive accounts somebody had
-    #: disabled for their own reasons, and nobody would connect the two events.
-    user_ids: list[uuid.UUID]
+    #: What was actually deactivated, which Alice keeps and hands back to `unblock`.
+    #:
+    #: 🔴 ALICE READS `blocked_user_ids` (8 Nov 2026). This answer said `user_ids`: Alice
+    #: kept an empty list, and her `unblock` came back with nothing to restore. It is
+    #: always empty now: the block switches nobody off (`licence_state` reads the licence
+    #: on every request instead).
+    blocked_user_ids: list[uuid.UUID]
 
 
 class UnblockIn(BaseModel):
@@ -315,12 +320,12 @@ def _manager_out(user: User, counted: dict) -> ManagerOut:
     comes back NULL on the very account the console just wrote, in the exact shape of a
     real answer.
 
-    `counted` is `license_service.count_investors_by_firm`: one query, whatever the number
-    of rows being answered.
+    `counted` is `license_service.billable_investor_counts`: one query, whatever the number
+    of rows being answered. Only the account that IS the firm reports it.
     """
     return ManagerOut.model_validate(user).model_copy(
         update={
-            "managed_count": counted.get(firm_scope.firm_of(user), 0),
+            "managed_count": counted.get(user.id, 0) if user.firm_id is None else 0,
             "account_kind_label": account_kind.label_of(user.account_kind),
             "acts_for": account_kind.acts_for_of(user.account_kind),
         }
@@ -328,7 +333,7 @@ def _manager_out(user: User, counted: dict) -> ManagerOut:
 
 
 async def _one_manager_out(db: AsyncSession, user: User) -> ManagerOut:
-    return _manager_out(user, await license_service.count_investors_by_firm(db))
+    return _manager_out(user, await license_service.billable_investor_counts(db))
 
 
 def _kind_from(acts_for: str) -> str:
@@ -396,7 +401,7 @@ async def list_managers(
         .all()
     )
     # 🔴 ONE COUNT PER FIRM, NO LONGER ONE FIGURE FOR EVERYBODY. See the field's note.
-    counted = await license_service.count_investors_by_firm(db)
+    counted = await license_service.billable_investor_counts(db)
     return [_manager_out(r, counted) for r in rows]
 
 
@@ -587,21 +592,22 @@ async def block(
     _: None = Depends(require_internal_key),
     db: AsyncSession = SESSION,
 ):
-    """Suspend the account — non-payment, usually.
+    """Alice has blocked the licence (non-payment, usually, or by hand).
 
-    ⚠️ BLOCKS THE MANAGER, NEVER THE INVESTORS. An unpaid subscription is a dispute between
-    the fund and Alice; the investors are third parties who committed money and are owed
-    sight of it. Cutting their access would turn a billing incident into something a
-    regulator reads very differently.
+    🔴 SWITCHES NOBODY OFF (the owner, 8 Nov 2026). The licence itself is read on every
+    request (`licence_state.gate`): the colleagues are refused, the subscriber reaches
+    « Mon abonnement » alone to settle, the investors keep their space. Writing
+    `is_active = False` locked the subscriber out of the very page where they pay, and
+    left the colleagues working. This route only drops the licence this process keeps in
+    memory, so the block bites at the next request.
+
+    ⚠️ THE INVESTORS ARE NEVER CONCERNED. An unpaid subscription is a dispute between the
+    fund and Alice; the investors are third parties who committed money and are owed sight
+    of it.
     """
-    user = await _managed(db, manager_id)
-    await _refuse_if_last_administrator(db, user)
-    blocked: list[uuid.UUID] = []
-    if user.is_active:
-        user.is_active = False
-        blocked.append(user.id)
-        await db.commit()
-    return BlockResult(user_ids=blocked)
+    await _managed(db, manager_id)
+    alice_client.invalidate_license_cache(manager_id)
+    return BlockResult(blocked_user_ids=[])
 
 
 @router.post("/managers/{manager_id}/unblock", status_code=204)
@@ -611,20 +617,26 @@ async def unblock(
     _: None = Depends(require_internal_key),
     db: AsyncSession = SESSION,
 ):
-    """Reactivate EXACTLY what the matching block deactivated.
+    """Alice lifts the block: reactivate what an earlier block deactivated.
 
     🔴 THE LIST COMES FROM THE CALLER, and that is the point. Reactivating « every account
     of this manager » would revive accounts somebody had disabled for their own reasons —
     a departure, a suspicion — and nobody would ever connect the two events.
+
+    🔴 AND THE MANAGER ITSELF (8 Nov 2026). Until then `/block` switched it off and answered
+    under a key Alice does not read (`user_ids` for `blocked_user_ids`): she kept an empty
+    list and came back here with nothing, and the account stayed off for good. `/block`
+    was the ONLY writer of `is_active = False` in this product, so a manager found switched
+    off here was switched off by a block, and comes back.
     """
-    await _managed(db, manager_id)
-    if not data.user_ids:
+    user = await _managed(db, manager_id)
+    alice_client.invalidate_license_cache(manager_id)
+    wanted = set(data.user_ids)
+    if not user.is_active:
+        wanted.add(user.id)
+    if not wanted:
         return
-    rows = (
-        (await db.execute(select(User).where(User.id.in_(data.user_ids))))
-        .scalars()
-        .all()
-    )
+    rows = (await db.execute(select(User).where(User.id.in_(wanted)))).scalars().all()
     for row in rows:
         row.is_active = True
     await db.commit()

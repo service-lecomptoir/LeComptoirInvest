@@ -32,11 +32,14 @@ first line of the list above, and it is decided on CONFIGURATION, never on a fai
 
 from __future__ import annotations
 
+import uuid
+
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import kyc
+from app.core import display, kyc
+from app.core.firm_scope import firm_of
 from app.core.i18n import pick
 from app.models.investor import Investor
 from app.models.user import MANAGER, User
@@ -60,60 +63,69 @@ BLOCKED = "blocked"
 UNKNOWN = "unknown"
 
 
-async def count_investors(db: AsyncSession) -> int:
-    """How many investors this installation carries. THE BILLING QUANTITY.
+async def billable_investor_counts(
+    db: AsyncSession, firm: uuid.UUID | None = None
+) -> dict[uuid.UUID, int]:
+    """THE BILLING QUANTITY: investors per management company. THE ONE COUNT.
 
-    🔴 THE GUARD AND THE INVOICE COUNT THE SAME THING BECAUSE THEY CALL THE SAME FUNCTION.
-    This used to live inside `internal_admin.py`, where only the console could reach it.
-    Had the guard grown its own `select(count())` it would have been right the day it was
-    written and wrong at the first change to either — and the symptom would have been a
-    fund refused at forty-nine while being billed for fifty-one, each number defensible on
-    its own.
+    🔴 ONE FUNCTION FOR EVERY READER (the owner, 8 Nov 2026): the ceiling and its 402
+    (`check_investor_quota`), the screen's « 48 / 50 » (`quota_outlook`) and the
+    `managed_count` Alice bills and lists (`/internal/managers`). Two copies would drift, and
+    the fund would be refused at forty-nine while invoiced for fifty-one.
 
-    🔴 A REFUSED FILE IS NOT AN INVESTOR UNDER MANAGEMENT. They were assessed and turned
-    away: they hold nothing, they receive nothing, and no capital call will ever go to
-    them. Counting them would bill a fund for the people it declined — and the more
-    carefully it screens, the more it would pay.
+    - **by the firm that manages**: `investors.firm_id`, stamped with the firm of the
+      account that registered them (`firm_scope`), so an investor counts ONCE, for the firm
+      whose register holds them, whichever colleague typed them in;
+    - **a refused file frees its place** (`COUNTABLE`): assessed and turned away, they hold
+      nothing and receive nothing. Reversing the refusal asks the place back
+      (`investors.record_verdict`, the second door);
+    - everything else counts, a file pending or under review included: the work is done
+      the moment the file exists.
 
-    ⚠️ EVERYTHING ELSE COUNTS, including a file still pending or under review. The work is
-    done the moment the file exists, which is exactly what is being billed; waiting for an
-    acceptance would make the quantity lag the effort by weeks.
+    ⚠️ This product has no archive and no exit of an investor (8 Nov 2026): the refusal is
+    the only way a place is freed.
+
+    `firm` narrows to one firm; without it, every firm in reach of the caller's scope (all
+    of them under `/internal`, which opens it on the console's key). ONE query either way.
     """
-    return int(
-        (
-            await db.execute(select(func.count(Investor.id)).where(COUNTABLE))
-        ).scalar_one()
+    query = (
+        select(Investor.firm_id, func.count(Investor.id))
+        .where(COUNTABLE)
+        .group_by(Investor.firm_id)
     )
+    if firm is not None:
+        query = query.where(Investor.firm_id == firm)
+    rows = (await db.execute(query)).all()
+    return {owner: int(total) for owner, total in rows if owner is not None}
 
 
-async def count_investors_by_firm(db: AsyncSession) -> dict:
-    """The same quantity, per management company, in ONE query.
+async def count_investors(db: AsyncSession, firm: uuid.UUID) -> int:
+    """`billable_investor_counts` for one firm, as a number."""
+    return (await billable_investor_counts(db, firm)).get(firm, 0)
 
-    🔴 FOR THE CONSOLE, AND ONLY FOR IT. Every other caller runs inside a firm, so the
-    injected scope already answers the question; the console reads across firms on purpose
-    and must therefore say which count belongs to whom.
 
-    🔴 THIS EXISTS BECAUSE THE PER-FIRM ISOLATION MADE THE OLD ANSWER WRONG, AND IT WAS
-    MONEY. Until 21 August this product had one register for the whole installation, so the
-    console reported the SAME count to every manager account -- documented, and true at the
-    time. The day two firms shared an installation, that number billed each of them for the
-    other's investors, and nothing anywhere would have looked broken.
+def billing_currency() -> str:
+    """The currency this product's subscription is billed in.
 
-    ⚠️ ONE QUERY, NOT ONE PER MANAGER. The console lists every account of the platform; a
-    count per row is a screen that slows down exactly as the business grows.
-
-    ⚠️ AND IT COUNTS THE SAME THING AS `count_investors`, by construction: both read
-    `COUNTABLE`. Two predicates would eventually disagree, and the fund would be refused at
-    forty-nine while being billed for fifty-one.
+    Invest asks Alice's Checkout and plan change in euros (`api/v1/billing.py`): the price
+    of the overage is read and written in that currency, with its decimals.
     """
-    rows = (
-        await db.execute(
-            select(Investor.firm_id, func.count(Investor.id))
-            .where(COUNTABLE)
-            .group_by(Investor.firm_id)
-        )
-    ).all()
-    return {firm: int(total) for firm, total in rows}
+    return "EUR"
+
+
+def overage_price(licence: dict | None) -> float:
+    """The monthly price of one investor beyond the plan, in `billing_currency()`.
+
+    Alice's `overage_prices` (per currency) first, her single `overage_price` (the euro)
+    when the plan names none for the currency.
+    """
+    lic = licence or {}
+    prices = lic.get("overage_prices")
+    if isinstance(prices, dict):
+        found = prices.get(billing_currency()) or prices.get(billing_currency().lower())
+        if isinstance(found, int | float):
+            return float(found)
+    return float(lic.get("overage_price") or 0)
 
 
 def outlook(licence: dict | None, current: int, adding: int) -> dict:
@@ -135,7 +147,7 @@ def outlook(licence: dict | None, current: int, adding: int) -> dict:
         "adding": adding,
         "after": after,
         "excess": 0,
-        "price": float((licence or {}).get("overage_price") or 0),
+        "price": overage_price(licence),
         "monthly_cost": 0.0,
     }
     # ⚠️ `None` IS A VALUE HERE, NOT AN ABSENCE: « unlimited » travels as null on the wire.
@@ -161,9 +173,14 @@ async def _licence_of(user: User) -> dict | None:
     if not alice_client.console_configured():
         return None
     try:
-        licence = await alice_client.get_license(user.id, strict=True)
+        # 🔴 THE FIRM'S LICENCE, for every account of its team (8 Nov 2026). It was read on
+        # the caller's own id: a colleague, whose id Alice files no licence under, met a
+        # 403 where the subscriber met the ceiling and its 402.
+        licence = await alice_client.get_license(firm_of(user), strict=True)
     except alice_client.AliceUnavailable as exc:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, alice_client.billing_unavailable()
+        ) from exc
     if licence is None:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
@@ -201,7 +218,7 @@ async def quota_outlook(db: AsyncSession, user: User, *, adding: int = 1) -> dic
         return {**empty, "verdict": UNKNOWN}
     if licence is None:
         return empty
-    return outlook(licence, await count_investors(db), adding)
+    return outlook(licence, await count_investors(db, firm_of(user)), adding)
 
 
 async def check_investor_quota(
@@ -227,11 +244,14 @@ async def check_investor_quota(
     if licence.get("managed_limit") is None:
         return  # Unlimited allowance.
 
-    view = outlook(licence, await count_investors(db), adding)
+    view = outlook(licence, await count_investors(db, firm_of(user)), adding)
     if view["verdict"] == OK:
         return
 
-    current, limit, price = view["current"], view["limit"], view["price"]
+    current, limit = view["current"], view["limit"]
+    # 🔴 IN THE ACCOUNT'S CURRENCY, WITH ITS DECIMALS, IN THE READER'S LANGUAGE (8 Nov
+    # 2026): « 12,50 € » to a French reader, « €12.50 » to an English one, never « 12.5 € ».
+    price = display.amount(view["price"], billing_currency())
     if view["verdict"] == BLOCKED:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
@@ -257,19 +277,19 @@ async def check_investor_quota(
         if adding == 1:
             detail = pick(
                 f"Cet enregistrement dépasse votre forfait ({current}/{limit}). Chaque "
-                f"investisseur au-delà est facturé {price:g} €/mois, ajouté à votre "
+                f"investisseur au-delà est facturé {price} par mois, ajouté à votre "
                 "abonnement. Confirmez pour continuer.",
                 f"Registering this investor exceeds your plan ({current}/{limit}). Each "
-                f"investor beyond it is billed {price:g} €/month, added to your "
+                f"investor beyond it is billed {price} a month, added to your "
                 "subscription. Confirm to continue.",
             )
         else:
             detail = pick(
                 f"Cette opération dépasse votre forfait de {view['excess']} "
                 f"investisseur(s) ({current}/{limit}). Chacun au-delà est facturé "
-                f"{price:g} €/mois, ajouté à votre abonnement. Confirmez pour continuer.",
+                f"{price} par mois, ajouté à votre abonnement. Confirmez pour continuer.",
                 f"This exceeds your plan by {view['excess']} investor(s) "
-                f"({current}/{limit}). Each one beyond it is billed {price:g} €/month, "
+                f"({current}/{limit}). Each one beyond it is billed {price} a month, "
                 "added to your subscription. Confirm to continue.",
             )
         raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, detail)
@@ -280,8 +300,11 @@ __all__ = [
     "OK",
     "OVERAGE",
     "UNKNOWN",
+    "billable_investor_counts",
+    "billing_currency",
     "check_investor_quota",
     "count_investors",
+    "overage_price",
     "outlook",
     "quota_outlook",
 ]

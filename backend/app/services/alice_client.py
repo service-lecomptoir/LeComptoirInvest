@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import ssl
+import time
 from functools import cache
 from typing import Any
 from uuid import UUID
@@ -76,6 +77,32 @@ class AliceUnavailable(RuntimeError):
     """Raised only where silence would be misread as success."""
 
 
+class AliceRefused(AliceUnavailable):
+    """Alice answered, and refused: a business refusal written for the subscriber.
+
+    A 4xx other than 401, 403 and 404. `status` is hers, `refusal` her `X-Refusal` header
+    (`terms_cgv`, `terms_dpa` on a Checkout asked before the terms were accepted). Still an
+    `AliceUnavailable`, so a caller that only cares whether the call went through keeps
+    one `except`.
+    """
+
+    def __init__(self, sentence: str, status: int, refusal: str | None = None) -> None:
+        super().__init__(sentence)
+        self.status = status
+        self.refusal = refusal
+
+
+def billing_unavailable() -> str:
+    """🔴 THE ONE SENTENCE FOR AN ALICE THAT CANNOT SERVE (the owner, 8 Nov 2026): her key
+    refused (401/403), her insides (5xx) or the network. Never her own sentence: « Clé
+    interne invalide » is about the link between two services, not the subscriber's."""
+    return pick(
+        "Le service de facturation est momentanément indisponible. Réessayez dans "
+        "quelques minutes.",
+        "The billing service is unavailable right now. Try again in a few minutes.",
+    )
+
+
 async def _call(
     method: str,
     path: str,
@@ -104,14 +131,15 @@ async def _call(
     except Exception as exc:  # noqa: BLE001
         logger.warning("Alice %s %s injoignable : %s", method, path, exc)
         if strict:
-            raise AliceUnavailable(
-                pick(
-                    "Le service d'abonnement est momentanément indisponible.",
-                    "The subscription service is temporarily unavailable.",
-                )
-            )
+            raise AliceUnavailable(billing_unavailable()) from None
         return None
     if resp.status_code == 404:
+        return None
+    if resp.status_code in (401, 403) or resp.status_code >= 500:
+        # 🔴 NOT HER SENTENCE (the owner, 8 Nov 2026): see `billing_unavailable`.
+        logger.warning("Alice %s %s -> %s", method, path, resp.status_code)
+        if strict:
+            raise AliceUnavailable(billing_unavailable())
         return None
     if resp.status_code >= 400:
         detail = None
@@ -121,12 +149,15 @@ async def _call(
             pass
         logger.warning("Alice %s %s -> %s %s", method, path, resp.status_code, detail)
         if strict:
-            raise AliceUnavailable(
+            raise AliceRefused(
                 detail
-                or pick(
+                if isinstance(detail, str) and detail.strip()
+                else pick(
                     "Le service d'abonnement a refusé la demande.",
                     "The subscription service refused the request.",
-                )
+                ),
+                resp.status_code,
+                resp.headers.get("X-Refusal"),
             )
         return None
     if not resp.content:
@@ -145,14 +176,48 @@ def console_configured() -> bool:
     return _target() is not None
 
 
+#: How long one process keeps a licence Alice answered. The licence is read on EVERY
+#: request since 8 Nov 2026 (`licence_state.gate`): without a memory, each click of a fund
+#: manager would wait on the console.
+_LICENSE_TTL = 60.0
+#: `{licence holder id: (monotonic time read, licence)}`. Only a licence Alice ANSWERED is
+#: kept: a silence or a refusal is asked again at the next request.
+_licence_cache: dict[UUID, tuple[float, dict]] = {}
+
+
+def invalidate_license_cache(user_id: UUID | None = None) -> None:
+    """Forget what this process remembers of a licence (all of them with no id).
+
+    🔴 CALLED WHEN ALICE SAYS THE LICENCE CHANGED. Alice sends Invest no licence webhook:
+    her `/internal/managers/{id}/block` and `/unblock` are the signal, and a plan changed
+    through « Mon abonnement » passes here too. ⚠️ ONE PROCESS: another worker of the
+    backend keeps its copy until `_LICENSE_TTL` runs out.
+    """
+    if user_id is None:
+        _licence_cache.clear()
+    else:
+        _licence_cache.pop(user_id, None)
+
+
 async def get_license(user_id: UUID, *, strict: bool = False) -> dict | None:
-    """The manager's licence: plan, price, blocking, included features, ceiling.
+    """The licence filed under this id: plan, price, blocking, included features, ceiling,
+    and Alice's billing calendar (`billing_starts_on`, `has_payment_method`,
+    `payment_failed_on`, `suspension_on`, each optional: `services.licence_state`).
+
+    🔴 ASK IT FOR THE FIRM'S ROOT (`firm_scope.firm_of`), never for a colleague's own id:
+    Alice files ONE licence, the subscriber's, and has none for anybody else.
 
     ⚠️ `strict` IS FOR CALLERS THAT ENFORCE, not for callers that display. The subscription
     screen wants a soft `None` and shows « unknown »; the quota guard wants the failure,
     because the alternative is granting an allowance nobody checked.
     """
-    return await _call("GET", f"/api/v1/internal/license/{user_id}", strict=strict)
+    kept = _licence_cache.get(user_id)
+    if kept is not None and time.monotonic() - kept[0] < _LICENSE_TTL:
+        return kept[1]
+    licence = await _call("GET", f"/api/v1/internal/license/{user_id}", strict=strict)
+    if isinstance(licence, dict):
+        _licence_cache[user_id] = (time.monotonic(), licence)
+    return licence
 
 
 async def payment_config() -> dict:

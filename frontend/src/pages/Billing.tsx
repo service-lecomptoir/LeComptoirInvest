@@ -207,8 +207,9 @@ export default function Billing() {
     setBusy('checkout')
     setRefusal(null)
     try {
-      // A plan named here is subscribed to: the terms of sale ticked travel with it.
-      const { data } = await billingApi.checkout(planId, planId ? sale : undefined)
+      // A plan named here is subscribed to, and paying the plan in place is a sale too (the
+      // owner, 8 Nov 2026): the terms ticked travel with it, and the server checks them.
+      const { data } = await billingApi.checkout(planId, sale)
       if (data?.url) window.location.href = data.url
       else setRefusal(t('billing.noPaymentPage'))
     } catch (error) {
@@ -288,6 +289,13 @@ export default function Billing() {
 
   const current = subscription
   const noConsole = current && !current.managed
+  // 🔴 A DEBIT THAT FAILED IS NOT « ACTIF » (the owner, 8 Nov 2026): while it is being
+  // settled, the badge says so.
+  const paymentFailed = !current?.is_blocked && !!current?.payment_failed_on
+  // Paying the plan in place waits on the terms still owed, as a plan change does.
+  const payHeld = subscriber && saleHold !== null
+  /** An issued invoice still to pay: not paid, and not cancelled by its credit notes. */
+  const owes = (invoice: BillingInvoice) => !invoice.paid_at && !nothingLeftToPay(creditsOf(invoice))
 
   return (
     <>
@@ -309,7 +317,10 @@ export default function Billing() {
         </div>
       )}
 
-      {noConsole ? (
+      {current?.unavailable ? (
+        /* Alice did not answer: an empty plan here would read as « no plan » (8 Nov 2026). */
+        <Notice tone="warn" title={t('billing.actionRefused')}>{t('billing.infoUnavailable')}</Notice>
+      ) : noConsole ? (
         <Notice tone="info" title={t('billing.notManaged')}>{t('billing.notManagedHint')}</Notice>
       ) : (
         <div className="space-y-5">
@@ -331,7 +342,9 @@ export default function Billing() {
             }
             badges={
               <>
-              {status?.has_subscription ? (
+              {paymentFailed ? (
+                <Badge variant="orange">{t('billing.paymentFailed')}</Badge>
+              ) : status?.has_subscription ? (
                 <Badge variant="green">{t('billing.active')}</Badge>
               ) : (
                 <Badge variant="gray">{t('billing.notSubscribed')}</Badge>
@@ -391,10 +404,12 @@ export default function Billing() {
                         <span className="text-sm font-medium">{t('billing.byCard')}</span>
                       </div>
                       <p className="mt-1.5 text-sm text-gray-600 flex-1">{t('billing.byCardHint')}</p>
+                      {/* Never a silent grey button: what it waits for is said here. */}
+                      {payHeld && <p className="mt-2 text-xs text-amber-800">{t('billing.termsFirst')}</p>}
                       <div className="mt-4 flex flex-wrap gap-2">
                         <Button
                           onClick={() => goToPayment()}
-                          disabled={busy === 'checkout'}
+                          disabled={busy === 'checkout' || payHeld}
                         >
                           {status?.has_subscription ? t('billing.updateCard') : t('billing.payNow')}
                         </Button>
@@ -507,13 +522,54 @@ export default function Billing() {
                             </span>
                           </Td>
                           <Td right>
-                            <button
-                              type="button"
-                              onClick={() => openInvoice(invoice)}
-                              className="text-sm font-medium text-brand-teal hover:underline"
-                            >
-                              {t('billing.downloadPdf')}
-                            </button>
+                            <span className="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+                              {/* 🔴 « À RÉGLER » WITH NOTHING TO CLICK (the owner, 8 Nov 2026): an
+                                  unpaid invoice offers its way out, on its own line. */}
+                              {owes(invoice) && !status?.is_demo && (
+                                status?.transfer_pending ? (
+                                  <span className="text-xs text-amber-800">{t('billing.transferPending')}</span>
+                                ) : (
+                                  <>
+                                    {status?.has_subscription ? (
+                                      <button
+                                        type="button"
+                                        onClick={openPortal}
+                                        disabled={busy === 'portal'}
+                                        className="text-sm font-medium text-brand-teal hover:underline disabled:opacity-60"
+                                      >
+                                        {t('billing.invoiceSettle')}
+                                      </button>
+                                    ) : methods?.card_enabled ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => goToPayment()}
+                                        disabled={busy === 'checkout' || payHeld}
+                                        className="text-sm font-medium text-brand-teal hover:underline disabled:opacity-60"
+                                      >
+                                        {t('billing.invoicePayByCard')}
+                                      </button>
+                                    ) : null}
+                                    {methods?.transfer_enabled && (
+                                      <button
+                                        type="button"
+                                        onClick={declareTransfer}
+                                        disabled={busy === 'transfer'}
+                                        className="text-sm font-medium text-gray-700 hover:underline disabled:opacity-60"
+                                      >
+                                        {t('billing.invoiceByTransfer')}
+                                      </button>
+                                    )}
+                                  </>
+                                )
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => openInvoice(invoice)}
+                                className="text-sm font-medium text-brand-teal hover:underline"
+                              >
+                                {t('billing.downloadPdf')}
+                              </button>
+                            </span>
                           </Td>
                         </tr>
                         {credits.notes.length > 0 && (

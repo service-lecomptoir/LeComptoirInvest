@@ -13,6 +13,7 @@ import { LogoMark } from '@/components/common/Logo'
 import { SignupForm } from '@/components/signup/SignupForm'
 import { safeNext } from '@/lib/nextPath'
 import { readConsoleLink, withoutLink } from '@/lib/consoleLink'
+import { takeSessionNotice } from '@/lib/sessionNotice'
 import { useFieldCheck } from '@/lib/formCheck'
 import { TwoFactorStep } from '@/components/security/TwoFactorStep'
 
@@ -36,7 +37,9 @@ export default function Login() {
   const [link] = useState(() => readConsoleLink(location.search, location.hash))
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  // Why the last session closed, when the server said (a suspended firm, an ended
+  // subscription: 8 Nov 2026), read once at the opening.
+  const [error, setError] = useState<string | null>(takeSessionNotice)
   const [busy, setBusy] = useState(false)
   const { errors, check } = useFieldCheck()
   // 🔴 THE SIGN-UP GOES THROUGH THE CONSOLE (`SignupForm`), as on Le Comptoir RH: the

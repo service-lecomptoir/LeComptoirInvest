@@ -4,6 +4,7 @@ import { Shell } from '@/components/layout/Shell'
 import { TermsGate } from '@/components/terms/TermsGate'
 import { useAuthStore } from '@/store/authStore'
 import { loginFor } from '@/lib/nextPath'
+import { SUBSCRIPTION_ROUTE } from '@/api/client'
 import Login from '@/pages/Login'
 import Landing from '@/pages/Landing'
 import Pricing from '@/pages/Pricing'
@@ -40,6 +41,7 @@ const PROFILE_ROUTE = '/profile'
 function RequireAuth() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const mustChangePassword = useAuthStore((s) => s.mustChangePassword)
+  const subscriptionSuspended = useAuthStore((s) => s.subscriptionSuspended)
   const location = useLocation()
 
   // ⚠️ THE WAY BACK TRAVELS WITH THE READER (`?next=`): the « Mon abonnement » link the
@@ -63,6 +65,12 @@ function RequireAuth() {
     const back = `${location.pathname}${location.search}${location.hash}`
     const query = back === '/' ? '' : `?next=${encodeURIComponent(back)}`
     return <Navigate to={`${PROFILE_ROUTE}${query}`} replace />
+  }
+  // 🔴 THE SUBSCRIBER OF A SUSPENDED FIRM REACHES « MON ABONNEMENT » ALONE, to settle (the
+  // owner, 8 Nov 2026). The server refuses the rest anyway (403 `subscription_suspended`);
+  // this keeps the screen from drawing what it cannot load.
+  if (subscriptionSuspended && location.pathname !== SUBSCRIPTION_ROUTE) {
+    return <Navigate to={SUBSCRIPTION_ROUTE} replace />
   }
   // 🔴 AND THE TERMS, AT THE SAME DOOR (the manager, 2 Oct 2026): a version owed is
   // accepted before any screen opens, on every route at once. See `TermsGate`.
