@@ -127,3 +127,15 @@ before Alice's Checkout; her own 409 (`X-Refusal: terms_cgv` / `terms_dpa`) is s
 product's words. Billing calls that fail on her key (401/403), her insides (5xx) or the
 network answer 503 « Le service de facturation est momentanément indisponible », never her
 sentence; a business refusal she wrote for the subscriber is relayed with her status.
+
+🔴 AN ENDED LICENCE PAYS ONE INVOICE, NEVER SUBSCRIBES AGAIN BY PAYING IT (the owner, 9 Nov
+2026). On an invoice still due of an ended licence, « Payer par carte » calls
+`POST /api/v1/billing/invoices/{invoice_id}/pay`, which relays Alice's
+`POST /internal/billing/pay-invoice/{firm}` with the invoice and the page's return addresses
+(`PUBLIC_APP_URL/billing?paiement=succes|annule`) and sends the subscriber to the `url` she
+answers: a one-off payment of that invoice, or the open invoice of a subscription still
+running. Never the Checkout of the plan (which opens a new subscription) nor the portal, and a
+payment never reopens a closed licence; subscribing again is the plans' business, above. Her
+409 (a transfer declared, awaiting validation) and 400 (nothing left to pay on that invoice)
+are said in this product's words, in French and English; the rest as every billing gesture.
+Licences active or suspended keep their way out (portal, or the Checkout of the plan).

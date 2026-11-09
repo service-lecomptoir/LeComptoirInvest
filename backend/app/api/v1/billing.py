@@ -28,6 +28,7 @@ from pydantic import BaseModel, Field
 from app.api.deps import current_manager
 from app.api.v1 import terms as terms_api
 from app.core import audit
+from app.config import get_settings
 from app.database import AsyncSessionLocal
 from app.models.audit_log import AuditLog
 from app.models.user import User
@@ -343,6 +344,73 @@ async def cancel_transfer(user: User = Depends(current_manager)) -> dict:
         return await alice_client.billing("POST", "cancel-transfer", _payer(user)) or {}
     except AliceUnavailable as exc:
         raise _unavailable(exc)
+
+
+def _return_url(outcome: str) -> str:
+    """Where Alice's payment page sends the subscriber back: « Mon abonnement », which says
+    how it went (`?paiement=succes` / `annule`, read by the page)."""
+    return f"{get_settings().PUBLIC_APP_URL.rstrip('/')}/billing?paiement={outcome}"
+
+
+def _pay_refusal(exc: AliceUnavailable) -> HTTPException:
+    """Alice's refusals of `pay-invoice`, in this product's words and the reader's language:
+    a transfer already declared (409), nothing left to pay on that invoice (400). Anything
+    else as every billing gesture (`_unavailable`)."""
+    if isinstance(exc, AliceRefused) and exc.status == status.HTTP_409_CONFLICT:
+        return HTTPException(
+            status.HTTP_409_CONFLICT,
+            pick(
+                "Un virement est déjà déclaré pour cette échéance et attend sa validation : "
+                "annulez-le avant de payer par carte.",
+                "A transfer is already declared for this invoice and awaits validation: "
+                "cancel it before paying by card.",
+            ),
+        )
+    if isinstance(exc, AliceRefused) and exc.status == status.HTTP_400_BAD_REQUEST:
+        return HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            pick(
+                "Cette facture n'est plus à régler. Actualisez la page.",
+                "This invoice no longer has anything to pay. Reload the page.",
+            ),
+        )
+    return _unavailable(exc)
+
+
+@router.post("/invoices/{invoice_id}/pay", summary="Pay one invoice")
+async def pay_invoice(
+    invoice_id: uuid.UUID, user: User = Depends(current_manager)
+) -> dict:
+    """Pays ONE invoice still due, through Alice's `pay-invoice`.
+
+    🔴 THE SUBSCRIBER OF AN ENDED LICENCE SETTLES WHAT HE OWES WITHOUT SUBSCRIBING AGAIN
+    (the owner, 9 Nov 2026). The Checkout of the plan would open a new subscription; Alice
+    answers a one-off payment of THAT invoice (or the open invoice of a subscription still
+    running), and a payment never reopens a closed licence. The invoice is looked up under
+    the session's firm (`_payer`), never an id from the request.
+    """
+    try:
+        found = await alice_client.billing(
+            "POST",
+            "pay-invoice",
+            _payer(user),
+            json={
+                "invoice_id": str(invoice_id),
+                "success_url": _return_url("succes"),
+                "cancel_url": _return_url("annule"),
+            },
+        )
+    except AliceUnavailable as exc:
+        raise _pay_refusal(exc)
+    if not isinstance(found, dict) or not found.get("url"):
+        # 404 (an Alice without the route, or no licence): nothing to pay through.
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, alice_client.billing_unavailable()
+        )
+    await _journal(
+        user, "subscription.invoice_payment_started", {"invoice_id": str(invoice_id)}
+    )
+    return {"url": found["url"]}
 
 
 @router.post("/change-plan", summary="Change plan")

@@ -210,6 +210,10 @@ export const billingApi = {
   portal: () => apiClient.post<{ url?: string }>('/billing/portal', {}, { skipErrorToast: true }),
   declareTransfer: () => apiClient.post('/billing/declare-transfer', {}, { skipErrorToast: true }),
   cancelTransfer: () => apiClient.post('/billing/cancel-transfer', {}, { skipErrorToast: true }),
+  // ONE invoice paid, through Alice's `pay-invoice`: what an ended licence settles without
+  // subscribing again (the owner, 9 Nov 2026). The answer is the payment page.
+  payInvoice: (id: string) =>
+    apiClient.post<{ url?: string }>(`/billing/invoices/${id}/pay`, {}, { skipErrorToast: true }),
   // Changing plan: `components/billing/PlanChangeOffer`, from Alice's offer.
   invoices: () => apiClient.get<BillingInvoice[]>('/billing/invoices'),
   invoicePdfUrl: (id: string) => `/billing/invoices/${id}/pdf`,

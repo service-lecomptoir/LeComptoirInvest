@@ -219,6 +219,22 @@ export default function Billing() {
     }
   }
 
+  /** An ended licence settles ONE invoice, never subscribes again by paying it (the owner,
+   *  9 Nov 2026): Alice's `pay-invoice`, not the Checkout of the plan nor the portal. */
+  const payInvoice = async (invoice: BillingInvoice) => {
+    setBusy('checkout')
+    setRefusal(null)
+    try {
+      const { data } = await billingApi.payInvoice(invoice.id)
+      if (data?.url) window.location.href = data.url
+      else setRefusal(t('billing.noPaymentPage'))
+    } catch (error) {
+      setRefusal(refusalOf(error))
+    } finally {
+      setBusy(null)
+    }
+  }
+
   const openPortal = async () => {
     setBusy('portal')
     setRefusal(null)
@@ -535,7 +551,18 @@ export default function Billing() {
                                   <span className="text-xs text-amber-800">{t('billing.transferPending')}</span>
                                 ) : (
                                   <>
-                                    {status?.has_subscription ? (
+                                    {current?.ended ? (
+                                      methods?.card_enabled ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => payInvoice(invoice)}
+                                          disabled={busy === 'checkout'}
+                                          className="text-sm font-medium text-brand-teal hover:underline disabled:opacity-60"
+                                        >
+                                          {t('billing.invoicePayByCard')}
+                                        </button>
+                                      ) : null
+                                    ) : status?.has_subscription ? (
                                       <button
                                         type="button"
                                         onClick={openPortal}

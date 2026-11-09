@@ -389,7 +389,9 @@ def alice(monkeypatch):
     answers: dict[str, httpx.Response] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
-        return answers.get(request.url.path, httpx.Response(404, json={}))
+        # An answer may be a function of the request, to read what was sent.
+        found = answers.get(request.url.path, httpx.Response(404, json={}))
+        return found(request) if callable(found) else found
 
     real = httpx.AsyncClient
 
@@ -483,3 +485,79 @@ async def test_paying_the_plan_in_place_asks_the_terms_still_owed(
         "/api/v1/billing/checkout", headers=_auth(subscriber), json={}
     )
     assert resp.status_code == 422
+
+
+# ── An ended licence settles ONE invoice (the owner, 9 Nov 2026) ─────────────────
+
+
+def _ended_licence(alice) -> None:
+    ended = (datetime.now(UTC) - timedelta(days=1)).isoformat()
+    alice[f"/api/v1/internal/license/{TEST_FIRM}"] = httpx.Response(
+        200, json=_licence(is_blocked=True, access_until=ended)
+    )
+
+
+async def test_an_ended_subscriber_pays_one_invoice_without_subscribing_again(
+    client, db, alice
+):
+    """« Régler » on an invoice of an ended licence pays THAT invoice through Alice's
+    `pay-invoice` (a one-off payment, or the open invoice of a running subscription), with
+    the page's return addresses; never the Checkout of the plan, which would subscribe
+    again, nor the portal."""
+    subscriber = await _subscriber(db)
+    _ended_licence(alice)
+    invoice = uuid.uuid4()
+    sent: list[dict] = []
+
+    def _pay(request: httpx.Request) -> httpx.Response:
+        import json
+
+        sent.append(json.loads(request.content))
+        return httpx.Response(200, json={"url": "https://pay.stripe.test/one"})
+
+    alice[f"/api/v1/internal/billing/pay-invoice/{TEST_FIRM}"] = _pay
+    alice[f"/api/v1/internal/billing/checkout/{TEST_FIRM}"] = httpx.Response(
+        500, json={}
+    )
+    resp = await client.post(
+        f"/api/v1/billing/invoices/{invoice}/pay", headers=_auth(subscriber)
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["url"] == "https://pay.stripe.test/one"
+    [body] = sent
+    assert body["invoice_id"] == str(invoice)
+    assert body["success_url"].endswith("/billing?paiement=succes")
+    assert body["cancel_url"].endswith("/billing?paiement=annule")
+
+
+async def test_paying_an_invoice_says_alices_refusals_in_this_products_words(
+    client, db, alice
+):
+    subscriber = await _subscriber(db)
+    _ended_licence(alice)
+    invoice = uuid.uuid4()
+    path = f"/api/v1/internal/billing/pay-invoice/{TEST_FIRM}"
+
+    alice[path] = httpx.Response(
+        409, json={"detail": "Un virement est déjà déclaré pour cette échéance."}
+    )
+    pending = await client.post(
+        f"/api/v1/billing/invoices/{invoice}/pay",
+        headers={**_auth(subscriber), "Accept-Language": "en"},
+    )
+    assert pending.status_code == 409
+    assert "transfer" in pending.json()["detail"]
+
+    alice[path] = httpx.Response(400, json={"detail": "Aucune facture à régler."})
+    nothing = await client.post(
+        f"/api/v1/billing/invoices/{invoice}/pay", headers=_auth(subscriber)
+    )
+    assert nothing.status_code == 400
+    assert "plus à régler" in nothing.json()["detail"]
+
+    alice[path] = httpx.Response(502, json={"detail": "Stripe"})
+    down = await client.post(
+        f"/api/v1/billing/invoices/{invoice}/pay", headers=_auth(subscriber)
+    )
+    assert down.status_code == 503
+    assert "facturation" in down.json()["detail"]
