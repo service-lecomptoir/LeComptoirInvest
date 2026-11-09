@@ -21,6 +21,6 @@ describe('the copy of every product', () => {
   }
 
   it('is the shared pageLeaving.ts: change one, change them all', () => {
-    expect(fingerprint(SOURCE)).toBe('026c25eb')
+    expect(fingerprint(SOURCE)).toBe('0b7d7c82')
   })
 })
