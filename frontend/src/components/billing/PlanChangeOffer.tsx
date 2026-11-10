@@ -8,6 +8,7 @@ import {
   offerView,
   prorataKey,
   requestablePlans,
+  taxWordKey,
   sentenceOf,
   usagePercent,
   usageTone,
@@ -43,8 +44,9 @@ import { leaveFor } from '@/lib/pageLeaving'
  *
  * 🔴 NOTHING IS PRICED OR DECIDED HERE: the plans, their price before tax, the VAT, whether
  * a cap holds the account, how a plan is taken, the next payment, are Alice's answer.
- * « TTC », a VAT line and a total only under a positive rate (`chargesVat`); at 0 % the
- * amount is said alone, with Alice's mention (the owner, 10 Nov 2026).
+ * « HT », « TTC », a VAT line and a total only under a positive rate (`chargesVat`,
+ * `taxWordKey`); at 0 % or unknown the amount is said alone, with Alice's mention at 0 %
+ * (the owner, 10 Nov 2026).
  *
  * ⚠️ ONLY THE SUBSCRIBER ACTS (`can_change`, decided by this product's server): any other
  * account reads the same card without a button.
@@ -135,7 +137,7 @@ export function PlanChangeOffer({
           {current && current.price_ht > 0 && (
             <p className="flex flex-wrap items-baseline gap-x-1 text-sm text-gray-600">
               <span className="font-medium text-gray-900">{amount(current.price_ht, current.currency)}</span>
-              <span className="text-xs text-gray-500">{t('perMonthSuffix')}</span>
+              <span className="text-xs text-gray-500">{t(taxWordKey('perMonthSuffix', current.vat_rate))}</span>
               {details(current) && <PlanBubble label={t('detailsOf', { name: current.name })} text={details(current)} />}
             </p>
           )}
@@ -212,7 +214,7 @@ export function PlanChangeOffer({
                 )}
                 <p className="flex flex-wrap items-baseline gap-x-1">
                   <span className="whitespace-nowrap text-lg font-semibold text-gray-900">{amount(plan.price_ht, plan.currency)}</span>
-                  <span className="whitespace-nowrap text-xs text-gray-500">{t('perMonthSuffix')}</span>
+                  <span className="whitespace-nowrap text-xs text-gray-500">{t(taxWordKey('perMonthSuffix', plan.vat_rate))}</span>
                 </p>
                 <p className="flex items-center gap-1 text-sm text-gray-600">
                   <span>{limitLabel(plan.managed_limit)}</span>
@@ -304,10 +306,10 @@ function planDetails(
     lines.push(t('withTax', { amount: amount(plan.price_ttc, plan.currency), rate: plan.vat_rate }))
   }
   if (plan.overage_allowed && plan.overage_price) {
-    lines.push(t('overage', { amount: amount(plan.overage_price, plan.currency) }))
+    lines.push(t(taxWordKey('overage', plan.vat_rate), { amount: amount(plan.overage_price, plan.currency) }))
   }
   if (plan.overage_count > 0) {
-    lines.push(t('overageNow', { count: plan.overage_count, amount: amount(plan.overage_monthly, plan.currency) }))
+    lines.push(t(taxWordKey('overageNow', plan.vat_rate), { count: plan.overage_count, amount: amount(plan.overage_monthly, plan.currency) }))
   }
   if (plan.action === 'refused' && plan.refusal) {
     lines.push(t('refused', { count: plan.refusal.count, limit: plan.refusal.limit }))
@@ -393,7 +395,7 @@ function ConfirmChange({
       <dl className="space-y-1 text-sm">
         <div className="flex justify-between gap-3">
           <dt className="text-gray-500">{t('monthly')}</dt>
-          <dd className="text-right font-medium text-gray-900">{t('perMonth', { amount: amount(card.price_ht, card.currency) })}</dd>
+          <dd className="text-right font-medium text-gray-900">{t(taxWordKey('perMonth', card.vat_rate), { amount: amount(card.price_ht, card.currency) })}</dd>
         </div>
         {chargesVat(card.vat_rate) && card.price_ttc !== null && (
           <>
@@ -411,7 +413,7 @@ function ConfirmChange({
       {card.vat_rate === 0 && vatMention && <p className="text-xs text-gray-500">{vatMention}</p>}
       {card.overage_count > 0 && (
         <p className="text-xs text-gray-500">
-          {t('overageNow', { count: card.overage_count, amount: amount(card.overage_monthly, card.currency) })}
+          {t(taxWordKey('overageNow', card.vat_rate), { count: card.overage_count, amount: amount(card.overage_monthly, card.currency) })}
         </p>
       )}
       {preview === null && !previewFailed && <p className="text-xs text-gray-500">{t('previewLoading')}</p>}
@@ -495,7 +497,7 @@ function AskChange({
             { value: '', label: t('requestPlanAny') },
             ...plans.map(plan => ({
               value: plan.id,
-              label: `${plan.name} · ${t('perMonth', { amount: amount(plan.price_ht, plan.currency) })} · ${limitLabel(plan.managed_limit)}`,
+              label: `${plan.name} · ${t(taxWordKey('perMonth', plan.vat_rate), { amount: amount(plan.price_ht, plan.currency) })} · ${limitLabel(plan.managed_limit)}`,
             })),
           ]}
         />

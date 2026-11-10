@@ -127,13 +127,21 @@ export function chargesVat(rate: number | null | undefined): boolean {
   return typeof rate === 'number' && rate > 0
 }
 
+/**
+ * A price's words, under `planChange`: the key that says « HT » or « TTC » under a positive
+ * rate, its `…NoTax` twin (the amount alone) otherwise. The owner, 10 Nov 2026: « Formule
+ * actuelle » read « 100,00 € HT par mois » while Alice bills no VAT.
+ */
+export function taxWordKey<K extends string>(key: K, rate: number | null | undefined): K | `${K}NoTax` {
+  return chargesVat(rate) ? key : `${key}NoTax`
+}
+
 /** The prorata's words, under `planChange`: « TTC » only under a positive rate. */
 export function prorataKey(
   amount: number,
   rate: number | null | undefined,
 ): 'prorataCharge' | 'prorataCredit' | 'prorataChargeNoTax' | 'prorataCreditNoTax' {
-  const direction = amount >= 0 ? 'Charge' : 'Credit'
-  return chargesVat(rate) ? `prorata${direction}` : `prorata${direction}NoTax`
+  return taxWordKey(amount >= 0 ? 'prorataCharge' : 'prorataCredit', rate)
 }
 
 /** The plans a request may name: the catalogue plans other than the current one. */

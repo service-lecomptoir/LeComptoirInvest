@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chargesVat, prorataKey } from './planOffer'
+import { chargesVat, prorataKey, taxWordKey } from './planOffer'
 import COMPONENT from './PlanChangeOffer.tsx?raw'
 
 /** The card's words in every language of the product. */
@@ -12,6 +12,8 @@ const CATALOGUES = Object.values(LOCALES).map(mod => mod.default.planChange as R
  * `vat_rate: 0` and `vat_mention`, and the card read « TVA 0 % : 0,00 € », « Total TTC »,
  * « Soit 100 € TTC (TVA 0 %) » and a prorata « … TTC ». The word is only true when a
  * positive rate is known; an unknown rate (null) says nothing about the VAT.
+ * Then « HT » too (the owner, 10 Nov 2026, « oui »): « Formule actuelle » read « 100,00 € HT
+ * par mois » under the franchise; « HT » only beside a positive rate, the amount alone otherwise.
  * The same guard in every product, as `PlanChangeOffer.tsx` and `planOffer.ts` are.
  */
 
@@ -51,6 +53,25 @@ describe('an amount Alice bills without VAT is said alone', () => {
       for (const key of ['prorataChargeNoTax', 'prorataCreditNoTax']) {
         expect(words[key]).toContain('{{amount}}')
         expect(words[key]).not.toMatch(/TTC|VAT|IVA|imposto|tax/i)
+      }
+    }
+  })
+
+  it('says « HT » only under a positive rate: the plan, the cards, the window, the request, the overage', () => {
+    for (const key of ['perMonthSuffix', 'perMonth', 'overage', 'overageNow'] as const) {
+      expect(taxWordKey(key, 20)).toBe(key)
+      expect(taxWordKey(key, 0)).toBe(`${key}NoTax`)
+      expect(taxWordKey(key, null)).toBe(`${key}NoTax`)
+    }
+    expect(COMPONENT).not.toMatch(/t\('(perMonthSuffix|perMonth|overage|overageNow)'/)
+    expect(COMPONENT.match(/taxWordKey\(/g)?.length ?? 0).toBeGreaterThanOrEqual(6)
+  })
+
+  it('has the prices without « HT » in every language of the product', () => {
+    for (const words of CATALOGUES) {
+      for (const key of ['perMonthSuffix', 'perMonth', 'overage', 'overageNow']) {
+        expect(words[`${key}NoTax`]).toBeTruthy()
+        expect(words[`${key}NoTax`]).not.toMatch(/\bHT\b|TTC|VAT|IVA|imposto|tax/i)
       }
     }
   })
