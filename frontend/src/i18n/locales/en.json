@@ -1093,6 +1093,8 @@
     "previewUnavailable": "The exact amount could not be worked out: it is prorated.",
     "prorataCharge": "Prorated adjustment charged today: {{amount}} incl. VAT.",
     "prorataCredit": "Prorated credit taken off the next invoice: {{amount}} incl. VAT.",
+    "prorataChargeNoTax": "Prorated adjustment charged today: {{amount}}.",
+    "prorataCreditNoTax": "Prorated credit taken off the next invoice: {{amount}}.",
     "effectiveNow": "The change applies as soon as you confirm.",
     "effectiveAtPayment": "The plan applies on payment, on Stripe's secure page.",
     "nextBilling": "Next payment on {{day}}.",

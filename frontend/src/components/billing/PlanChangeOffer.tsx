@@ -3,8 +3,10 @@ import {
   BILLING_ROUTES,
   USAGE_BAR,
   cardsOf,
+  chargesVat,
   handedOutKey,
   offerView,
+  prorataKey,
   requestablePlans,
   sentenceOf,
   usagePercent,
@@ -41,6 +43,8 @@ import { leaveFor } from '@/lib/pageLeaving'
  *
  * 🔴 NOTHING IS PRICED OR DECIDED HERE: the plans, their price before tax, the VAT, whether
  * a cap holds the account, how a plan is taken, the next payment, are Alice's answer.
+ * « TTC », a VAT line and a total only under a positive rate (`chargesVat`); at 0 % the
+ * amount is said alone, with Alice's mention (the owner, 10 Nov 2026).
  *
  * ⚠️ ONLY THE SUBSCRIBER ACTS (`can_change`, decided by this product's server): any other
  * account reads the same card without a button.
@@ -251,6 +255,7 @@ export function PlanChangeOffer({
       {chosen && (
         <ConfirmChange
           plan={chosen}
+          vatMention={offer.vat_mention ?? null}
           saleTerms={saleTerms}
           amount={amount}
           day={day}
@@ -287,14 +292,15 @@ export function PlanChangeOffer({
 const CARD = 'space-y-4 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5'
 
 /** What a card keeps for its ⓘ (the owner, 12 Oct 2026: name, price, cap on the card; the
- *  total with VAT, the overage and its effect on the account in the bubble). */
+ *  total with VAT, the overage and its effect on the account in the bubble). The total with
+ *  VAT only when Alice bills some (the owner, 10 Nov 2026: the amount alone otherwise). */
 function planDetails(
   plan: OfferPlan,
   t: (key: string, vars?: Record<string, unknown>) => string,
   amount: (value: number, currency: string) => string,
 ): string {
   const lines: string[] = []
-  if (plan.price_ttc !== null && plan.vat_rate !== null && plan.price_ht > 0) {
+  if (plan.price_ttc !== null && chargesVat(plan.vat_rate) && plan.price_ht > 0) {
     lines.push(t('withTax', { amount: amount(plan.price_ttc, plan.currency), rate: plan.vat_rate }))
   }
   if (plan.overage_allowed && plan.overage_price) {
@@ -311,6 +317,7 @@ function planDetails(
 
 function ConfirmChange({
   plan,
+  vatMention,
   saleTerms,
   amount,
   day,
@@ -320,6 +327,8 @@ function ConfirmChange({
   onDone,
 }: {
   plan: OfferPlan
+  /** Alice's mention for an amount billed at 0 % (« TVA non applicable, article 293 B du CGI »). */
+  vatMention: string | null
   saleTerms: SaleTerms
   amount: (value: number, currency: string) => string
   day: (iso: string) => string
@@ -386,7 +395,7 @@ function ConfirmChange({
           <dt className="text-gray-500">{t('monthly')}</dt>
           <dd className="text-right font-medium text-gray-900">{t('perMonth', { amount: amount(card.price_ht, card.currency) })}</dd>
         </div>
-        {card.vat_rate !== null && card.price_ttc !== null && (
+        {chargesVat(card.vat_rate) && card.price_ttc !== null && (
           <>
             <div className="flex justify-between gap-3">
               <dt className="text-gray-500">{t('vat', { rate: card.vat_rate })}</dt>
@@ -399,6 +408,7 @@ function ConfirmChange({
           </>
         )}
       </dl>
+      {card.vat_rate === 0 && vatMention && <p className="text-xs text-gray-500">{vatMention}</p>}
       {card.overage_count > 0 && (
         <p className="text-xs text-gray-500">
           {t('overageNow', { count: card.overage_count, amount: amount(card.overage_monthly, card.currency) })}
@@ -408,9 +418,9 @@ function ConfirmChange({
       {previewFailed && <p className="text-xs text-gray-500">{t('previewUnavailable')}</p>}
       {typeof preview?.proration_amount === 'number' && (
         <p className="text-sm text-gray-700">
-          {preview.proration_amount >= 0
-            ? t('prorataCharge', { amount: amount(preview.proration_amount, card.currency) })
-            : t('prorataCredit', { amount: amount(Math.abs(preview.proration_amount), card.currency) })}
+          {t(prorataKey(preview.proration_amount, card.vat_rate), {
+            amount: amount(Math.abs(preview.proration_amount), card.currency),
+          })}
         </p>
       )}
       <p className="text-sm text-gray-700">{atPayment ? t('effectiveAtPayment') : t('effectiveNow')}</p>

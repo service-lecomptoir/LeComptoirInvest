@@ -39,6 +39,8 @@ export interface Offer {
   next_due_date?: string | null
   /** The day the subscription ends, when an end is set. */
   ends_on?: string | null
+  /** What an invoice at 0 % prints (« TVA non applicable, article 293 B du CGI »), or null. */
+  vat_mention?: string | null
 }
 
 export interface Preview {
@@ -113,6 +115,25 @@ export function cardsOf(offer: Offer): OfferPlan[] {
       a.price_ht - b.price_ht ||
       (a.managed_limit ?? Number.POSITIVE_INFINITY) - (b.managed_limit ?? Number.POSITIVE_INFINITY),
   )
+}
+
+/**
+ * Does Alice bill VAT on this amount? Only a POSITIVE rate says so (the owner, 10 Nov 2026:
+ * the amount alone when Alice bills no VAT, « TTC » when she does). Under the franchise
+ * (CGI art. 293 B) and the other cases at 0 % the card read « TVA 0 % » and « Total TTC »;
+ * an unknown rate (null) says nothing about the VAT at all.
+ */
+export function chargesVat(rate: number | null | undefined): boolean {
+  return typeof rate === 'number' && rate > 0
+}
+
+/** The prorata's words, under `planChange`: « TTC » only under a positive rate. */
+export function prorataKey(
+  amount: number,
+  rate: number | null | undefined,
+): 'prorataCharge' | 'prorataCredit' | 'prorataChargeNoTax' | 'prorataCreditNoTax' {
+  const direction = amount >= 0 ? 'Charge' : 'Credit'
+  return chargesVat(rate) ? `prorata${direction}` : `prorata${direction}NoTax`
 }
 
 /** The plans a request may name: the catalogue plans other than the current one. */

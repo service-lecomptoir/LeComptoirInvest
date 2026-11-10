@@ -1093,6 +1093,8 @@
     "previewUnavailable": "Le montant exact n’a pas pu être calculé : il est ajusté au prorata.",
     "prorataCharge": "Ajustement au prorata facturé aujourd’hui : {{amount}} TTC.",
     "prorataCredit": "Avoir au prorata déduit de la prochaine facture : {{amount}} TTC.",
+    "prorataChargeNoTax": "Ajustement au prorata facturé aujourd’hui : {{amount}}.",
+    "prorataCreditNoTax": "Avoir au prorata déduit de la prochaine facture : {{amount}}.",
     "effectiveNow": "Le changement s’applique dès votre confirmation.",
     "effectiveAtPayment": "La formule s’applique dès le paiement, sur la page sécurisée de Stripe.",
     "nextBilling": "Prochaine échéance le {{day}}.",
