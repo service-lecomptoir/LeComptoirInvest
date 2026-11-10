@@ -147,7 +147,7 @@ en place », « Payer maintenant » (« Paiement immédiat ») and showed the ba
 declaration for a month nobody owes. `GET /billing/status` relays Alice's
 `current_period_billed` and `billing_starts_on` (LeComptoirAlice, docs/BILLING_CONTRACT.md
 « Before the billing start, nothing is owed »), read through `components/billing/billedPeriod.ts`,
-the same file in Séjour, Invest, Market and Compta under the fingerprint of
+the same file in the nine products under the fingerprint of
 `billedPeriod.test.ts`. While the month is not billed, the plan reads « Actif », the card button
 « Ajouter un moyen de paiement » (Alice's Checkout sets a trial until the start) with « Rien
 n'est prélevé avant le début de la facturation, le … » in place of « Paiement immédiat », and
@@ -155,6 +155,25 @@ the bank transfer is not offered unless an invoice already issued is still owed 
 as before). The next payment is the one Alice's offer announces (`next_due_date`, on the billing
 start). An older Alice leaves the field out: the month is billed
 (`nothingIsOwedBeforeTheBillingStart.test.ts`).
+
+**One rule for the month in course, in the nine products** (the owner, 10 November 2026: one
+need, one code). Whether the current month is billed, whether it is owed, what the plan's
+Checkout is offered for, whether the bank details show and which badge the plan wears are
+`frontend/src/components/billing/billedPeriod.ts`, the same file in Immo, RH, Compta, PDF,
+Séjour, Syndic, BTP, Invest and Market, under the FNV-1a fingerprint `87829c59` held by
+`billedPeriod.test.ts` (the text read with LF line ends): change one, change them all, and the
+fingerprint. It replaced `periodBilling.ts` (PDF, Syndic, BTP), the former `billedPeriod.ts`
+(Compta, Séjour, Invest, Market) and the rules written in the pages (`owesCurrent` of Immo,
+Compta and Invest; RH's `owesCurrentPeriod`, which now reads it). Immo's rule is the model:
+the month is owed when billed, not paid, not a demonstration, not held by a running
+subscription, at a positive price, the licence not ended; an ended licence subscribes again
+and owes only its issued invoices. The page keeps what is its own: whether the card or the
+transfer is open, a transfer declared, the terms to tick, and its words. Where this product
+differed (10 Nov 2026), Immo's rule now holds: a suspended or ended licence wears its red
+badge beside the plan (the notice above stays); « Paiement à mettre en place » is drawn for
+the month owed alone (it was the badge of every other case, a free plan included); a plan
+whose price Alice does not give owes nothing; an ended demonstration account is offered to
+subscribe again.
 
 🔴 THE INVOICE STILL TO PAY IS SAID ON EVERY SCREEN (the owner, 9 November 2026: after the
 billing start, a subscriber paying by transfer, or with no means of payment, had nothing on
@@ -194,7 +213,7 @@ BTP and PDF under the fingerprint of `invoiceDue.test.ts`.
 - 🔴 A MONTH PAID, OR A DEMONSTRATION ACCOUNT, OWES NOTHING (Immo's `owesCurrent`): a payer
   by transfer whose month is paid read « Paiement à mettre en place », « Payer maintenant »,
   the bank details and « J'ai fait le virement » (answered « Aucune facture à régler »).
-  `owesCurrent` in `pages/Billing.tsx`, beside `components/billing/billedPeriod.ts`: billed,
+  `owesCurrentPeriod` of `components/billing/billedPeriod.ts`: billed,
   not paid (`current_period_paid`), not a demo (`is_demo`), not held by a subscription, not
   free (`monthly_price`), the licence not ended. Badges « À jour » and « Compte de
   démonstration, non facturé »; no Checkout button; the bank details only for the month owed

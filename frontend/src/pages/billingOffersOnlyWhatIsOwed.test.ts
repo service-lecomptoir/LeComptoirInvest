@@ -26,8 +26,9 @@ const ROWS = PAGE.slice(PAGE.indexOf('invoices.map('))
  */
 describe('« Mon abonnement » offers what is owed, and only that', () => {
   it('draws the Checkout button only for whoever holds no subscription', () => {
-    expect(PAGE).toContain('const subscribed = !current?.ended && !!status?.has_subscription')
-    expect(PAGE).toMatch(/const payShown = !subscribed && !isDemo && \(!!current\?\.ended \|\| owesCurrent \|\| startsLater\)/)
+    // The rule is the shared billedPeriod.ts (its own test holds the cases): no Checkout for
+    // a subscriber, a month paid or a demonstration account; a closed licence subscribes again.
+    expect(PAGE).toContain('const payShown = planCheckoutOf(held) !== null')
     expect(PAGE).toMatch(/\{payShown && \(\s*<Button/)
     expect(PAGE).not.toContain("t('billing.updateCard')")
     expect(PAGE).toContain("t('billing.openPortal')")
@@ -42,12 +43,10 @@ describe('« Mon abonnement » offers what is owed, and only that', () => {
 
   it('reads the month paid and the demonstration account, as Immo does', () => {
     expect(TYPES).toMatch(/current_period_paid\?: boolean/)
-    expect(PAGE).toContain(
-      'const owesCurrent = !current?.ended && periodBilled(status) && !isDemo && !subscribed && !status?.current_period_paid && status?.monthly_price !== 0',
-    )
-    expect(PAGE).toContain('const transferShown = owesCurrent || (!isDemo && invoices.some(owes))')
-    expect(PAGE).toMatch(/status\?\.current_period_paid \? \(\s*<Badge variant="green">\{t\('billing\.upToDate'\)\}/)
-    expect(PAGE).toMatch(/isDemo \? \(\s*<Badge variant="gray">\{t\('billing\.demoAccount'\)\}/)
+    expect(PAGE).toContain('const held: HeldPlan = { status, ended: !!current?.ended, price: status?.monthly_price }')
+    expect(PAGE).toContain('const transferShown = transferOffered(held, invoices.some(owes))')
+    expect(PAGE).toMatch(/badge === 'up-to-date' \? \(\s*<Badge variant="green">\{t\('billing\.upToDate'\)\}/)
+    expect(PAGE).toMatch(/badge === 'demo' \? \(\s*<Badge variant="gray">\{t\('billing\.demoAccount'\)\}/)
   })
 
   it('has its words in every language, each written for its reader', () => {

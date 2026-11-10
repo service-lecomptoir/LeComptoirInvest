@@ -83,7 +83,7 @@ describe('the screens around a suspension', () => {
   })
 
   it('never shows « Actif » over a failed debit, and offers a way out on a due invoice', () => {
-    expect(billing).toMatch(/paymentFailed \? \(\s*<Badge variant="orange">/)
+    expect(billing).toMatch(/badge === 'payment-failed' \? \(\s*<Badge variant="orange">/)
     expect(billing).toContain("t('billing.invoiceSettle')")
     expect(billing).toContain("t('billing.invoiceByTransfer')")
     expect(billing).toContain("t('billing.infoUnavailable')")

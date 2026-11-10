@@ -20,7 +20,10 @@ import type {
 } from '@/types'
 import { PlanChangeOffer } from '@/components/billing/PlanChangeOffer'
 import { creditsOf, nothingLeftToPay, type InvoiceCreditNote } from '@/components/billing/invoiceCredits'
-import { billingStartsOn, periodBilled, planPayment } from '@/components/billing/billedPeriod'
+import {
+  billingStartsOn, planBadgeOf, planCheckoutOf, planPayment, startsLater as planStartsLater, transferOffered,
+  type HeldPlan,
+} from '@/components/billing/billedPeriod'
 import { leaveFor } from '@/lib/pageLeaving'
 
 /**
@@ -321,20 +324,20 @@ export default function Billing() {
   // 2027). Alice says whether the month is billed: before the start the plan is « Actif »,
   // the card adds a means of payment (nothing charged), and no transfer is declared for a
   // month nobody owes; an invoice already issued and unpaid is still owed.
-  const startsLater =
-    !status?.has_subscription && !status?.is_demo && !current?.ended && !paymentFailed && !periodBilled(status)
-  // 🔴 WHAT IS OFFERED IS WHAT IS OWED (the owner's recipe, 9 Nov 2026), Immo's rule
-  // (`owesCurrent`): a payer by transfer whose month is paid, and a demonstration account,
-  // read « Paiement à mettre en place », « Payer maintenant » and the bank details. A closed
-  // licence holds no subscription, whatever an older answer still says.
+  // 🔴 WHAT IS OFFERED IS WHAT IS OWED (the owner's recipe, 9 Nov 2026): a payer by transfer
+  // whose month is paid, and a demonstration account, read « Paiement à mettre en place »,
+  // « Payer maintenant » and the bank details. 🔴 ONE RULE IN THE NINE PRODUCTS (the owner,
+  // 10 Nov 2026): the shared `components/billing/billedPeriod`, Immo's `owesCurrent`; a
+  // closed licence holds no subscription, owes no month and subscribes again.
+  const held: HeldPlan = { status, ended: !!current?.ended, price: status?.monthly_price }
+  const startsLater = planStartsLater(held)
   const isDemo = !!status?.is_demo
-  const subscribed = !current?.ended && !!status?.has_subscription
-  const owesCurrent = !current?.ended && periodBilled(status) && !isDemo && !subscribed && !status?.current_period_paid && status?.monthly_price !== 0
-  const transferShown = owesCurrent || (!isDemo && invoices.some(owes))
+  const transferShown = transferOffered(held, invoices.some(owes))
   // The plan's Checkout, never for a subscriber: « Changer de moyen de paiement » opened a
   // SECOND subscription (Alice refuses it since, 409 `already_subscribed`); his means of
-  // payment changes in the portal. A closed licence subscribes again.
-  const payShown = !subscribed && !isDemo && (!!current?.ended || owesCurrent || startsLater)
+  // payment changes in the portal.
+  const payShown = planCheckoutOf(held) !== null
+  const badge = planBadgeOf(held, { blocked: !!current?.is_blocked, paymentFailed })
   const nothingChargedBefore = t('billing.nothingChargedBefore', { day: numericDay(billingStartsOn(status)) })
 
   return (
@@ -387,17 +390,19 @@ export default function Billing() {
             }
             badges={
               <>
-              {paymentFailed ? (
+              {badge === 'ended' || badge === 'suspended' ? (
+                <Badge variant="red">{badge === 'ended' ? t('billing.ended') : t('billing.blocked')}</Badge>
+              ) : badge === 'payment-failed' ? (
                 <Badge variant="orange">{t('billing.paymentFailed')}</Badge>
-              ) : status?.has_subscription || startsLater ? (
+              ) : badge === 'active' ? (
                 <Badge variant="green">{t('billing.active')}</Badge>
-              ) : status?.current_period_paid ? (
+              ) : badge === 'up-to-date' ? (
                 <Badge variant="green">{t('billing.upToDate')}</Badge>
-              ) : isDemo ? (
+              ) : badge === 'demo' ? (
                 <Badge variant="gray">{t('billing.demoAccount')}</Badge>
-              ) : (
+              ) : badge === 'to-pay' ? (
                 <Badge variant="gray">{t('billing.notSubscribed')}</Badge>
-              )}
+              ) : null}
               </>
             }
             plansNote={
