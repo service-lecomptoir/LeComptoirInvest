@@ -20,6 +20,11 @@
  * listened to. A departure through `leaveFor` that has not happened after
  * `STILL_HERE_AFTER_MS` is over: the flag drops and every error held meanwhile is said, as
  * if the page had never been leaving. A screen waiting on an error is never left waiting.
+ *
+ * 🔴 THE CLIENT HOLDS THE REJECTION, NOT ONLY THE TOAST (the owner, 9 Nov 2026, once the
+ * toast was held: « toujours l'erreur du serveur, y'en a un seul pas 2 »). A screen that
+ * shows its own load error said it from the rejection. And a phone may take long to open
+ * Stripe's page: thirty seconds before the page counts as still here.
  */
 
 let leaving = false
@@ -30,7 +35,7 @@ let held: Array<() => void> = []
 export const NO_RESPONSE_GRACE_MS = 800
 
 /** How long a departure through `leaveFor` may take before the page counts as still here. */
-export const STILL_HERE_AFTER_MS = 10_000
+export const STILL_HERE_AFTER_MS = 30_000
 
 export function isPageLeaving(): boolean {
   return leaving

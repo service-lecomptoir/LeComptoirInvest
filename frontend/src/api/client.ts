@@ -107,14 +107,16 @@ apiClient.interceptors.response.use(
     const isQuestion = error?.response?.status === 402
     // A read's failure is the screen's problem; a write's failure is news the user is
     // owed, because they asked for something and it did not happen.
-    if (!isRead && !isQuestion && !config.skipErrorToast) {
-      const message = errorMessage(error)
-      // A response-less error may be a request cut short by leaving the page (a payment
-      // button sends the browser to Stripe): said a beat later, unless the page is gone
-      // by then (`lib/pageLeaving.ts`, the owner, 9 Nov 2026).
-      if (!error?.response) sayUnlessLeaving(() => toast.error(message))
-      else toast.error(message)
+    const fail = () => {
+      if (!isRead && !isQuestion && !config.skipErrorToast) toast.error(errorMessage(error))
+      return error
     }
-    return Promise.reject(error)
+    // 🔴 A response-less error may be a request cut short by leaving the page (a payment
+    // button sends the browser to Stripe): the toast AND the rejection wait a beat, and are
+    // held while the page is being left (`lib/pageLeaving.ts`, the owner, 9 Nov 2026). The
+    // rejection too: a screen that shows its own load error said it on the iPhone just
+    // before Stripe opened, once the toast was held (« Mon abonnement » in Le Comptoir Immo).
+    if (!error?.response) return new Promise((_, reject) => sayUnlessLeaving(() => reject(fail())))
+    return Promise.reject(fail())
   },
 )
