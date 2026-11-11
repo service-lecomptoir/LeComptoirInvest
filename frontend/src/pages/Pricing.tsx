@@ -6,6 +6,7 @@ import { Check, LogIn } from 'lucide-react'
 import { publicApi, type PublicPlan } from '@/api'
 import { money } from '@/lib/format'
 import { usePlanPrice } from '@/lib/planPrice'
+import { chargesVat } from '@/components/billing/planOffer'
 import { useAuthStore } from '@/store/authStore'
 import { LogoMark } from '@/components/common/Logo'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
@@ -148,8 +149,10 @@ export function PlanOffer({
                     does not know. */}
                 <h2 className="text-lg font-semibold text-brand-navy">{plan.name}</h2>
                 <p className="mt-2 text-2xl font-bold text-gray-900">{planPrice(plan)}</p>
-                {plan.monthly_price > 0 && (
-                  <p className="text-xs text-gray-500">{t('pricing.excludingTax', { rate: plan.tva_rate })}</p>
+                {/* The tax only while Alice bills VAT, at her rate: the price alone under the
+                    franchise (the owner, 10 Nov 2026, « enlève HT partout »). */}
+                {plan.monthly_price > 0 && chargesVat(plan.vat_rate) && (
+                  <p className="text-xs text-gray-500">{t('pricing.excludingTax', { rate: plan.vat_rate })}</p>
                 )}
                 {/* The demo, where Alice says the plan includes it (`free_demo`, as Le
                     Comptoir Immo, 7 Sept), and no number of days, none exists -- the demo

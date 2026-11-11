@@ -12,6 +12,7 @@ import { Button, Field, Input, Select, inputBaseClass } from '@/components/ui'
 import { TermsBoxes } from '@/components/terms/TermsBoxes'
 import { UNTICKED, termsBlock, termsGiven, useSignupTerms, type Ticked } from '@/lib/terms'
 import { PlanChoice } from './PlanChoice'
+import { chargesVat, taxWordKey } from '@/components/billing/planOffer'
 
 const FRANCE: Country = { code: 'FR', name: 'France', number_label: 'SIREN / SIRET' }
 
@@ -113,6 +114,8 @@ export function SignupForm({
   const inFrance = country.code === 'FR'
   // 🔴 ONLY THE CATALOGUE: a quoted offer is made for one customer, never picked here.
   const catalogue = (plans ?? []).filter((p) => !p.sur_devis)
+  // « hors taxes » only while Alice bills VAT on these plans (the owner, 10 Nov 2026).
+  const vatRate = catalogue.find((p) => chargesVat(p.vat_rate))?.vat_rate
   const quoted = draft.profile === MANAGEMENT_COMPANY
   useEffect(() => {
     onQuotedChange?.(quoted)
@@ -264,7 +267,7 @@ export function SignupForm({
           plans={plans === null ? null : catalogue}
           value={draft.plan_id}
           onChange={(plan_id) => set({ plan_id })}
-          hint={plans !== null && catalogue.length === 0 ? t('signup.noPlan') : t('signup.planHint')}
+          hint={plans !== null && catalogue.length === 0 ? t('signup.noPlan') : t(taxWordKey('signup.planHint', vatRate))}
           error={errors.plan_id}
         />
       )}

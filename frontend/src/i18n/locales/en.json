@@ -783,6 +783,7 @@
     "profileHint": "A club or a fund picks a catalogue plan; a management company receives a quotation.",
     "plan": "Plan",
     "planHint": "Prices are per month, excluding tax.",
+    "planHintNoTax": "Prices are per month.",
     "noPlan": "No plan is shown: our team will handle your request.",
     "requesterKind": "The account is opened in the name of",
     "requesterKinds": {

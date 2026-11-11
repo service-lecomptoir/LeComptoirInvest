@@ -783,6 +783,7 @@
     "profileHint": "Un club ou un fonds choisit une formule du catalogue ; une société de gestion reçoit un devis.",
     "plan": "Formule",
     "planHint": "Le prix s'entend hors taxes, par mois.",
+    "planHintNoTax": "Le prix s'entend par mois.",
     "noPlan": "Aucune formule n'est affichée : votre demande sera traitée par notre équipe.",
     "requesterKind": "Le compte est ouvert au nom",
     "requesterKinds": {

@@ -175,6 +175,7 @@ async def test_the_plans_are_the_consoles_counted_in_investors(client, console):
                 "managed_limit": 20,
                 "monthly_price": 49,
                 "free_demo": True,
+                "vat_rate": 0,
             },
             {"id": "b", "name": "Fonds", "managed_limit": 100, "monthly_price": 149},
             {"id": "c", "name": "Sur devis", "managed_limit": None, "sur_devis": True},
@@ -195,6 +196,10 @@ async def test_the_plans_are_the_consoles_counted_in_investors(client, console):
     # « Démo gratuite incluse » is Alice's answer (`free_demo`), never recomputed from the
     # price here: « Fonds » is priced, and Alice did not say it includes the demo.
     assert [p["free_demo"] for p in found] == [True, False, False]
+    # « Enlève HT partout » (the owner, 10 Nov 2026): the tax is said beside a price only
+    # under a positive `vat_rate`, Alice's answer relayed (0 under the franchise), None
+    # when an older Alice does not say it.
+    assert [p["vat_rate"] for p in found] == [0.0, None, None]
 
 
 async def test_a_silent_console_shows_no_plan(client, console, no_console):

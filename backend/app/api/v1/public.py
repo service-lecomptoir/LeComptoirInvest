@@ -130,6 +130,10 @@ class PublicPlan(BaseModel):
     monthly_price: float = 0
     overage_price: float = 0
     tva_rate: float = 20
+    #: The VAT rate Alice bills on it (percent), her answer relayed: 0 under the franchise
+    #: (CGI art. 293 B), None from an older Alice. The screens say the tax beside a price
+    #: only when it is positive (the owner, 10 Nov 2026).
+    vat_rate: float | None = None
     prices: dict[str, float] | None = None
     billable_currencies: list[str] = []
     #: A quotation: no price shown, the request goes to an operator.
@@ -246,6 +250,7 @@ def _plan_of(row: dict) -> PublicPlan | None:
             monthly_price=float(row.get("monthly_price") or 0),
             overage_price=float(row.get("overage_price") or 0),
             tva_rate=float(row.get("tva_rate") or 20),
+            vat_rate=row.get("vat_rate"),
             prices=row.get("prices") or None,
             billable_currencies=row.get("billable_currencies") or [],
             sur_devis=bool(row.get("sur_devis") or row.get("quote_only")),

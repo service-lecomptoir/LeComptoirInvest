@@ -271,6 +271,9 @@ export interface PublicPlan {
   monthly_price: number
   overage_price: number
   tva_rate: number
+  /** The VAT rate Alice bills on it (percent): 0 under the franchise, absent from an older
+   *  Alice. The tax is written beside the price only when it is positive (`chargesVat`). */
+  vat_rate?: number | null
   /** A quotation: never shown on the public page, which lists the catalogue only. */
   sur_devis: boolean
   /** Whether « Démo gratuite incluse » is written under this plan. Alice decides it
