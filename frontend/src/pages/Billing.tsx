@@ -503,7 +503,7 @@ export default function Billing() {
                         )}
                         {methods.transfer.iban && (
                           <div className="flex gap-2">
-                            <dt className="text-gray-500 shrink-0">IBAN</dt>
+                            <dt className="text-gray-500 shrink-0">{t('billing.iban')}</dt>
                             <dd className="font-mono text-[13px] text-gray-800 break-all">
                               {methods.transfer.iban}
                             </dd>
@@ -511,7 +511,7 @@ export default function Billing() {
                         )}
                         {methods.transfer.bic && (
                           <div className="flex gap-2">
-                            <dt className="text-gray-500 shrink-0">BIC</dt>
+                            <dt className="text-gray-500 shrink-0">{t('billing.bic')}</dt>
                             <dd className="font-mono text-[13px] text-gray-800">{methods.transfer.bic}</dd>
                           </div>
                         )}

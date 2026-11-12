@@ -37,3 +37,31 @@ describe('the transfer block says the reference and the day', () => {
     }
   })
 })
+
+/**
+ * The owner, 12 Nov 2026 (« uniformise les deux-points »): the labels of the transfer block
+ * carry their colon, as in Immo and RH: « Titulaire : » in French (a non-breaking space
+ * before it), « Account holder: » elsewhere. IBAN and BIC were written in the page with no
+ * colon: they are keys too, so that each language writes its own.
+ */
+describe('the transfer block labels carry their colon', () => {
+  const start = PAGE.indexOf("t('billing.byTransfer')")
+  const block = PAGE.slice(start, PAGE.indexOf("t('billing.declareTransfer')", start))
+  const KEYS = ['holder', 'iban', 'bic', 'transferReference', 'transferDueOn']
+
+  it('every label of the block is a key, IBAN and BIC included', () => {
+    for (const key of KEYS) expect(block).toContain(`{t('billing.${key}')}</dt>`)
+    expect(block).not.toMatch(/<dt[^>]*>(?!\{t\()/)
+  })
+
+  it('each language writes the colon its own way', () => {
+    for (const [file, mod] of Object.entries(LOCALES)) {
+      const billing = mod.default.billing as Record<string, unknown>
+      for (const key of KEYS) {
+        const said = String(billing[key])
+        if (file.endsWith('/fr.json')) expect(said, `billing.${key} in ${file}`).toMatch(/\S\u00A0:$/)
+        else expect(said, `billing.${key} in ${file}`).toMatch(/\S:$/)
+      }
+    }
+  })
+})
