@@ -25,6 +25,7 @@ import {
   transferOffered,
   type HeldPlan,
 } from '@/components/billing/billedPeriod'
+import { invoiceDueOf } from '@/components/billing/invoiceDue'
 import { leaveFor } from '@/lib/pageLeaving'
 
 /**
@@ -337,6 +338,11 @@ export default function Billing() {
   const byTransfer = meansSettledBeforeStart(held)
   const isDemo = !!status?.is_demo
   const transferShown = transferOffered(held, invoices.some(owes))
+  // 🔴 WHERE, BY WHEN AND WITH WHICH REFERENCE (the owner, 12 Nov 2026): the invoice Alice
+  // names to pay (`invoice_due`, relayed with the licence as for the banner), its ABO- number
+  // to write in the transfer's wording and its last day, said as the banner says it. Told,
+  // never inferred: none when Alice names none.
+  const transferDue = transferShown ? invoiceDueOf(current?.invoice_due) : null
   // The plan's Checkout, never for a subscriber: « Changer de moyen de paiement » opened a
   // SECOND subscription (Alice refuses it since, 409 `already_subscribed`); his means of
   // payment changes in the portal.
@@ -508,6 +514,18 @@ export default function Billing() {
                             <dt className="text-gray-500 shrink-0">BIC</dt>
                             <dd className="font-mono text-[13px] text-gray-800">{methods.transfer.bic}</dd>
                           </div>
+                        )}
+                        {transferDue && (
+                          <>
+                            <div className="flex flex-wrap gap-x-2">
+                              <dt className="text-gray-500">{t('billing.transferReference')}</dt>
+                              <dd className="font-mono text-[13px] text-gray-800 break-all">{transferDue.number}</dd>
+                            </div>
+                            <div className="flex gap-2">
+                              <dt className="text-gray-500 shrink-0">{t('billing.transferDueOn')}</dt>
+                              <dd className="font-medium text-gray-800">{day(transferDue.due_on)}</dd>
+                            </div>
+                          </>
                         )}
                         {methods.transfer.instructions && (
                           <p className="pt-1 text-[13px] text-gray-500">{methods.transfer.instructions}</p>

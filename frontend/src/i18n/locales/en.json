@@ -483,6 +483,8 @@
     "openPortal": "Manage my subscription",
     "byTransfer": "Bank transfer",
     "holder": "Account holder",
+    "transferReference": "Reference to quote in the description",
+    "transferDueOn": "Due date",
     "declareTransfer": "I have made the transfer",
     "declareTitle": "Declare a transfer",
     "declareMessage": "You are reporting that you have sent the transfer for your subscription. This declaration is not a payment: it will be matched against the actual bank movement, and access is restored once the transfer is seen.",

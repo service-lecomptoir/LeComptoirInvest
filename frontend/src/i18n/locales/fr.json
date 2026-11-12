@@ -483,6 +483,8 @@
     "openPortal": "Gérer mon abonnement",
     "byTransfer": "Virement bancaire",
     "holder": "Titulaire",
+    "transferReference": "Référence à indiquer dans le libellé",
+    "transferDueOn": "Échéance",
     "declareTransfer": "J'ai fait le virement",
     "declareTitle": "Déclarer un virement",
     "declareMessage": "Vous signalez avoir émis le virement de votre abonnement. Cette déclaration ne vaut pas paiement : elle sera rapprochée du mouvement bancaire réel, et l'accès est rétabli une fois le virement constaté.",
