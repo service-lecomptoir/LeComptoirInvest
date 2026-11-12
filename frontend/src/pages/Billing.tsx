@@ -21,7 +21,8 @@ import type {
 import { PlanChangeOffer } from '@/components/billing/PlanChangeOffer'
 import { creditsOf, nothingLeftToPay, type InvoiceCreditNote } from '@/components/billing/invoiceCredits'
 import {
-  billingStartsOn, planBadgeOf, planCheckoutOf, planPayment, startsLater as planStartsLater, transferOffered,
+  billingStartsOn, meansSettledBeforeStart, planBadgeOf, planCheckoutOf, planPayment, startsLater as planStartsLater,
+  transferOffered,
   type HeldPlan,
 } from '@/components/billing/billedPeriod'
 import { leaveFor } from '@/lib/pageLeaving'
@@ -329,8 +330,11 @@ export default function Billing() {
   // « Payer maintenant » and the bank details. 🔴 ONE RULE IN THE NINE PRODUCTS (the owner,
   // 10 Nov 2026): the shared `components/billing/billedPeriod`, Immo's `owesCurrent`; a
   // closed licence holds no subscription, owes no month and subscribes again.
-  const held: HeldPlan = { status, ended: !!current?.ended, price: status?.monthly_price }
+  // Nor a means of payment to add when Alice says it is settled: a payer by transfer (the
+  // owner, 12 Nov 2026, « Paie par virement » ticked on her console).
+  const held: HeldPlan = { status, ended: !!current?.ended, price: status?.monthly_price, hasPaymentMethod: current?.has_payment_method }
   const startsLater = planStartsLater(held)
+  const byTransfer = meansSettledBeforeStart(held)
   const isDemo = !!status?.is_demo
   const transferShown = transferOffered(held, invoices.some(owes))
   // The plan's Checkout, never for a subscriber: « Changer de moyen de paiement » opened a
@@ -451,7 +455,8 @@ export default function Billing() {
                 <p className="mt-3 text-sm text-gray-600">{t('billing.noMethod')}</p>
               ) : (
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  {methods?.card_enabled && (
+                  {/* A payer by transfer before the start has no card to use here. */}
+                  {methods?.card_enabled && !byTransfer && (
                     <div className="rounded-xl border border-gray-200 p-4 flex flex-col">
                       <div className="flex items-center gap-2 text-gray-900">
                         <CreditCard size={16} className="text-brand-teal" />
@@ -524,9 +529,10 @@ export default function Billing() {
               {/* The hint lives UNDER the row, never in a cell aligned at the bottom, and
                   only when a card payment is on offer: under « aucun moyen de paiement »
                   it spoke of a payment nobody could make. */}
-              {methods?.card_enabled && (
+              {methods?.card_enabled && !byTransfer && (
                 <p className="mt-4 text-xs text-gray-500">{t('billing.methodsHint')}</p>
               )}
+              {byTransfer && <p className="mt-4 text-sm text-gray-700">{t('billing.paysByTransferNote')}</p>}
               {/* Without the card, the month not billed yet is said here. */}
               {startsLater && !methods?.card_enabled && (
                 <p className="mt-4 text-xs text-gray-500">{nothingChargedBefore}</p>

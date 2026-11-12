@@ -479,6 +479,7 @@
     "payNow": "Payer maintenant",
     "addMethod": "Ajouter un moyen de paiement",
     "nothingChargedBefore": "Rien n'est prélevé avant le début de la facturation, le {{day}}.",
+    "paysByTransferNote": "Vous réglez vos factures par virement.",
     "openPortal": "Gérer mon abonnement",
     "byTransfer": "Virement bancaire",
     "holder": "Titulaire",

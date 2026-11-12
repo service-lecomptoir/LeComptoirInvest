@@ -43,7 +43,7 @@ describe('« Mon abonnement » offers what is owed, and only that', () => {
 
   it('reads the month paid and the demonstration account, as Immo does', () => {
     expect(TYPES).toMatch(/current_period_paid\?: boolean/)
-    expect(PAGE).toContain('const held: HeldPlan = { status, ended: !!current?.ended, price: status?.monthly_price }')
+    expect(PAGE).toContain('const held: HeldPlan = { status, ended: !!current?.ended, price: status?.monthly_price, hasPaymentMethod: current?.has_payment_method }')
     expect(PAGE).toContain('const transferShown = transferOffered(held, invoices.some(owes))')
     expect(PAGE).toMatch(/badge === 'up-to-date' \? \(\s*<Badge variant="green">\{t\('billing\.upToDate'\)\}/)
     expect(PAGE).toMatch(/badge === 'demo' \? \(\s*<Badge variant="gray">\{t\('billing\.demoAccount'\)\}/)

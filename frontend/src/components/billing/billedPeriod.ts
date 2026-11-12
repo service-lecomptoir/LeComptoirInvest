@@ -48,6 +48,11 @@ export interface HeldPlan {
   /** The plan's monthly price; null when no plan is held or the page cannot tell its price:
    *  nothing is owed for it. */
   price: number | null | undefined
+  /** Whether the licence's means of payment is settled, as Alice says it
+   *  (`has_payment_method` of `/internal/license`: a debit Stripe will make, or the
+   *  console's « Paie par virement »). TOLD, NEVER INFERRED: null or absent says nothing,
+   *  and the plan billed later still adds a means of payment, the screen as it was. */
+  hasPaymentMethod: boolean | null | undefined
 }
 
 /**
@@ -92,21 +97,36 @@ export function owesCurrentPeriod(plan: HeldPlan): boolean {
   return pricedWithout(plan) && periodBilled(plan.status) && !plan.status?.current_period_paid
 }
 
-/** Whether the plan starts being billed later: « Actif », a means of payment to add. */
+/** Whether the plan starts being billed later: « Actif », a means of payment to add unless
+ *  it is settled (`meansSettledBeforeStart`). */
 export function startsLater(plan: HeldPlan): boolean {
   return pricedWithout(plan) && !periodBilled(plan.status)
 }
 
 /**
+ * 🔴 A MEANS OF PAYMENT SETTLED HAS NOTHING TO ADD (the owner, 12 Nov 2026: « Paie par
+ * virement » ticked on Alice's console for an agency billed from 1 January 2027; the banner
+ * « ajoutez un moyen de paiement » went away, « Mon abonnement » still offered « Ajouter un
+ * moyen de paiement », which opened Stripe). Alice's `has_payment_method` (the decision of
+ * 9 Nov 2026: a transfer payer's means is settled) is read here too, not by the banner
+ * alone. Before the start, a plan held by no subscription whose means is settled pays by
+ * transfer: a debit Stripe will make holds a subscription.
+ */
+export function meansSettledBeforeStart(plan: HeldPlan): boolean {
+  return startsLater(plan) && plan.hasPaymentMethod === true
+}
+
+/**
  * What the plan's Checkout is offered for, or null when it is not: an ended licence
- * subscribes again, a plan billed later adds a means of payment, the month owed is paid.
+ * subscribes again, a plan billed later adds a means of payment unless Alice says it is
+ * settled already (a payer by transfer), the month owed is paid.
  * 🔴 NEVER FOR A SUBSCRIBER: his means of payment changes in the portal.
  */
 export type PlanCheckout = 'subscribe-again' | 'add-method' | 'pay'
 
 export function planCheckoutOf(plan: HeldPlan): PlanCheckout | null {
   if (plan.ended) return 'subscribe-again'
-  if (startsLater(plan)) return 'add-method'
+  if (startsLater(plan)) return meansSettledBeforeStart(plan) ? null : 'add-method'
   return owesCurrentPeriod(plan) ? 'pay' : null
 }
 

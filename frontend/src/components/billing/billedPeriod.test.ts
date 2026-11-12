@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  billingStartsOn, nothingOwedBefore, owesCurrentPeriod, periodBilled, planBadgeOf, planCheckoutOf,
-  planPayment, startsLater, heldBySubscription, transferOffered, type HeldPlan, type PeriodBilling,
+  billingStartsOn, meansSettledBeforeStart, nothingOwedBefore, owesCurrentPeriod, periodBilled, planBadgeOf,
+  planCheckoutOf, planPayment, startsLater, heldBySubscription, transferOffered, type HeldPlan, type PeriodBilling,
 } from './billedPeriod'
 import SOURCE from './billedPeriod.ts?raw'
 
@@ -15,7 +15,7 @@ import SOURCE from './billedPeriod.ts?raw'
 
 const BILLED: PeriodBilling = { has_subscription: false, current_period_billed: true, current_period_paid: false, is_demo: false }
 const plan = (status: PeriodBilling | null | undefined, more: Partial<HeldPlan> = {}): HeldPlan =>
-  ({ status, ended: false, price: 29, ...more })
+  ({ status, ended: false, price: 29, hasPaymentMethod: undefined, ...more })
 const OPEN = { blocked: false, paymentFailed: false }
 
 describe('the month billed and not paid', () => {
@@ -99,6 +99,31 @@ describe('before the billing start', () => {
     expect(transferOffered(later, true)).toBe(true)
   })
 
+  it('adds a means of payment only when Alice does not say it is settled (the owner, 12 Nov 2026)', () => {
+    // A payer by transfer (« Paie par virement » on Alice's console): nothing to add.
+    const byTransfer = plan(before, { hasPaymentMethod: true })
+    expect(planCheckoutOf(byTransfer)).toBeNull()
+    expect(meansSettledBeforeStart(byTransfer)).toBe(true)
+    expect(planBadgeOf(byTransfer, OPEN)).toBe('active')
+    expect(transferOffered(byTransfer, false)).toBe(false)
+    // No means of payment: the Checkout records one.
+    const without = plan(before, { hasPaymentMethod: false })
+    expect(planCheckoutOf(without)).toBe('add-method')
+    expect(meansSettledBeforeStart(without)).toBe(false)
+    // Alice silent (an older one, an outage): as before.
+    for (const hasPaymentMethod of [null, undefined]) {
+      expect(planCheckoutOf(plan(before, { hasPaymentMethod }))).toBe('add-method')
+      expect(meansSettledBeforeStart(plan(before, { hasPaymentMethod }))).toBe(false)
+    }
+  })
+
+  it('changes nothing else: the month owed, an ended licence, a subscriber', () => {
+    expect(planCheckoutOf(plan(BILLED, { hasPaymentMethod: true }))).toBe('pay')
+    expect(planCheckoutOf(plan(before, { ended: true, hasPaymentMethod: true }))).toBe('subscribe-again')
+    expect(meansSettledBeforeStart(plan({ ...before, has_subscription: true }, { hasPaymentMethod: true }))).toBe(false)
+    expect(meansSettledBeforeStart(plan(BILLED, { hasPaymentMethod: true }))).toBe(false)
+  })
+
   it('names no day when Alice names none, or once the start is reached', () => {
     expect(billingStartsOn({ current_period_billed: true, billing_starts_on: null })).toBeNull()
     expect(billingStartsOn({})).toBeNull()
@@ -158,6 +183,6 @@ describe('the copy of every product', () => {
   }
 
   it('is the shared billedPeriod.ts: change one, change them all', () => {
-    expect(fingerprint(SOURCE)).toBe('87829c59')
+    expect(fingerprint(SOURCE)).toBe('7c14c985')
   })
 })

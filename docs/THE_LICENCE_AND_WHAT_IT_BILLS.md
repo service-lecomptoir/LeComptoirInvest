@@ -160,7 +160,7 @@ start). An older Alice leaves the field out: the month is billed
 need, one code). Whether the current month is billed, whether it is owed, what the plan's
 Checkout is offered for, whether the bank details show and which badge the plan wears are
 `frontend/src/components/billing/billedPeriod.ts`, the same file in Immo, RH, Compta, PDF,
-Séjour, Syndic, BTP, Invest and Market, under the FNV-1a fingerprint `87829c59` held by
+Séjour, Syndic, BTP, Invest and Market, under the FNV-1a fingerprint `7c14c985` held by
 `billedPeriod.test.ts` (the text read with LF line ends): change one, change them all, and the
 fingerprint. It replaced `periodBilling.ts` (PDF, Syndic, BTP), the former `billedPeriod.ts`
 (Compta, Séjour, Invest, Market) and the rules written in the pages (`owesCurrent` of Immo,
@@ -174,6 +174,18 @@ badge beside the plan (the notice above stays); « Paiement à mettre en place �
 the month owed alone (it was the badge of every other case, a free plan included); a plan
 whose price Alice does not give owes nothing; an ended demonstration account is offered to
 subscribe again.
+
+**A means of payment settled has nothing to add** (the owner, 12 November 2026: « Paie par
+virement » ticked on Alice's console for an account billed from 1 January 2027; the banner
+« ajoutez un moyen de paiement » went away, « Mon abonnement » still offered « Ajouter un moyen
+de paiement », which opened Stripe). The plan held carries Alice's `has_payment_method` of
+`/internal/license` (true for a debit Stripe will make or for a payer by transfer, her
+decision of 9 November), told, never inferred: before the start, `planCheckoutOf` offers the
+Checkout to add a means of payment only when it is not `true` (absent or null: as before), and
+`meansSettledBeforeStart` is true for a plan held by no subscription whose means is settled, a
+payer by transfer; the page then says « Vous réglez vos factures par virement » instead of the
+card. A month owed, an issued invoice left unpaid and an ended licence are unchanged; the
+portal stays a subscriber's.
 
 🔴 THE INVOICE STILL TO PAY IS SAID ON EVERY SCREEN (the owner, 9 November 2026: after the
 billing start, a subscriber paying by transfer, or with no means of payment, had nothing on

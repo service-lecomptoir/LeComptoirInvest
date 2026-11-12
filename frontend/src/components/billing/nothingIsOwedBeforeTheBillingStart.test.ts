@@ -44,4 +44,17 @@ describe('« Mon abonnement » before the billing start', () => {
     expect(PAGE).toContain('const transferShown = transferOffered(held, invoices.some(owes))')
     expect(PAGE).toContain('methods?.transfer_enabled && methods.transfer && transferShown && (')
   })
+
+  it('offers no means of payment to add to a payer by transfer (the owner, 12 Nov 2026)', () => {
+    // Alice's `has_payment_method` (true for « Paie par virement ») reaches the shared rule,
+    // whose own test holds the cases: no Checkout, no card, and the way he pays said.
+    expect(TYPES).toContain('has_payment_method?: boolean | null')
+    expect(PAGE).toContain('hasPaymentMethod: current?.has_payment_method }')
+    expect(PAGE).toContain('const byTransfer = meansSettledBeforeStart(held)')
+    expect(PAGE).toContain('{methods?.card_enabled && !byTransfer && (')
+    expect(PAGE).toContain("{byTransfer && <p className=\"mt-4 text-sm text-gray-700\">{t('billing.paysByTransferNote')}</p>}")
+    expect(fr.billing.paysByTransferNote).toBeTruthy()
+    expect(en.billing.paysByTransferNote).toBeTruthy()
+    expect(en.billing.paysByTransferNote).not.toBe(fr.billing.paysByTransferNote)
+  })
 })
