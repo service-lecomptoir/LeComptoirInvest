@@ -82,7 +82,9 @@ export function SubscriptionBanner() {
   }
   const text =
     kind === 'ended'
-      ? t('subscriptionBanner.ended')
+      ? info.exports_open && info.export_until
+        ? t('subscriptionBanner.endedExports', { date: day(info.export_until) })
+        : t('subscriptionBanner.ended')
       : kind === 'suspended'
         ? info.suspension_on
           ? t('subscriptionBanner.suspendedSince', { date: day(info.suspension_on) })

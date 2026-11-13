@@ -22,6 +22,8 @@ it is the publisher of these terms, not a party to them.
 
 from __future__ import annotations
 
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 
@@ -80,6 +82,18 @@ def _alice_says(sentence: str) -> str:
     return french_colons(sentence) if current_lang() == "fr" else sentence
 
 
+class UpcomingVersion(BaseModel):
+    """A version Alice published and that is not yet in force, announced during its
+    notice (terms of use, article 10.1: published and announced at least thirty days before
+    it takes effect, with a summary of what changes; the owner, 12 Nov 2026)."""
+
+    version: str
+    product: str | None = None
+    audience: str | None = None
+    effective_from: date
+    summary_of_changes: str | None = None
+
+
 class DocumentStatus(BaseModel):
     """Alice's status of one document, plus the one thing the screen decides on."""
 
@@ -93,6 +107,9 @@ class DocumentStatus(BaseModel):
     anything_to_accept: bool = False
     #: Owed now: a published version this account has not accepted.
     pending: bool = False
+    #: The next version, announced during its notice (`UpcomingVersion`): every screen
+    #: says it with its date. Absent from an Alice not yet updated: read as None.
+    upcoming: UpcomingVersion | None = None
 
 
 class TermsStatus(BaseModel):
@@ -112,9 +129,18 @@ class TermsStatus(BaseModel):
 def _document(raw: object) -> DocumentStatus | None:
     if not isinstance(raw, dict):
         return None
+    upcoming = raw.get("upcoming")
+    if upcoming is not None:
+        # ⚠️ A MALFORMED ANNOUNCEMENT IS NONE, never a status refused: the gate must still
+        # read what is owed today.
+        try:
+            UpcomingVersion.model_validate(upcoming)
+        except ValueError:
+            upcoming = None
     found = DocumentStatus.model_validate(
         {key: raw.get(key) for key in DocumentStatus.model_fields if key != "pending"}
         | {
+            "upcoming": upcoming,
             "up_to_date": bool(raw.get("up_to_date", True)),
             "anything_to_accept": bool(raw.get("anything_to_accept", False)),
         }

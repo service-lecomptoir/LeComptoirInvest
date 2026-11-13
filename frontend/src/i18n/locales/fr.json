@@ -1057,7 +1057,15 @@
       "unavailableTitle": "Liste indisponible",
       "unavailable": "La liste des sous-traitants ultérieurs ne peut pas être chargée pour le moment : réessayez dans quelques minutes."
     },
-    "readToTick": "Lisez le texte jusqu'au bout pour pouvoir cocher la case."
+    "readToTick": "Lisez le texte jusqu'au bout pour pouvoir cocher la case.",
+    "versionLineAhead": "Version {{version}}, en vigueur à partir du {{date}}.",
+    "upcoming": {
+      "banner": "Nouvelles conditions au {{date}} : {{title}}",
+      "read": "Lire",
+      "dismiss": "Masquer",
+      "understood": "J'ai compris",
+      "hint": "Rien à faire pour l'instant : cette version vous sera demandée à votre première connexion à partir du {{date}}. D'ici là, la version actuelle s'applique."
+    }
   },
   "planChange": {
     "loading": "Chargement de votre formule…",
@@ -1194,6 +1202,7 @@
     "open": "Mon abonnement",
     "close": "Fermer",
     "invoiceDue": "Votre facture de {{period}} ({{amount}}) est à régler avant le {{date}}.",
-    "invoiceOverdue": "Votre facture de {{period}} ({{amount}}) n'est pas réglée : elle était due le {{date}}."
+    "invoiceOverdue": "Votre facture de {{period}} ({{amount}}) n'est pas réglée : elle était due le {{date}}.",
+    "endedExports": "Votre abonnement a pris fin : jusqu'au {{date}}, vous gardez la lecture et l'export de vos données."
   }
 }

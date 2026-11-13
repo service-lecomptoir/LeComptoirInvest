@@ -12,6 +12,7 @@ import { LogoMark } from '@/components/common/Logo'
 import { ProfileMenu } from '@/components/layout/ProfileMenu'
 import { UpdateBanner } from '@/components/layout/UpdateBanner'
 import { SubscriptionBanner } from '@/components/layout/SubscriptionBanner'
+import { UpcomingTermsBanner } from '@/components/terms/UpcomingTermsBanner'
 import { TwoFactorBanner } from '@/components/security/TwoFactorBanner'
 
 interface Item {
@@ -281,6 +282,8 @@ export function Shell() {
             suspension (the owner, 8 Nov 2026). */}
         <SubscriptionBanner />
         <TwoFactorBanner />
+        {/* A new version of the terms, during its notice (CGU 10.1, the owner, 12 Nov 2026). */}
+        <UpcomingTermsBanner />
         <main className="px-4 sm:px-6 lg:px-8 py-6 max-w-[1400px]">
           <Outlet />
         </main>

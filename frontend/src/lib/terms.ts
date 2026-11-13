@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   SUBSCRIBER_KINDS, termsApi, type Subprocessors, type TermsDocumentStatus, type TermsHistory,
-  type TermsKind, type TermsStatus, type TermsText,
+  type TermsKind, type TermsStatus, type TermsText, type TermsUpcoming,
 } from '@/api/terms'
 
 /**
@@ -32,6 +32,32 @@ export const UNTICKED: Ticked = { cgu: false, cgv: false, dpa: false }
  * The documents a sign-up is asked: the terms of sale and the data processing agreement
  * only with a catalogue plan (a quotation takes no licence).
  */
+/** The key under which this reader set a given announcement aside. */
+export function seenKeyOf(kind: TermsKind, version: string): string {
+  return `lecomptoirinvest-terms-upcoming-seen:${kind}:${version}`
+}
+
+/**
+ * The announcements of a new version to show, in the order the documents are asked: the
+ * terms of use, then (the subscriber alone) the terms of sale and the agreement (terms of
+ * use, article 10.1; the owner, 12 Nov 2026). Nothing while Alice is unreachable, nothing
+ * for a version this reader set aside.
+ */
+export function upcomingTerms(
+  status: TermsStatus | null,
+  seen: (key: string) => boolean = () => false,
+): { kind: TermsKind; upcoming: TermsUpcoming }[] {
+  if (!status || status.unavailable) return []
+  const out: { kind: TermsKind; upcoming: TermsUpcoming }[] = []
+  for (const kind of ['cgu', 'cgv', 'dpa'] as const) {
+    const upcoming = status[kind]?.upcoming
+    if (upcoming?.version && upcoming.effective_from && !seen(seenKeyOf(kind, upcoming.version))) {
+      out.push({ kind, upcoming })
+    }
+  }
+  return out
+}
+
 export function asked(withSale: boolean): TermsKind[] {
   return withSale ? ['cgu', ...SUBSCRIBER_KINDS] : ['cgu']
 }

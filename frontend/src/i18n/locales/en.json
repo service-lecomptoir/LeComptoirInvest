@@ -1057,7 +1057,15 @@
       "unavailableTitle": "List unavailable",
       "unavailable": "The list of sub-processors cannot be loaded at the moment: try again in a few minutes."
     },
-    "readToTick": "Read the text to the end to be able to tick the box."
+    "readToTick": "Read the text to the end to be able to tick the box.",
+    "versionLineAhead": "Version {{version}}, in force from {{date}}.",
+    "upcoming": {
+      "banner": "New terms on {{date}}: {{title}}",
+      "read": "Read",
+      "dismiss": "Hide",
+      "understood": "Understood",
+      "hint": "Nothing to do for now: this version will be asked of you the first time you sign in from {{date}}. Until then, the current version applies."
+    }
   },
   "planChange": {
     "loading": "Loading your plan…",
@@ -1194,6 +1202,7 @@
     "open": "My subscription",
     "close": "Close",
     "invoiceDue": "Your {{period}} invoice ({{amount}}) is to be paid by {{date}}.",
-    "invoiceOverdue": "Your {{period}} invoice ({{amount}}) is unpaid: it was due on {{date}}."
+    "invoiceOverdue": "Your {{period}} invoice ({{amount}}) is unpaid: it was due on {{date}}.",
+    "endedExports": "Your subscription has ended: until {{date}}, you can still read and export your data."
   }
 }

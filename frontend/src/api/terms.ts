@@ -43,6 +43,20 @@ export interface TermsText {
 }
 
 /** Where this account stands with one document. */
+/**
+ * A version Alice published and that is not yet in force, announced during its notice
+ * (terms of use, article 10.1: published and announced at least thirty days before it
+ * takes effect, with a summary of what changes; the owner, 12 Nov 2026).
+ */
+export interface TermsUpcoming {
+  version: string
+  product: string | null
+  audience: string | null
+  /** A calendar day, `yyyy-MM-dd`. */
+  effective_from: string
+  summary_of_changes: string | null
+}
+
 export interface TermsDocumentStatus {
   /** The version asked; null when nothing is published. */
   version: string | null
@@ -56,6 +70,8 @@ export interface TermsDocumentStatus {
   anything_to_accept: boolean
   /** Owed now: the gate shows it. */
   pending: boolean
+  /** The next version, announced during its notice; absent from an older server. */
+  upcoming?: TermsUpcoming | null
 }
 
 export interface TermsStatus {

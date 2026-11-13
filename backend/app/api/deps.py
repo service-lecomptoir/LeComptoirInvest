@@ -58,8 +58,11 @@ async def current_user(
     # 🔴 THE FIRM'S LICENCE, ON EVERY REQUEST (the owner, 8 Nov 2026). A colleague of a
     # suspended or ended firm is refused here, mid-session as at the sign-in; its subscriber
     # keeps « Mon abonnement » and nothing else, suspended or ended alike (9 Nov 2026); the
-    # investors are not concerned.
-    user.licence_held = await licence_state.gate(user)
+    # investors are not concerned. Once it ended, its subscriber still READS for thirty days,
+    # to export (terms of sale, 7.4).
+    user.licence_held = await licence_state.gate(
+        user, reading=request.method in ("GET", "HEAD")
+    )
     if user.licence_held and not licence_state.held_subscriber_may_reach(
         request.url.path
     ):

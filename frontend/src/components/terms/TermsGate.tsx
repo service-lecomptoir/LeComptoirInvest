@@ -12,6 +12,7 @@ import { Button, Spinner } from '@/components/ui'
 import { useAuthStore } from '@/store/authStore'
 import { Subprocessors } from './Subprocessors'
 import { TermsBody } from './TermsReader'
+import { TermsStatusContext } from './termsStatusContext'
 
 /**
  * The full-page question, and nothing else of the application.
@@ -165,7 +166,8 @@ export function TermsGate({ children }: { children: ReactNode }) {
     )
   }
   // Nothing owed, the console silent, or a text it cannot serve: the application.
-  if (!owed || textFailed) return <>{children}</>
+  // The status read is handed to the application: the announcement of a new version reads it.
+  if (!owed || textFailed) return <TermsStatusContext.Provider value={status}>{children}</TermsStatusContext.Provider>
 
   const accept = async () => {
     if (!text) return

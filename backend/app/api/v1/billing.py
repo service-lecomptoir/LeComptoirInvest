@@ -84,6 +84,12 @@ class SubscriptionInfo(BaseModel):
     #: left to pay and its currency, the last day, overdue), for the holder's banner (the
     #: owner, 9 Nov 2026); None when nothing is to pay.
     invoice_due: dict | None = None
+    #: 🔴 THIRTY DAYS TO EXPORT ONCE IT ENDED (terms of sale, 7.4; the owner, 12 Nov 2026):
+    #: the last instant the subscriber of an ended licence still reads and exports their
+    #: data (`licence_state.EXPORT_DAYS`), and whether that window is open now. Null and
+    #: false otherwise.
+    export_until: str | None = None
+    exports_open: bool = False
 
 
 def _iso(day) -> str | None:
@@ -103,6 +109,10 @@ def _as_info(license_: dict | None) -> SubscriptionInfo:
         payment_failed_on=_iso(state.payment_failed_on) if state else None,
         suspension_on=_iso(state.suspension_on) if state else None,
         invoice_due=state.invoice_due if state else None,
+        export_until=(
+            state.export_until.isoformat() if state and state.export_until else None
+        ),
+        exports_open=bool(state and state.exports_open()),
         plan_name=license_.get("plan_name"),
         monthly_price=license_.get("monthly_price"),
         is_blocked=bool(license_.get("is_blocked")),

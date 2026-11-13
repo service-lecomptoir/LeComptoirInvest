@@ -233,7 +233,7 @@ describe('the gate', () => {
     expect(pendingDocument(status())).toBeNull()
     expect(pendingDocument(status({ cgu: null, unavailable: true }))).toBeNull()
     expect(pendingDocument(null)).toBeNull()
-    expect(GATE).toContain('if (!owed || textFailed) return <>{children}</>')
+    expect(GATE).toContain('if (!owed || textFailed) return <TermsStatusContext.Provider value={status}>{children}')
     expect(ROUTER).toMatch(/<TermsGate>\s*<Outlet \/>\s*<\/TermsGate>/)
   })
 

@@ -27,7 +27,7 @@ one still ahead, is a SUSPENSION.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from fastapi import HTTPException, status
@@ -48,6 +48,14 @@ AGENCY_SUSPENDED = "agency_suspended"
 LICENCE_ENDED = "licence_ended"
 #: The subscriber of a suspended firm, on any route but « Mon abonnement »: 403.
 SUBSCRIPTION_SUSPENDED = "subscription_suspended"
+
+#: 🔴 THE DAYS THE SUBSCRIBER KEEPS TO EXPORT THEIR DATA ONCE THE SUBSCRIPTION HAS ENDED
+#: (terms of sale, article 7.4: « trente (30) jours pour exporter ses données » from the
+#: end of the subscription; the owner, 12 Nov 2026). Until then the subscriber of an ended
+#: licence was held to « Mon abonnement » the very day it took effect: now every READ stays
+#: open for thirty days after `access_until` (the register, the exports, the documents),
+#: writes closed, then « Mon abonnement » alone as before.
+EXPORT_DAYS = 30
 
 #: What the subscriber HELD to « Mon abonnement » may still reach, whether the firm is
 #: suspended or its licence has ended (ONE rule, the owner, 9 Nov 2026): their subscription
@@ -146,11 +154,25 @@ class LicenceState:
     suspension_on: date | None
     #: The invoice the holder's banner asks to pay (`_invoice_due`), or None.
     invoice_due: dict | None = None
+    #: When the paid access ended or ends (`access_until`), as an aware instant.
+    ends_at: datetime | None = None
 
     @property
     def suspended(self) -> bool:
         """Blocked, and not by a termination: the subscriber may still come in to settle."""
         return self.is_blocked and not self.terminated
+
+    @property
+    def export_until(self) -> datetime | None:
+        """The end of the thirty days to export, once a termination has run out."""
+        if not self.terminated or self.ends_at is None:
+            return None
+        return self.ends_at + timedelta(days=EXPORT_DAYS)
+
+    def exports_open(self, now: datetime | None = None) -> bool:
+        """Does the subscriber of an ENDED licence still read and export their data?"""
+        until = self.export_until
+        return until is not None and (now or datetime.now(UTC)) < until
 
 
 def read(lic: dict | None, *, now: datetime | None = None) -> LicenceState | None:
@@ -169,6 +191,7 @@ def read(lic: dict | None, *, now: datetime | None = None) -> LicenceState | Non
         payment_failed_on=_day(lic.get("payment_failed_on")),
         suspension_on=_day(lic.get("suspension_on")),
         invoice_due=_invoice_due(lic.get("invoice_due")),
+        ends_at=ends,
     )
 
 
@@ -202,7 +225,7 @@ def held_subscriber_refusal(reason: str) -> HTTPException:
     )
 
 
-async def gate(user: User) -> str | None:
+async def gate(user: User, *, reading: bool = False) -> str | None:
     """Admit or refuse an account under its firm's licence.
 
     Answers the reason the account is HELD to « Mon abonnement » (`SUBSCRIPTION_SUSPENDED`
@@ -213,6 +236,10 @@ async def gate(user: User) -> str | None:
     (`firm_id`), all read on the firm's ONE licence (`firm_of`). Before 8 Nov 2026 nothing
     read it: a blocked firm went on working through its colleagues. The platform's admin
     and the investors are outside the team and keep their access.
+
+    🔴 THIRTY DAYS TO READ AND EXPORT ONCE IT ENDED (terms of sale, 7.4; the owner, 12 Nov
+    2026): `reading` (a GET or a HEAD) of the subscriber is let in freely for `EXPORT_DAYS`
+    after `access_until`, writes stay held, then « Mon abonnement » alone.
 
     ⚠️ FAILS OPEN: no console configured, no licence filed (404) or an Alice that does not
     answer lets the account in, as before. A blocked firm is let in during an outage of
@@ -230,6 +257,8 @@ async def gate(user: User) -> str | None:
         # 🔴 THE SUBSCRIBER COMES IN, SUSPENDED OR ENDED (the owner, 9 Nov 2026): before,
         # an ended licence refused him at every door, « Mon abonnement » included, and left
         # him no way to read his invoices, settle what was due or subscribe again.
+        if reading and state.exports_open():
+            return None
         return LICENCE_ENDED if state.terminated else SUBSCRIPTION_SUSPENDED
     if state.terminated:
         raise _refused(

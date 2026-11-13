@@ -300,6 +300,10 @@ export interface BillingSubscription {
   suspension_on?: string | null
   /** The invoice still to pay, as Alice names it (`components/billing/invoiceDue`), or null. */
   invoice_due?: unknown
+  /** Once it ended, the last instant the subscriber still reads and exports their data
+   *  (terms of sale, 7.4: thirty days; the owner, 12 Nov 2026), and whether it is now. */
+  export_until?: string | null
+  exports_open?: boolean
 }
 
 export interface PaymentMethods {

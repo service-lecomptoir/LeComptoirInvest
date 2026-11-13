@@ -823,3 +823,54 @@ async def test_a_new_version_of_one_document_asks_that_one_only(client, db, alic
     assert resp.status_code == 200, resp.text
     accepted = [json.loads(r.content) for r in seen if r.url.path == f"{TERMS}/accept"]
     assert [(a["kind"], a["version"]) for a in accepted] == [("dpa", "2026-11")]
+
+
+# ── What the texts say, said by the code (the owner, 12 Nov 2026) ───────────────────
+
+UPCOMING = {
+    "version": "2026-12",
+    "product": "invest",
+    "audience": "manager",
+    "effective_from": "2026-12-15",
+    "summary_of_changes": "Article 9 : la durée de conservation.",
+}
+
+
+async def test_the_next_version_is_relayed_during_its_notice(client, db, alice):
+    """CGU 10.1: a new version is announced at least thirty days ahead, with what
+    changes. Alice names it in `upcoming`; the status relays it as she sends it."""
+    _, answers = alice
+    manager = await _user(db, MANAGER)
+    answers[_status_path(manager)] = httpx.Response(
+        200,
+        json={
+            "cgu": {
+                **_document("2026-10", up_to_date=True, accepted="2026-10"),
+                "upcoming": UPCOMING,
+            },
+            "cgv": _document("2026-09", up_to_date=True, accepted="2026-09"),
+        },
+    )
+    body = (await client.get("/api/v1/terms/status", headers=_auth(manager))).json()
+    assert body["cgu"]["upcoming"] == UPCOMING
+    assert body["cgu"]["pending"] is False
+    assert body["cgv"]["upcoming"] is None
+
+
+async def test_an_alice_that_announces_nothing_announces_nothing(client, db, alice):
+    """An Alice not yet updated leaves `upcoming` out; a malformed one is none, and the
+    status still says what is owed today."""
+    _, answers = alice
+    manager = await _user(db, MANAGER)
+    answers[_status_path(manager)] = httpx.Response(
+        200,
+        json={
+            "cgu": {
+                **_document("2026-11", up_to_date=False, accepted="2026-10"),
+                "upcoming": {"version": "2026-12"},
+            },
+        },
+    )
+    body = (await client.get("/api/v1/terms/status", headers=_auth(manager))).json()
+    assert body["cgu"]["upcoming"] is None
+    assert body["cgu"]["pending"] is True

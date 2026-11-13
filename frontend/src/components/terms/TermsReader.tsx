@@ -35,9 +35,12 @@ export function TermsBody({
   text,
   scroll = true,
   onReadToEnd,
+  ahead = false,
 }: {
   text: TermsText
   scroll?: boolean
+  /** A version announced and not yet in force: its date is said « à partir du ». */
+  ahead?: boolean
   /** Told once the reader has reached the end of the scrolling box (or it fits whole). */
   onReadToEnd?: () => void
 }) {
@@ -56,7 +59,7 @@ export function TermsBody({
   return (
     <div className="space-y-3">
       <p className="text-xs text-gray-500">
-        {t('terms.versionInForce', { version: text.version, date: numericDay(text.effective_from) })}
+        {t(ahead ? 'terms.versionLineAhead' : 'terms.versionInForce', { version: text.version, date: numericDay(text.effective_from) })}
       </p>
       {text.fell_back && (
         <Notice tone="info" title={t('terms.fellBackTitle')}>
@@ -102,6 +105,7 @@ export function TermsReader({
   onReadToEnd,
   read = false,
   onAccept,
+  ahead = false,
 }: {
   text?: TermsText
   load?: () => Promise<TermsText>
@@ -110,6 +114,11 @@ export function TermsReader({
   /** The text was read to its end: « J'accepte » is enabled. */
   read?: boolean
   onAccept?: () => void
+  /**
+   * A version announced during its notice (`UpcomingTermsBanner`, CGU 10.1): read, never
+   * accepted now; it is asked at the first sign-in from its date. « J'ai compris » closes.
+   */
+  ahead?: boolean
 }) {
   const { t } = useTranslation()
   const asking = !!onAccept
@@ -169,7 +178,12 @@ export function TermsReader({
               {asking ? (
                 <TermsBody text={text} onReadToEnd={onReadToEnd} />
               ) : (
-                <TermsBody text={text} scroll={false} />
+                <>
+                  {ahead && (
+                    <p className="text-sm text-gray-600">{t('terms.upcoming.hint', { date: numericDay(text.effective_from) })}</p>
+                  )}
+                  <TermsBody text={text} scroll={false} ahead={ahead} />
+                </>
               )}
               {asking && !read && <p className="text-xs text-gray-500">{t('terms.gate.scrollToAccept')}</p>}
               {/* Under the agreement, who else holds the data (the owner, 13 Oct 2026). */}
@@ -180,9 +194,15 @@ export function TermsReader({
           )}
         </div>
         <div className="flex flex-col-reverse gap-2 px-5 py-3 border-t border-gray-200 bg-gray-50 sm:flex-row sm:justify-end">
-          <Button type="button" variant="secondary" onClick={onClose}>
-            {t('common.close')}
-          </Button>
+          {ahead ? (
+            <Button type="button" onClick={onClose}>
+              {t('terms.upcoming.understood')}
+            </Button>
+          ) : (
+            <Button type="button" variant="secondary" onClick={onClose}>
+              {t('common.close')}
+            </Button>
+          )}
           {asking && (
             <Button type="button" onClick={onAccept} disabled={!text || !read}>
               {t('terms.gate.accept')}

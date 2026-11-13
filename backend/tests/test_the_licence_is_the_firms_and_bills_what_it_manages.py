@@ -267,8 +267,10 @@ async def test_a_terminated_licence_keeps_the_subscriber_on_his_subscription(
     subscriber keeps « Mon abonnement », and that screen alone, exactly as the subscriber of
     a suspended firm: his invoices and credit notes, what is still due, subscribing again.
     He signs in; anywhere else he is refused with `licence_ended`, so the screen tells an
-    ended subscription from a suspension. The team stays refused."""
-    ended = (datetime.now(UTC) - timedelta(days=1)).isoformat()
+    ended subscription from a suspension. The team stays refused. Ended long ago, its
+    thirty days to export run out too (terms of sale, 7.4): held by
+    `test_an_ended_subscription_reads_and_exports_for_thirty_days.py`."""
+    ended = (datetime.now(UTC) - timedelta(days=31)).isoformat()
     _console(monkeypatch, _licence(is_blocked=True, access_until=ended))
     subscriber = await _subscriber(db)
     colleague = await _colleague(db)

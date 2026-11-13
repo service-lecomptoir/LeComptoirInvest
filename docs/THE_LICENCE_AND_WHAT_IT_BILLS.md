@@ -83,6 +83,16 @@ into `users.is_active`:
   `licence_ended`), `deps.current_user` keeps him to `held_subscriber_may_reach` and
   `held_subscriber_refusal` says why. Proven by
   `test_a_terminated_licence_keeps_the_subscriber_on_his_subscription`;
+- 🔴 thirty days to read and export once it ended (terms of sale, article 7.4; the owner,
+  12 Nov 2026): for `licence_state.EXPORT_DAYS` (30) days after `access_until`, the
+  subscriber of an ended licence is let in freely for every READ (GET and HEAD: the register,
+  the exports, the documents; `gate(reading=True)` answers None, so `/auth/me` holds him
+  nowhere), writes stay refused (403 `licence_ended`); then « Mon abonnement » alone as
+  above. `GET /billing` says `export_until` and `exports_open` and the red banner says
+  « jusqu'au …, vous gardez la lecture et l'export de vos données »
+  (`subscriptionBanner.endedExports`). Nothing is erased by this product at the end of the
+  window: it only closes the reads. The colleagues stay refused from the end. Proven by
+  `test_an_ended_subscription_reads_and_exports_for_thirty_days`;
 - investors keep their space in both cases (the owner, 8 and 9 November 2026: a closed
   licence leaves the end users their access in every tool, exactly as a suspension does). ONE
   rule says who is held to the licence: the manager accounts (`licence_state.gate`, `role !=
@@ -94,6 +104,13 @@ the sign-in page (`lib/sessionNotice.ts`) on a 401, and sends a held subscriber 
 without a toast on a 403 `subscription_suspended` or `licence_ended` (the status tells the
 team's 401 `licence_ended` from the subscriber's 403); `/auth/me` says
 `subscription_suspended` or `subscription_ended` and the router keeps them there.
+
+A new version of the terms, published and not yet in force, is announced on every page during
+its notice (terms of use, article 10.1; the owner, 12 Nov 2026): `/terms/status` relays
+Alice's `upcoming` (version, product, audience, effective date, what changes; absent or
+malformed: null), `components/terms/UpcomingTermsBanner.tsx` says « Nouvelles conditions au
+… », « Lire » opens the text announced (`TermsReader` `ahead`), and a version read or hidden
+does not come back.
 
 `/internal/managers/{id}/block` switches nobody off and answers an empty `blocked_user_ids`
 (it answered `user_ids`, a key Alice does not read: her `unblock` came back with an empty list
