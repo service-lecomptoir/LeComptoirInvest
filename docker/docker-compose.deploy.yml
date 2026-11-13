@@ -12,10 +12,22 @@
 # mouvements bancaires du fonds ne partagent ni sauvegarde, ni restauration, ni export
 # mal cadré avec un outil de gestion locative.
 
+# Container logs (the owner, 13 Nov 2026): json-file rotated at 20 MB, five files kept,
+# so 100 MB per container at most. Their AGE is bounded elsewhere, by Portail360's daily
+# purge (deploy/lecomptoir-technical-logs.sh), which reads the rotations <LogPath>.N too.
+# Here, service by service, and NOT in daemon.json: changing daemon.json restarts Docker,
+# and every container with it. A limit applies to a container when it is RECREATED.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
 services:
   invest-db:
     image: postgres:16-alpine
     container_name: invest_db
+    logging: *default-logging
     restart: always
     env_file:
       - ../backend/.env.prod
@@ -37,6 +49,7 @@ services:
     image: "ghcr.io/service-lecomptoir/invest-backend:${IMAGE_TAG:?IMAGE_TAG obligatoire (voir le workflow de deploiement)}"
     pull_policy: always
     container_name: invest_backend
+    logging: *default-logging
     restart: always
     env_file:
       # 🔴 Connexion SMTP MUTUALISEE (~/shared/smtp.env sur le VPS). Invest etait le
@@ -67,6 +80,7 @@ services:
     image: "ghcr.io/service-lecomptoir/invest-frontend:${IMAGE_TAG:?IMAGE_TAG obligatoire (voir le workflow de deploiement)}"
     pull_policy: always
     container_name: invest_frontend
+    logging: *default-logging
     restart: always
     depends_on:
       - invest-backend
