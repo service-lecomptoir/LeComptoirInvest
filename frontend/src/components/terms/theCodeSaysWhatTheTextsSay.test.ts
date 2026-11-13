@@ -8,6 +8,7 @@ import GATE from './TermsGate.tsx?raw'
 import READER from './TermsReader.tsx?raw'
 import SHELL from '../layout/Shell.tsx?raw'
 import SUBSCRIPTION_BANNER from '../layout/SubscriptionBanner.tsx?raw'
+import BANNER_WORDS from '@/lib/subscriptionBanner.ts?raw'
 
 /**
  * Make the code say what the texts say (the owner, 12 Nov 2026): a new version of the
@@ -71,6 +72,8 @@ describe('an ended subscription reads and exports for thirty days (CGV 7.4)', ()
       exports_open: true, export_until: '2026-12-01T00:00:00+00:00',
     } as BillingSubscription
     expect(subscriptionBannerOf(ended, false, '2026-11-13')).toBe('ended')
-    expect(SUBSCRIPTION_BANNER).toContain("t('subscriptionBanner.endedExports'")
+    // The words live beside the decision since the erasure day joined them (13 Nov 2026).
+    expect(SUBSCRIPTION_BANNER).toContain('endedWords(info, t)')
+    expect(BANNER_WORDS).toContain("t('subscriptionBanner.endedExports'")
   })
 })

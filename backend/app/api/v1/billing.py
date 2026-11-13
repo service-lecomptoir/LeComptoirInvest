@@ -90,6 +90,11 @@ class SubscriptionInfo(BaseModel):
     #: false otherwise.
     export_until: str | None = None
     exports_open: bool = False
+    #: 🔴 THE DAY THE SPACE IS ERASED once the thirty days have run out (the owner, 13 Nov
+    #: 2026): Alice's day and this product's own reading, the later of the two
+    #: (`licence_state.LicenceState.erase_on`); null while none is scheduled. The banner
+    #: says « Vos données seront effacées le JJ/MM/AAAA ».
+    erase_on: str | None = None
 
 
 def _iso(day) -> str | None:
@@ -113,6 +118,7 @@ def _as_info(license_: dict | None) -> SubscriptionInfo:
             state.export_until.isoformat() if state and state.export_until else None
         ),
         exports_open=bool(state and state.exports_open()),
+        erase_on=_iso(state.erase_on) if state else None,
         plan_name=license_.get("plan_name"),
         monthly_price=license_.get("monthly_price"),
         is_blocked=bool(license_.get("is_blocked")),

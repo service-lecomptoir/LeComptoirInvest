@@ -6,6 +6,7 @@ import type { TermsText } from '@/api/terms'
 import { Loading, Notice } from '@/components/common/Primitives'
 import { Button } from '@/components/ui'
 import { numericDay } from '@/lib/format'
+import { bannerDay } from '@/lib/subscriptionBanner'
 import { readToTheEnd } from '@/lib/terms'
 import { Subprocessors } from './Subprocessors'
 
@@ -180,7 +181,7 @@ export function TermsReader({
               ) : (
                 <>
                   {ahead && (
-                    <p className="text-sm text-gray-600">{t('terms.upcoming.hint', { date: numericDay(text.effective_from) })}</p>
+                    <p className="text-sm text-gray-600">{t('terms.upcoming.hint', { date: bannerDay(text.effective_from) })}</p>
                   )}
                   <TermsBody text={text} scroll={false} ahead={ahead} />
                 </>

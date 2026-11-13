@@ -198,6 +198,22 @@ Vide, l'envoi se refuse en le disant.
 ⚠️ Le relais filtre par IP : un envoi qui échoue depuis un nouvel hôte en « 525 Unauthorized
 IP », c'est d'abord ça, et le message ne parle pas d'IP.
 
+## L'espace est effacé au bout des 30 jours d'export (13 nov 2026)
+
+Décision du propriétaire du 13 nov (CGV 7.4, accord de traitement 11). Alice fixe le jour et
+liste les espaces à effacer ; Invest planifie au plus tard de son jour et du sien
+(`core/self_delete.py`, le noyau commun à tous les produits), envoie l'avis sept jours avant
+dans la langue du titulaire, et le jour venu n'efface que sur une réponse fraîche d'Alice
+(terminée, pas une démonstration, jour atteint), sans lien avec une autre société, sans
+compte de la plateforme rattaché, et s'il reste un compte capable d'administrer ; sinon
+l'effacement est retenu et le journal dit pourquoi. La purge (`services/firm_purge.py`)
+emporte les fonds, le registre, les souscriptions, la trésorerie, les projets, l'équipe et
+les comptes des investisseurs ; Alice est prévenue et garde ses factures. La suppression
+depuis la console, elle, ne supprime que le compte, comme avant. Une écriture pendant les 30
+jours est refusée sur place (« Abonnement terminé : lecture et export seulement jusqu'au
+JJ/MM/AAAA », lien vers Mon abonnement, le formulaire reste ouvert), et les dates des
+bandeaux s'écrivent JJ/MM/AAAA. `docs/THE_SPACE_IS_ERASED_AFTER_THE_EXPORT_DAYS.md`.
+
 ## Ce qui n'existe pas encore
 
 Le relevé annuel en PDF, et l'envoi programmé (aujourd'hui c'est le gestionnaire qui

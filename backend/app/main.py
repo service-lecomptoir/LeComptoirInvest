@@ -64,9 +64,21 @@ async def lifespan(app: FastAPI):
         from app.services.audit_retention import run_forever
 
         sweeper = asyncio.create_task(run_forever())
+    # The space of an ended subscription, erased once its thirty days to export have run
+    # out (13 Nov 2026), on Alice's day and her fresh word: once a day, only when this
+    # instance is driven by Alice; an advisory lock lets one of the two workers work.
+    from app.services import account_deletion_service, alice_client
+
+    erasure_pass = None
+    if alice_client.console_configured():
+        import asyncio
+
+        erasure_pass = asyncio.create_task(account_deletion_service.run_forever())
     try:
         yield
     finally:
+        if erasure_pass is not None:
+            erasure_pass.cancel()
         if sweeper is not None:
             sweeper.cancel()
 

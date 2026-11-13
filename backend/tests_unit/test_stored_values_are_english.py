@@ -134,6 +134,11 @@ APPROVED: dict[str, str] = {
     "AGENCY_SUSPENDED": "agency_suspended",
     "LICENCE_ENDED": "licence_ended",
     "SUBSCRIPTION_SUSPENDED": "subscription_suspended",
+    # A write during the thirty days to export (the owner, 13 Nov 2026), the same word as
+    # Le Comptoir Immo's.
+    "SUBSCRIPTION_READ_ONLY": "subscription_read_only",
+    # The kind of an erasure in `account_deletions` (13 Nov 2026), the house's word.
+    "ENDED": "ended",
     # ⚠️ THE TWO DELIBERATE EXCEPTIONS, and they are not an oversight. Le Comptoir Immo
     # stores exactly these two words on its landlords, and an investor is very often a
     # landlord. A second vocabulary would have to be translated wherever the two products

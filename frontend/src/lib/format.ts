@@ -69,8 +69,13 @@ export function number(value: number | string | null | undefined, digits = 2): s
   return new Intl.NumberFormat(activeLocale(), { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(v)
 }
 
-/** A date as the user reads it. Empty rather than « Invalid Date ». */
-export function day(value: string | null | undefined): string {
+/** A pattern a day may be written with instead of the reader's words: `dd/MM/yyyy`, the
+ *  banners' (the owner, 13 Nov 2026), the same in every language. */
+export type DayPattern = 'dd/MM/yyyy'
+
+/** A date as the user reads it. Empty rather than « Invalid Date ». `pattern`: written
+ *  with that pattern rather than in the reader's words (« 15/12/2026 », not « 15 déc. »). */
+export function day(value: string | null | undefined, pattern?: DayPattern): string {
   if (!value) return '-'
   // 🔴 `new Date(value)` PARSED A STORED DAY AS UTC MIDNIGHT, and no `timeZone` option
   // below makes that zone-less -- omitting it uses the DEVICE's zone. Every date in the
@@ -78,6 +83,13 @@ export function day(value: string | null | undefined): string {
   // bare day as LOCAL midnight, after which no rendering can move it.
   const d = dayOf(value)
   if (Number.isNaN(d.getTime())) return '-'
+  if (pattern) {
+    const two = (n: number) => String(n).padStart(2, '0')
+    return pattern
+      .replace('dd', two(d.getDate()))
+      .replace('MM', two(d.getMonth() + 1))
+      .replace('yyyy', String(d.getFullYear()))
+  }
   return new Intl.DateTimeFormat(activeLocale(), { day: '2-digit', month: 'short', year: 'numeric' }).format(d)
 }
 

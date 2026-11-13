@@ -48,6 +48,10 @@ AGENCY_SUSPENDED = "agency_suspended"
 LICENCE_ENDED = "licence_ended"
 #: The subscriber of a suspended firm, on any route but « Mon abonnement »: 403.
 SUBSCRIPTION_SUSPENDED = "subscription_suspended"
+#: The subscriber of an ended licence WRITING during the thirty days to export (the owner,
+#: 13 Nov 2026): 403 with this word, and the screen says it where the form is, keeping what
+#: was typed, instead of sending them to « Mon abonnement ».
+SUBSCRIPTION_READ_ONLY = "subscription_read_only"
 
 #: 🔴 THE DAYS THE SUBSCRIBER KEEPS TO EXPORT THEIR DATA ONCE THE SUBSCRIPTION HAS ENDED
 #: (terms of sale, article 7.4: « trente (30) jours pour exporter ses données » from the
@@ -56,6 +60,9 @@ SUBSCRIPTION_SUSPENDED = "subscription_suspended"
 #: open for thirty days after `access_until` (the register, the exports, the documents),
 #: writes closed, then « Mon abonnement » alone as before.
 EXPORT_DAYS = 30
+
+#: Alice's `erasure_status` under which a space has an erasure day (13 Nov 2026).
+ERASURE_DUE = frozenset({"scheduled", "postponed"})
 
 #: What the subscriber HELD to « Mon abonnement » may still reach, whether the firm is
 #: suspended or its licence has ended (ONE rule, the owner, 9 Nov 2026): their subscription
@@ -75,6 +82,24 @@ def held_subscriber_may_reach(path: str) -> bool:
         path == prefix.rstrip("/") or path.startswith(prefix)
         for prefix in HELD_SUBSCRIBER_PREFIXES
     )
+
+
+def _first_erasure_instant() -> datetime:
+    """The last second, platform time, of the eve of the first day any space may be erased:
+    the same shape as an end written by Alice (the last second of a day)."""
+    from app.core import self_delete
+    from app.core.fund_time import PLATFORM_ZONE
+
+    day = self_delete.FIRST_ERASURE_DAY
+    start = datetime(day.year, day.month, day.day, tzinfo=PLATFORM_ZONE)
+    return (start - timedelta(seconds=1)).astimezone(UTC)
+
+
+def platform_day(instant: datetime) -> date:
+    """The platform's day of an instant (Paris): the day a banner or a refusal names."""
+    from app.core.fund_time import PLATFORM_ZONE
+
+    return instant.astimezone(PLATFORM_ZONE).date()
 
 
 def _day(value: Any) -> date | None:
@@ -156,6 +181,13 @@ class LicenceState:
     invoice_due: dict | None = None
     #: When the paid access ended or ends (`access_until`), as an aware instant.
     ends_at: datetime | None = None
+    #: Alice's erasure of the space once the export days have run out (the owner, 13 Nov
+    #: 2026): where the licence stands (`erasure_status`), and the day, only when she
+    #: schedules one. This product erases on the later of her day and `own_erase_on`.
+    erasure_status: str | None = None
+    alice_erase_on: date | None = None
+    #: Alice's word on a demonstration licence; None when she did not say.
+    is_demo: bool | None = None
 
     @property
     def suspended(self) -> bool:
@@ -164,10 +196,39 @@ class LicenceState:
 
     @property
     def export_until(self) -> datetime | None:
-        """The end of the thirty days to export, once a termination has run out."""
+        """The end of the thirty days to export, once a termination has run out.
+
+        When Alice schedules the erasure, never before the start of the first day any space
+        may be erased (`self_delete.FIRST_ERASURE_DAY`): a subscriber whose thirty days had
+        run out when the erasure went into production gets its notice, with the export, and
+        reads until then. A postponement by the console opens nothing more."""
         if not self.terminated or self.ends_at is None:
             return None
-        return self.ends_at + timedelta(days=EXPORT_DAYS)
+        until = self.ends_at + timedelta(days=EXPORT_DAYS)
+        if self.erasure_status in ERASURE_DUE:
+            return max(until, _first_erasure_instant())
+        return until
+
+    @property
+    def own_erase_on(self) -> date | None:
+        """The day this product reads for the erasure, from `access_until` alone: the day
+        after the last platform day of the thirty days (`self_delete.ended_erase_on`)."""
+        if not self.terminated or self.ends_at is None:
+            return None
+        from app.core import self_delete
+
+        return self_delete.ended_erase_on(
+            platform_day(self.ends_at + timedelta(days=EXPORT_DAYS))
+        )
+
+    @property
+    def erase_on(self) -> date | None:
+        """The day the space is erased: Alice's day and this product's own reading agree on
+        the end, and the later of the two days is kept. None when either is missing."""
+        if self.erasure_status not in ERASURE_DUE or self.alice_erase_on is None:
+            return None
+        own = self.own_erase_on
+        return None if own is None else max(own, self.alice_erase_on)
 
     def exports_open(self, now: datetime | None = None) -> bool:
         """Does the subscriber of an ENDED licence still read and export their data?"""
@@ -192,6 +253,11 @@ def read(lic: dict | None, *, now: datetime | None = None) -> LicenceState | Non
         suspension_on=_day(lic.get("suspension_on")),
         invoice_due=_invoice_due(lic.get("invoice_due")),
         ends_at=ends,
+        erasure_status=status
+        if isinstance(status := lic.get("erasure_status"), str)
+        else None,
+        alice_erase_on=_day(lic.get("erase_on")),
+        is_demo=demo if isinstance(demo := lic.get("is_demo"), bool) else None,
     )
 
 
@@ -201,10 +267,27 @@ def _refused(sentence: str, code: str) -> HTTPException:
     )
 
 
-def held_subscriber_refusal(reason: str) -> HTTPException:
+def held_subscriber_refusal(
+    reason: str, export_until: datetime | None = None
+) -> HTTPException:
     """403 for the held subscriber anywhere but « Mon abonnement », with the reason's code
     (`subscription_suspended` or `licence_ended`): the screen sends him back there and says
-    why."""
+    why.
+
+    🔴 A WRITE DURING THE THIRTY DAYS TO EXPORT IS SAID WHERE IT WAS TRIED (the owner, 13
+    Nov 2026): `subscription_read_only`, the last day in the reader's language, JJ/MM/AAAA;
+    the screen keeps the form open with what was typed and links to « Mon abonnement »,
+    never a redirect. After the thirty days, the confinement is unchanged."""
+    if reason == SUBSCRIPTION_READ_ONLY and export_until is not None:
+        last_day = platform_day(export_until).strftime("%d/%m/%Y")
+        return HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            pick(
+                f"Abonnement terminé : lecture et export seulement jusqu'au {last_day}.",
+                f"Subscription ended: reading and export only until {last_day}.",
+            ),
+            headers={ERROR_CODE_HEADER: SUBSCRIPTION_READ_ONLY},
+        )
     sentence = (
         pick(
             "Votre abonnement a pris fin : réabonnez-vous depuis « Mon abonnement » pour "
@@ -239,7 +322,8 @@ async def gate(user: User, *, reading: bool = False) -> str | None:
 
     🔴 THIRTY DAYS TO READ AND EXPORT ONCE IT ENDED (terms of sale, 7.4; the owner, 12 Nov
     2026): `reading` (a GET or a HEAD) of the subscriber is let in freely for `EXPORT_DAYS`
-    after `access_until`, writes stay held, then « Mon abonnement » alone.
+    after `access_until`, writes stay held (`SUBSCRIPTION_READ_ONLY`, said where they were
+    tried, 13 Nov 2026), then « Mon abonnement » alone.
 
     ⚠️ FAILS OPEN: no console configured, no licence filed (404) or an Alice that does not
     answer lets the account in, as before. A blocked firm is let in during an outage of
@@ -257,8 +341,13 @@ async def gate(user: User, *, reading: bool = False) -> str | None:
         # 🔴 THE SUBSCRIBER COMES IN, SUSPENDED OR ENDED (the owner, 9 Nov 2026): before,
         # an ended licence refused him at every door, « Mon abonnement » included, and left
         # him no way to read his invoices, settle what was due or subscribe again.
-        if reading and state.exports_open():
-            return None
+        if state.exports_open():
+            if reading:
+                return None
+            # A write during the thirty days: refused where it was tried, with the last
+            # day (`held_subscriber_refusal`), « Mon abonnement » still open to it.
+            user.licence_export_until = state.export_until
+            return SUBSCRIPTION_READ_ONLY
         return LICENCE_ENDED if state.terminated else SUBSCRIPTION_SUSPENDED
     if state.terminated:
         raise _refused(

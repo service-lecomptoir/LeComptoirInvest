@@ -88,15 +88,56 @@ async def test_the_subscriber_reads_the_register_during_the_thirty_days(
 async def test_the_subscriber_writes_nothing_during_the_thirty_days(
     client, db, monkeypatch
 ):
+    """Decision A (the owner, 13 Nov 2026): the write is refused WHERE it was tried, under
+    its own code and with the last day, JJ/MM/AAAA; the screen keeps the form open."""
     subscriber = await _account(db, id=TEST_FIRM)
-    _ended(monkeypatch, days_ago=5)
+    ends = _ended(monkeypatch, days_ago=5)
     r = await client.post(
         "/api/v1/investors",
         headers=_auth(subscriber),
         json={"kind": "personne", "first_name": "Grace", "last_name": "Hopper"},
     )
     assert r.status_code == 403
-    assert r.headers.get("X-Error-Code") == licence_state.LICENCE_ENDED
+    assert r.headers.get("X-Error-Code") == licence_state.SUBSCRIPTION_READ_ONLY
+    last_day = licence_state.platform_day(ends + timedelta(days=30))
+    assert r.json()["detail"] == (
+        "Abonnement terminé : lecture et export seulement jusqu'au "
+        f"{last_day.strftime('%d/%m/%Y')}."
+    )
+
+
+async def test_the_write_refused_is_said_in_the_reader_s_language(
+    client, db, monkeypatch
+):
+    subscriber = await _account(db, id=TEST_FIRM)
+    _ended(monkeypatch, days_ago=5)
+    r = await client.post(
+        "/api/v1/investors",
+        headers={**_auth(subscriber), "Accept-Language": "en"},
+        json={"kind": "personne", "first_name": "Grace", "last_name": "Hopper"},
+    )
+    assert r.status_code == 403
+    assert r.json()["detail"].startswith(
+        "Subscription ended: reading and export only until "
+    )
+
+
+async def test_mon_abonnement_still_takes_a_write_during_the_thirty_days(
+    client, db, monkeypatch
+):
+    """Subscribing again, or changing one's password, is a write: the doors « Mon
+    abonnement » keeps open (`held_subscriber_may_reach`) stay open to it."""
+    subscriber = await _account(db, id=TEST_FIRM)
+    _ended(monkeypatch, days_ago=5)
+    r = await client.post(
+        "/api/v1/auth/change-password",
+        headers=_auth(subscriber),
+        json={
+            "current_password": "Motdepasse-1234",
+            "new_password": "Un-autre-mot-de-passe-5678",
+        },
+    )
+    assert r.status_code == 204, r.text
 
 
 async def test_the_team_stays_refused_from_the_end(client, db, monkeypatch):

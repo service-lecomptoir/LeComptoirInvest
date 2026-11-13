@@ -304,6 +304,9 @@ export interface BillingSubscription {
    *  (terms of sale, 7.4: thirty days; the owner, 12 Nov 2026), and whether it is now. */
   export_until?: string | null
   exports_open?: boolean
+  /** Once the thirty days have run out, the day the data are erased: Alice's day and the
+   *  product's own reading agree on it (the owner, 13 Nov 2026); null while none is set. */
+  erase_on?: string | null
 }
 
 export interface PaymentMethods {

@@ -18,6 +18,7 @@ from __future__ import annotations
 import logging
 import ssl
 import time
+from datetime import date
 from functools import cache
 from typing import Any
 from uuid import UUID
@@ -218,6 +219,94 @@ async def get_license(user_id: UUID, *, strict: bool = False) -> dict | None:
     if isinstance(licence, dict):
         _licence_cache[user_id] = (time.monotonic(), licence)
     return licence
+
+
+# ── The erasure of an ended subscription's space (the owner, 13 Nov 2026) ──────────────
+# docs/THE_SPACE_IS_ERASED_AFTER_THE_EXPORT_DAYS.md. Alice decides the day, this product
+# checks it: every answer below is read strictly, and anything but a clean 200 erases
+# nothing.
+
+
+async def _strict_get(path: str, *, params: dict | None = None) -> object | None:
+    """The body of a 200 from Alice, never from a cache; None on anything else (no console,
+    a 404, a refusal, an outage, a timeout, an unreadable body)."""
+    target = _target()
+    if target is None:
+        return None
+    base, headers = target
+    try:
+        async with httpx.AsyncClient(timeout=_ACTION_TIMEOUT, verify=_tls()) as client:
+            resp = await client.get(f"{base}{path}", headers=headers, params=params)
+        if resp.status_code != 200:
+            logger.warning("Alice GET %s -> %s", path, resp.status_code)
+            return None
+        return resp.json()
+    except Exception as exc:  # noqa: BLE001 - every failure is the same fact: unknown
+        logger.warning("Alice GET %s failed: %s", path, exc)
+        return None
+
+
+async def fresh_licence(user_id: UUID | str) -> dict | None:
+    """🔴 THE LICENCE AN ERASURE RESTS ON: asked of Alice NOW, never from the cache
+    (`get_license` keeps an answer 60 s), and kept only on a 200 whose body is an object.
+    A 404, an outage, a timeout or an unreadable body all answer None, and None erases
+    nothing."""
+    body = await _strict_get(f"/api/v1/internal/license/{user_id}")
+    return body if isinstance(body, dict) else None
+
+
+async def erasures_due(product: str | None = None) -> list[dict] | None:
+    """The ended licences of this product whose space Alice schedules for erasure
+    (`/internal/erasures`): `[{manager_user_id, access_until, erase_on, status}]`. None
+    unless she answered a 200 with a list of objects: an unknown answer plans and
+    withdraws nothing."""
+    body = await _strict_get(
+        "/api/v1/internal/erasures", params={"product": product or PRODUCT}
+    )
+    if not isinstance(body, list) or not all(isinstance(x, dict) for x in body):
+        return None
+    return body
+
+
+async def report_account_deleted(
+    user_id: UUID | str,
+    *,
+    deleted_on: date,
+    cause: str,
+    counts: dict[str, int] | None = None,
+    product: str | None = None,
+) -> bool:
+    """Tells Alice that the subscriber's space was purged here
+    (`/internal/license/{id}/account-deleted`): she stops the billing, purges the licence
+    and writes the day on the invoices she KEEPS. `cause` says why (« subscription_ended »
+    once the export days ran out) and `counts` what was erased, in numbers only. Idempotent
+    at Alice. True on a 200; False when refused or unreachable, and the caller tells her
+    again at the next pass."""
+    target = _target()
+    if target is None:
+        return False
+    base, headers = target
+    payload: dict = {
+        "product": product or PRODUCT,
+        "deleted_on": deleted_on.isoformat(),
+        "cause": cause,
+    }
+    if counts:
+        payload["counts"] = counts
+    try:
+        async with httpx.AsyncClient(timeout=_ACTION_TIMEOUT, verify=_tls()) as client:
+            resp = await client.post(
+                f"{base}/api/v1/internal/license/{user_id}/account-deleted",
+                headers=headers,
+                json=payload,
+            )
+    except Exception as exc:  # noqa: BLE001 - told again at the next pass
+        logger.warning("Alice account-deleted failed for %s: %s", user_id, exc)
+        return False
+    if resp.status_code != 200:
+        logger.warning("Alice account-deleted %s -> %s", user_id, resp.status_code)
+        return False
+    return True
 
 
 async def payment_config() -> dict:

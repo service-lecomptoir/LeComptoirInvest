@@ -57,7 +57,10 @@ IMPORTED = ("bank_movements",)
 #: The journal does not audit itself. `user_two_factors` holds an account's second factor:
 #: its events are written by name (`two_factor.enabled`, `.disabled`, `.failed`,
 #: `.backup_code_used`, `.backup_codes_regenerated`, `.reset`), never a code.
-NEVER_AUDITED = ("audit_logs", "user_two_factors")
+#: `account_deletions` holds the erasure of a firm (13 Nov 2026): its events are written by
+#: name, with the days and the numbers, never a snapshot (`account.erasure_planned`,
+#: `_withdrawn`, `_held`, `_executed`); the row itself holds no personal data.
+NEVER_AUDITED = ("audit_logs", "user_two_factors", "account_deletions")
 
 SENSITIVE = (
     "password",

@@ -31,6 +31,9 @@ const CLOSED_FIRM = ['agency_suspended', 'licence_ended']
 const HELD_SUBSCRIBER = ['subscription_suspended', 'licence_ended']
 /** The one screen a held subscriber is served. */
 export const SUBSCRIPTION_ROUTE = '/billing'
+/** A write of the subscriber refused during the thirty days to read and export once the
+ *  subscription ended (the owner, 13 Nov 2026): said where it was tried, never a redirect. */
+export const SUBSCRIPTION_READ_ONLY = 'subscription_read_only'
 
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEY)
@@ -86,6 +89,14 @@ apiClient.interceptors.response.use(
         const { pathname, search, hash } = window.location
         window.location.href = loginFor(`${pathname}${search}${hash}`)
       }
+      return Promise.reject(error)
+    }
+    // 🔴 A WRITE DURING THE THIRTY DAYS TO EXPORT (the owner, 13 Nov 2026): the server's
+    // sentence (« lecture et export seulement jusqu'au JJ/MM/AAAA », in the reader's
+    // language) is said here, with « Mon abonnement » a click away; the form stays open
+    // with what was typed. The confinement after the thirty days, below, is unchanged.
+    if (error?.response?.status === 403 && code === SUBSCRIPTION_READ_ONLY) {
+      toast.error(errorMessage(error), { to: SUBSCRIPTION_ROUTE, label: i18n.t('subscriptionBanner.open') })
       return Promise.reject(error)
     }
     // 🔴 A SUSPENDED SUBSCRIBER IS SENT TO « MON ABONNEMENT », WITHOUT A TOAST: the

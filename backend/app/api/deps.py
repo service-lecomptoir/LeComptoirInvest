@@ -66,7 +66,9 @@ async def current_user(
     if user.licence_held and not licence_state.held_subscriber_may_reach(
         request.url.path
     ):
-        raise licence_state.held_subscriber_refusal(user.licence_held)
+        raise licence_state.held_subscriber_refusal(
+            user.licence_held, user.licence_export_until
+        )
 
     # 🔴 THE MANAGEMENT COMPANY IS ESTABLISHED HERE, AND NOWHERE ELSE.
     #

@@ -6,5 +6,8 @@
 # checks its fingerprint (`tests/test_an_account_may_ask_a_second_factor.py`). Reformatting
 # it to this repository's 88 columns would change the fingerprint and make it a copy of
 # its own: the formatter leaves it as it is; the linter still reads it.
+#
+# 🔴 `app/core/self_delete.py` IS THE SHARED CORE OF THE ERASURE OF A SPACE (13 Nov 2026),
+# under the same rule and for the same reason (`tests_unit/test_the_self_delete_core_is_shared.py`).
 [format]
-exclude = ["app/core/two_factor.py"]
+exclude = ["app/core/two_factor.py", "app/core/self_delete.py"]

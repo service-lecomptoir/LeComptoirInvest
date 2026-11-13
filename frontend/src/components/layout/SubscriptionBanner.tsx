@@ -12,7 +12,7 @@ import {
   invoicePeriod,
 } from '@/components/billing/invoiceDue'
 import { day } from '@/lib/format'
-import { subscriptionBannerOf } from '@/lib/subscriptionBanner'
+import { endedWords, subscriptionBannerOf } from '@/lib/subscriptionBanner'
 import { useAuthStore } from '@/store/authStore'
 import type { BillingSubscription } from '@/types'
 
@@ -34,6 +34,8 @@ function dismissedForTheSession(): boolean {
  *
  *  - suspended for an unpaid invoice: red, where to settle, never closable;
  *  - the licence has ended: red, where to subscribe again, never closable (9 Nov 2026);
+ *    while the thirty days run, until when, and the day the data are erased, JJ/MM/AAAA
+ *    (the owner, 13 Nov 2026);
  *  - a debit that failed, in the grace period: amber, until when to settle;
  *  - the plan becomes paid on a coming date and no payment method is on file: blue,
  *    closable for the session.
@@ -82,9 +84,7 @@ export function SubscriptionBanner() {
   }
   const text =
     kind === 'ended'
-      ? info.exports_open && info.export_until
-        ? t('subscriptionBanner.endedExports', { date: day(info.export_until) })
-        : t('subscriptionBanner.ended')
+      ? endedWords(info, t)
       : kind === 'suspended'
         ? info.suspension_on
           ? t('subscriptionBanner.suspendedSince', { date: day(info.suspension_on) })

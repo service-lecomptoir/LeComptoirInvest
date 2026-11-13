@@ -136,6 +136,10 @@ class User(Base, TimestampMixin):
     #: (`subscription_suspended` for an unpaid invoice, `licence_ended` once the termination
     #: has run out), None otherwise. Never stored: the licence is read on each request.
     licence_held = None
+    #: NOT A COLUMN either: the end of the thirty days to export, set by the same gate when
+    #: the subscriber of an ENDED licence writes during them (`subscription_read_only`), so
+    #: the refusal names the last day (the owner, 13 Nov 2026). None otherwise.
+    licence_export_until = None
 
     @property
     def sees_whole_fund(self) -> bool:

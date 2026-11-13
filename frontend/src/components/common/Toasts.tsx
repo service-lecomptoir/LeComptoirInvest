@@ -21,7 +21,26 @@ export function Toasts() {
           {t.kind === 'success' && <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-600" />}
           {t.kind === 'error' && <XCircle size={17} className="mt-0.5 shrink-0 text-red-600" />}
           {t.kind === 'info' && <Info size={17} className="mt-0.5 shrink-0 text-sky-600" />}
-          <p className="text-sm text-gray-800 leading-snug flex-1">{t.message}</p>
+          <p className="text-sm text-gray-800 leading-snug flex-1 min-w-0 break-words">
+            {t.message}
+            {t.link && (
+              <>
+                {' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const to = t.link!.to
+                    dismiss(t.id)
+                    // The router, read when needed: this host sits outside it (`App.tsx`).
+                    void import('@/router').then((m) => m.router.navigate(to))
+                  }}
+                  className="font-semibold underline underline-offset-2"
+                >
+                  {t.link.label}
+                </button>
+              </>
+            )}
+          </p>
           <button onClick={() => dismiss(t.id)} className="text-gray-400 hover:text-gray-600 shrink-0">
             <X size={15} />
           </button>

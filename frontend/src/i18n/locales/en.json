@@ -1203,6 +1203,7 @@
     "close": "Close",
     "invoiceDue": "Your {{period}} invoice ({{amount}}) is to be paid by {{date}}.",
     "invoiceOverdue": "Your {{period}} invoice ({{amount}}) is unpaid: it was due on {{date}}.",
-    "endedExports": "Your subscription has ended: until {{date}}, you can still read and export your data."
+    "endedExports": "Your subscription has ended: until {{date}}, you can still read and export your data.",
+    "erasedOn": "Your data will be erased on {{date}}."
   }
 }

@@ -1,6 +1,7 @@
 import { invoiceDueKind } from '@/components/billing/invoiceDue'
 import type { BillingSubscription } from '@/types'
 import { todayIso } from '@/lib/day'
+import { day } from '@/lib/format'
 
 /** Which reminder the subscriber is shown, if any (`components/layout/SubscriptionBanner`). */
 export type SubscriptionBannerKind = 'suspended' | 'ended' | 'payment-failed' | 'billing-starts'
@@ -38,4 +39,30 @@ export function subscriptionBannerOf(
     return isDemo === false ? 'billing-starts' : null
   }
   return null
+}
+
+/**
+ * 🔴 A BANNER WRITES ITS DAY JJ/MM/AAAA, IN EVERY LANGUAGE (the owner, 13 Nov 2026): the end
+ * of the thirty days to export, the erasure of the data, the new terms. Through the one
+ * door to a written day (`lib/format.day`), with the pattern, never a formatter of its own.
+ */
+export function bannerDay(value: string | null | undefined): string {
+  return day(value, 'dd/MM/yyyy')
+}
+
+/**
+ * The words of the « ended » banner: the thirty days to read and export while they run,
+ * and the day the data are erased once Alice and this product agree on one (13 Nov 2026).
+ */
+export function endedWords(
+  info: Pick<BillingSubscription, 'exports_open' | 'export_until' | 'erase_on'>,
+  t: (key: string, vars?: Record<string, string>) => string,
+): string {
+  const head =
+    info.exports_open && info.export_until
+      ? t('subscriptionBanner.endedExports', { date: bannerDay(info.export_until) })
+      : t('subscriptionBanner.ended')
+  return info.erase_on
+    ? `${head} ${t('subscriptionBanner.erasedOn', { date: bannerDay(info.erase_on) })}`
+    : head
 }

@@ -87,11 +87,15 @@ into `users.is_active`:
   12 Nov 2026): for `licence_state.EXPORT_DAYS` (30) days after `access_until`, the
   subscriber of an ended licence is let in freely for every READ (GET and HEAD: the register,
   the exports, the documents; `gate(reading=True)` answers None, so `/auth/me` holds him
-  nowhere), writes stay refused (403 `licence_ended`); then « Mon abonnement » alone as
-  above. `GET /billing` says `export_until` and `exports_open` and the red banner says
-  « jusqu'au …, vous gardez la lecture et l'export de vos données »
-  (`subscriptionBanner.endedExports`). Nothing is erased by this product at the end of the
-  window: it only closes the reads. The colleagues stay refused from the end. Proven by
+  nowhere), writes stay refused, said where they were tried (403
+  `subscription_read_only`, « Abonnement terminé : lecture et export seulement jusqu'au
+  JJ/MM/AAAA », the form kept open with a link to « Mon abonnement »; the owner, 13 Nov
+  2026); then « Mon abonnement » alone as above. `GET /billing` says `export_until`,
+  `exports_open` and `erase_on`, and the red banner says « jusqu'au JJ/MM/AAAA, vous gardez
+  la lecture et l'export de vos données. Vos données seront effacées le JJ/MM/AAAA. »
+  (`lib/subscriptionBanner.endedWords`). Once the window has run out, the firm is erased on
+  Alice's day (the owner, 13 Nov 2026): docs/THE_SPACE_IS_ERASED_AFTER_THE_EXPORT_DAYS.md.
+  The colleagues stay refused from the end. Proven by
   `test_an_ended_subscription_reads_and_exports_for_thirty_days`;
 - investors keep their space in both cases (the owner, 8 and 9 November 2026: a closed
   licence leaves the end users their access in every tool, exactly as a suspension does). ONE

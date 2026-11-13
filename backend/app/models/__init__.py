@@ -25,10 +25,12 @@ from app.models.treasury import (
     Distribution,
 )
 from app.models.audit_log import AuditLog
+from app.models.account_deletion import AccountDeletion
 from app.models.two_factor import UserTwoFactor
 from app.models.user import RevokedSession, User
 
 __all__ = [
+    "AccountDeletion",
     "AuditLog",
     "BankMovement",
     "Base",

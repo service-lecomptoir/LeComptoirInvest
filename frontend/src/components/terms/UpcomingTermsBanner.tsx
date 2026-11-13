@@ -2,7 +2,7 @@ import { useContext, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FileClock, X } from 'lucide-react'
 import { termsApi, type TermsKind, type TermsUpcoming } from '@/api/terms'
-import { numericDay } from '@/lib/format'
+import { bannerDay } from '@/lib/subscriptionBanner'
 import { seenKeyOf, upcomingTerms } from '@/lib/terms'
 import { TermsReader } from './TermsReader'
 import { TermsStatusContext } from './termsStatusContext'
@@ -52,7 +52,7 @@ export function UpcomingTermsBanner() {
         >
           <FileClock size={16} className="shrink-0" />
           <span className="min-w-0 flex-1">
-            {t('terms.upcoming.banner', { title: t(`terms.names.${kind}`), date: numericDay(upcoming.effective_from) })}
+            {t('terms.upcoming.banner', { title: t(`terms.names.${kind}`), date: bannerDay(upcoming.effective_from) })}
           </span>
           <button
             type="button"
