@@ -175,7 +175,7 @@ def hold_of(found: Iterable[str]) -> str | None:
     seen = set(found)
     unknown = seen.difference(HOLD_CODES)
     if unknown:
-        raise ValueError(f"unknown hold code(s): {sorted(unknown)}")
+        raise ValueError(f"hold codes outside HOLD_CODES: {sorted(unknown)}")
     return next((code for code in HOLD_CODES if code in seen), None)
 
 

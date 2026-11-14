@@ -17,7 +17,7 @@ import pytest
 
 from app.core import self_delete
 
-SHARED_CORE_SHA256 = "ae351cc578009af8353079d852e6571a067556de26102e189bda02051afa97af"
+SHARED_CORE_SHA256 = "036984c7e4ae043be553926132b92a0235ac96db36d6bdabbbd04556d5ea6dff"
 
 
 def test_the_core_is_the_shared_one():

@@ -71,7 +71,7 @@ SETTLED: dict[str, str] = {
 PROGRAMMING_ERRORS: dict[str, str] = {
     # The shared core of an account's erasure (14 Nov 2026): a product naming a hold the
     # core does not know is a defect of the product, never a reader's request.
-    "unknown hold code(s)": "self_delete.hold_of, shared core",
+    "hold codes outside HOLD_CODES": "self_delete.hold_of, shared core",
     "Unknown instrument {}: it has no place in this order": (
         "an instrument was added without being placed in the distribution order"
     ),
