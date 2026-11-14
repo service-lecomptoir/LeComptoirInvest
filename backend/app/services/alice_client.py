@@ -268,6 +268,36 @@ async def erasures_due(product: str | None = None) -> list[dict] | None:
     return body
 
 
+async def say_erasure_hold(
+    user_id: UUID | str, code: str | None, product: str | None = None
+) -> bool:
+    """Tells Alice that this product holds the erasure of the space, and why (`code`, one
+    of `core.self_delete.HOLD_CODES`), or that its hold ended (`None`)
+    (`/internal/license/{id}/erasure-hold`, the owner, 14 Nov 2026): her console then says
+    « Retenu par le produit » instead of a day, and rings no bell. Said every morning the
+    erasure is planned, so a failure is said again the next one. True on a 200; False
+    otherwise, a 404 included (an Alice that does not know the route yet). Never raises,
+    never erases or blocks anything."""
+    target = _target()
+    if target is None:
+        return False
+    base, headers = target
+    try:
+        async with httpx.AsyncClient(timeout=_ACTION_TIMEOUT, verify=_tls()) as client:
+            resp = await client.post(
+                f"{base}/api/v1/internal/license/{user_id}/erasure-hold",
+                headers=headers,
+                json={"product": product or PRODUCT, "code": code},
+            )
+    except Exception as exc:  # noqa: BLE001 - said again the next morning
+        logger.warning("Alice erasure-hold failed for %s: %s", user_id, exc)
+        return False
+    if resp.status_code != 200:
+        logger.warning("Alice erasure-hold %s -> %s", user_id, resp.status_code)
+        return False
+    return True
+
+
 async def report_account_deleted(
     user_id: UUID | str,
     *,

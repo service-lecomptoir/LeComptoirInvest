@@ -40,7 +40,7 @@ from app.models.investor import Investor
 from app.models.subscription import Subscription
 from app.models.user import FUND_WIDE_ROLES, MANAGER, User
 from app.services import alice_client, license_service
-from app.core.i18n import pick
+from app.core.i18n import current_lang, pick
 
 router = APIRouter(prefix="/internal", tags=["internal"])
 
@@ -567,23 +567,55 @@ async def update_manager(
     return await _one_manager_out(db, user)
 
 
+@router.get("/managers/{manager_id}/deletion-hold")
+async def deletion_hold(
+    manager_id: uuid.UUID,
+    _: None = Depends(require_internal_key),
+    db: AsyncSession = SESSION,
+) -> dict:
+    """What would hold the deletion of this account, asked by the console BEFORE it stops
+    anything (the Stripe subscription): `{code, reason}`, `code` one of the shared core's
+    `HOLD_CODES`, null when nothing holds. The guards of the erasure, read only."""
+    from app.core import self_delete
+    from app.services.firm_purge import erasure_hold
+
+    user = await _managed(db, manager_id)
+    code = await erasure_hold(db, user)
+    return {
+        "code": code,
+        "reason": self_delete.hold_phrase(code, current_lang()) if code else None,
+    }
+
+
 @router.delete("/managers/{manager_id}", status_code=204)
 async def delete_manager(
     manager_id: uuid.UUID,
     _: None = Depends(require_internal_key),
     db: AsyncSession = SESSION,
 ):
-    """Remove the account. The fund's history does not move.
+    """Delete the account and, for the firm's root, the whole firm: THE purge of the
+    erasure of an ended subscription (`account_deletion_service.delete_from_console`), held
+    by the same guards.
 
-    ⚠️ `decided_by` and `attributed_by` hold an E-MAIL, not a foreign key, and that is why
-    this deletion is safe: who authorised a 500 000 € deployment must remain readable long
-    after the person has left. A foreign key would have forced a choice between keeping a
-    ghost account and losing the answer.
-    """
+    🔴 IT REMOVED THE ACCOUNT ROW ALONE (the owner, 14 Nov 2026: « la suppression depuis la
+    console suit la purge »): the firm's funds, investors, subscriptions, money and team
+    stayed, with no holder. A guard that holds answers 409, nothing deleted, with its code
+    in `X-Refusal` and its sentence (the shared core's), which the console shows.
+
+    ⚠️ `decided_by` and `attributed_by` hold an E-MAIL, not a foreign key: deleting another
+    account than the root's leaves who authorised a deployment readable."""
+    from app.core import self_delete
+    from app.services.account_deletion_service import DeletionHeld, delete_from_console
+
     user = await _managed(db, manager_id)
-    await _refuse_if_last_administrator(db, user)
-    await db.delete(user)
-    await db.commit()
+    try:
+        await delete_from_console(db, user)
+    except DeletionHeld as held:
+        raise HTTPException(
+            status_code=409,
+            detail=self_delete.hold_phrase(held.code, current_lang()),
+            headers={"X-Refusal": held.code},
+        ) from held
 
 
 @router.post("/managers/{manager_id}/block", response_model=BlockResult)

@@ -69,6 +69,9 @@ SETTLED: dict[str, str] = {
 #: ⚠️ THE TEST BELOW MATCHES ON A PREFIX, so the entry names enough of the sentence to be
 #: unmistakable and stops before anything that might be reworded.
 PROGRAMMING_ERRORS: dict[str, str] = {
+    # The shared core of an account's erasure (14 Nov 2026): a product naming a hold the
+    # core does not know is a defect of the product, never a reader's request.
+    "unknown hold code(s)": "self_delete.hold_of, shared core",
     "Unknown instrument {}: it has no place in this order": (
         "an instrument was added without being placed in the distribution order"
     ),
@@ -77,6 +80,16 @@ PROGRAMMING_ERRORS: dict[str, str] = {
     "Refusing to mix {} and {}": (
         "the per-currency treasury invariant: a caller totalling two currencies"
     ),
+}
+
+#: 🔴 WHOLE MODULES THAT ARE A CATALOGUE IN SEVERAL LANGUAGES, and why each is one: their
+#: strings are written once per language and picked by code at read time, so a French one
+#: next to its translations is not a remainder.
+CATALOGUES: dict[str, str] = {
+    # The shared core of an account's erasure (14 Nov 2026): the sentence of each hold in
+    # fr, en, es and pt-BR, picked by `hold_phrase(code, lang)`, the same bytes in every
+    # product and the same text as Alice's console.
+    "self_delete.py": "the holds' sentences in the four languages, shared core",
 }
 
 _ACCENTS = "àâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ«»"
@@ -151,6 +164,8 @@ def test_no_french_prose_survives_outside_pick_without_a_verdict():
     French that happens to carry no accent - which is precisely why it is not alone."""
     stray = []
     for path, tree in _sources():
+        if path.name in CATALOGUES:
+            continue
         settled_ids = set()
         for node in ast.walk(tree):
             if _is_pick(node):

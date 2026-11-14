@@ -21,12 +21,16 @@ What the terms of use promise (CGU of Alice, article 9.3), and what this file fi
   message, who entered a payment): it is then a TOMBSTONE carrying no personal data
   (`erased_values`, `tombstone_email`, `unusable_password`);
 - the same erasure runs once a subscription has ENDED and its thirty days to export have
-  run out (terms of sale 7.4): `ended_erase_on`, never before `FIRST_ERASURE_DAY`.
+  run out (terms of sale 7.4): `ended_erase_on`, never before `FIRST_ERASURE_DAY`;
+- a product that will NOT erase a space says why with one of `HOLD_CODES`, the same codes
+  everywhere: to Alice, as soon as it knows, and to the console's deletion it refuses
+  (`hold_of`, `hold_phrase`).
 """
 
 from __future__ import annotations
 
 import hmac
+import json
 import secrets
 import unicodedata
 from calendar import monthrange
@@ -58,6 +62,63 @@ ALWAYS_KEPT = frozenset({"id", "created_at", "updated_at"})
 ERASURE_LAUNCH_DAY = date(2026, 11, 20)
 LAUNCH_NOTICE_DAYS = 30
 FIRST_ERASURE_DAY = ERASURE_LAUNCH_DAY + timedelta(days=LAUNCH_NOTICE_DAYS)
+
+# ── Why a product holds an erasure (the owner, 14 Nov 2026) ─────────────────────────────
+# A product that will not erase a space says so to Alice as soon as it knows (the morning
+# it plans the erasure, not only on the day), and again when the hold ends: the console then
+# shows « Retenu par le produit » with the reason instead of a day, and rings no bell. The
+# console's deletion of an account (`DELETE /internal/managers/{id}`) runs the same purge
+# and is refused by the same holds, answered 409 with the code in `X-Refusal`.
+# 🔴 ONE NEED, ONE CODE: a product never invents its own. Alice holds the same codes and
+# sentences (`license_erasure.HOLD_REASONS`); both guards pin `HOLD_CONTRACT_SHA256`.
+
+#: Rows of another space point at this one's: the purge would delete or change them.
+SHARED_ROWS = "shared_rows"
+#: An account of the platform itself (its administration) is filed under this space.
+PLATFORM_ACCOUNT_INSIDE = "platform_account_inside"
+#: The space keeps records the law, or somebody else, needs kept: the owner decides.
+LEGAL_RETENTION = "legal_retention"
+#: Erasing the space would leave the installation with no active administrator.
+LAST_ADMINISTRATOR = "last_administrator"
+
+#: Every hold, in the order a product looks for them: the first found is the one said.
+HOLD_CODES: tuple[str, ...] = (
+    SHARED_ROWS,
+    PLATFORM_ACCOUNT_INSIDE,
+    LEGAL_RETENTION,
+    LAST_ADMINISTRATOR,
+)
+
+#: The language a sentence falls back to.
+HOLD_DEFAULT_LANG = "fr"
+
+#: Each hold's sentence, in the four languages of the platform.
+HOLD_REASONS: dict[str, dict[str, str]] = {
+    SHARED_ROWS: {
+        "fr": "Des données de cet espace sont liées à un autre espace.",
+        "en": "Some data of this space is linked to another space.",
+        "es": "Algunos datos de este espacio están vinculados a otro espacio.",
+        "pt-BR": "Alguns dados deste espaço estão vinculados a outro espaço.",
+    },
+    PLATFORM_ACCOUNT_INSIDE: {
+        "fr": "Un compte de la plateforme est rattaché à cet espace.",
+        "en": "An account of the platform is attached to this space.",
+        "es": "Una cuenta de la plataforma está vinculada a este espacio.",
+        "pt-BR": "Uma conta da plataforma está vinculada a este espaço.",
+    },
+    LEGAL_RETENTION: {
+        "fr": "L'espace garde des documents que la loi ou un tiers impose de conserver.",
+        "en": "The space holds records that the law or a third party requires to keep.",
+        "es": "El espacio guarda documentos que la ley o un tercero obligan a conservar.",
+        "pt-BR": "O espaço guarda documentos que a lei ou um terceiro obriga a conservar.",
+    },
+    LAST_ADMINISTRATOR: {
+        "fr": "C'est le dernier compte administrateur actif de la plateforme.",
+        "en": "It is the last active administrator account of the platform.",
+        "es": "Es la última cuenta de administrador activa de la plataforma.",
+        "pt-BR": "É a última conta de administrador ativa da plataforma.",
+    },
+}
 
 
 # ── The calendar of a deletion ──────────────────────────────────────────────────────────
@@ -102,6 +163,37 @@ def answer_by(received_on: date) -> date:
     year = received_on.year + month_index // 12
     month = month_index % 12 + 1
     return date(year, month, min(received_on.day, monthrange(year, month)[1]))
+
+
+# ── The hold ────────────────────────────────────────────────────────────────────────────
+
+
+def hold_of(found: Iterable[str]) -> str | None:
+    """The one hold a product says, among the codes it found: the first of `HOLD_CODES`,
+    or None when it found none. A code outside `HOLD_CODES` is a product's mistake, refused
+    (`ValueError`) rather than sent where nobody can read it."""
+    seen = set(found)
+    unknown = seen.difference(HOLD_CODES)
+    if unknown:
+        raise ValueError(f"unknown hold code(s): {sorted(unknown)}")
+    return next((code for code in HOLD_CODES if code in seen), None)
+
+
+def hold_phrase(code: str, lang: str | None = None) -> str:
+    """The sentence of a hold in `lang`, French when the language is not one of the four."""
+    sentences = HOLD_REASONS[code]
+    return sentences.get(lang or HOLD_DEFAULT_LANG) or sentences[HOLD_DEFAULT_LANG]
+
+
+def hold_contract() -> str:
+    """The codes and their sentences as one canonical text: Alice's guard and every
+    product's hash it to the same `HOLD_CONTRACT_SHA256`."""
+    return json.dumps(
+        {"codes": list(HOLD_CODES), "reasons": HOLD_REASONS},
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
 
 
 # ── The confirmation ────────────────────────────────────────────────────────────────────

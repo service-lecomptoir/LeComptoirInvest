@@ -17,12 +17,30 @@ implementation: Le Comptoir Immo's page of the same name.
 - `app/services/account_deletion_service.py`: the glue (who is the subscriber, when, whom to
   tell), and the daily pass.
 
-⚠️ The console's own deletion (`DELETE /internal/managers/{id}`) is NOT this need today: it
-removes the ACCOUNT alone (its second factor by CASCADE; an investor it signed in for keeps
-its record, `user_id` emptied) and leaves the firm's funds, register and money in place. It
-is left as it was; whether it should erase the firm too is the owner's to decide. A row
-planned for an account the console deleted in the meantime is withdrawn
-(`account_deleted_from_the_console`), never purged.
+🔴 The console's own deletion (`DELETE /internal/managers/{id}`) runs the same purge
+since 14 Nov 2026 (the owner: « la suppression depuis la console suit la purge »): it
+removed the account row alone and left the firm's funds, investors, subscriptions, money and team behind, with no holder.
+`account_deletion_service.delete_from_console` runs `firm_purge.purge_firm` for the root, the account
+alone for any other, journaled by name (`account.console_deletion_executed` with the
+numbers, `account.console_deletion_held` with why).
+
+## The holds, said to Alice
+
+One need, one code: `firm_purge.erasure_hold` gathers this product's guards (`shared_rows`: a link to another firm; `platform_account_inside`: a platform account filed under the firm; `last_administrator`)
+and names them with the shared core's codes (`core/self_delete.py`, `HOLD_CODES`). The same
+answer serves three doors:
+
+- the morning plan says it to Alice (`say_the_holds`, `POST /internal/license/{id}/
+  erasure-hold`, a code or `null` when the hold ended), every morning, so an Alice that does
+  not answer, or answers 404, hears it the next one; nothing is erased nor blocked by it;
+- the day's erasure holds on it (`why_not_erase`), and no notice announces an erasure it
+  holds;
+- the console's deletion is refused by it: 409, the code in `X-Refusal`, the core's
+  sentence; Alice asks `GET /internal/managers/{id}/deletion-hold` first, before she stops
+  the Stripe subscription.
+
+A row planned for an account deleted in the meantime is withdrawn
+(`account_deleted_from_the_console`), never purged by the pass.
 
 ## Who is the subscriber
 
@@ -117,6 +135,7 @@ holder, and the rows already planned.
 
 `backend/tests/test_the_space_is_erased_after_the_export_days.py`,
 `backend/tests/test_an_ended_subscription_reads_and_exports_for_thirty_days.py`,
+`backend/tests/test_the_console_deletion_follows_the_purge.py`,
 `backend/tests_unit/test_the_self_delete_core_is_shared.py`,
 `backend/tests_unit/test_the_purge_erases_every_table_of_a_firm.py`,
 `frontend/src/lib/theSpaceIsErasedAfterTheExportDays.test.ts`.

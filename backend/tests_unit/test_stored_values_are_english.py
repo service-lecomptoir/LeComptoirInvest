@@ -33,6 +33,14 @@ _CONSTANT = re.compile(
 
 #: 🔴 THE COMPLETE INVENTORY. Adding a line is a deliberate act; that is the whole point.
 APPROVED: dict[str, str] = {
+    # Why a product holds an erasure (the owner, 14 Nov 2026): the shared core's codes
+    # (`core/self_delete.HOLD_CODES`), the same in every product and in Alice, written in
+    # the journal (`why`) and sent to Alice; and the language its sentence falls back to.
+    "SHARED_ROWS": "shared_rows",
+    "PLATFORM_ACCOUNT_INSIDE": "platform_account_inside",
+    "LEGAL_RETENTION": "legal_retention",
+    "LAST_ADMINISTRATOR": "last_administrator",
+    "HOLD_DEFAULT_LANG": "fr",
     # Instruments
     "EQUITY": "equity",
     "LOAN": "loan",

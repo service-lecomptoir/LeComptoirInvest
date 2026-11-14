@@ -6,10 +6,11 @@ erased once its thirty days to export have run out, terms of sale 7.4). The dail
 the button, runs the same function, as Le Comptoir Immo's two doors share
 `agency_purge.purge_agency`. docs/THE_SPACE_IS_ERASED_AFTER_THE_EXPORT_DAYS.md.
 
-⚠️ NOT THE CONSOLE'S DELETION. `DELETE /internal/managers/{id}` removes the ACCOUNT alone
-(its second factor goes by CASCADE, the investors it signed in for keep their record) and
-leaves the firm's funds, register and money where they are: that route is left as it was,
-and whether it should erase the firm too is the owner's to decide.
+🔴 THE CONSOLE'S DELETION RUNS IT TOO (the owner, 14 Nov 2026: « la suppression depuis la
+console suit la purge »). `DELETE /internal/managers/{id}` removed the account row alone and
+left the firm's funds, register, money and team behind, with no holder
+(`account_deletion_service.delete_from_console`). The three doors are held by the same
+guards (`erasure_hold`), named by the shared core's codes.
 
 What goes, in one transaction the caller commits:
 
@@ -41,7 +42,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core import firm_scope
 from app.models.base import Base
 from app.models.two_factor import UserTwoFactor
-from app.models.user import INVESTOR, MANAGER, User
+from app.models.user import FUND_WIDE_ROLES, INVESTOR, MANAGER, User
 
 #: 🔴 THE ORDER OF THE PURGE, LEAVES FIRST: a row is deleted before the rows it points to,
 #: so a RESTRICT key (a contribution on its bank movement, a subscription on its fund) never
@@ -154,6 +155,52 @@ async def platform_accounts_in(db: AsyncSession, firm: uuid.UUID) -> int:
         )
     )
     return len(rows.all())
+
+
+async def others_can_administer(db: AsyncSession, user: User) -> bool:
+    """Whether an active account outside this firm can still administer the installation
+    once it is gone: the erasure and the console's deletion never take the last one
+    (`erasure_hold`)."""
+    others = await db.scalar(
+        select(func.count())
+        .select_from(User)
+        .where(
+            User.role.in_(FUND_WIDE_ROLES),
+            User.is_active.is_(True),
+            User.id != user.id,
+            func.coalesce(User.firm_id, User.id) != user.id,
+        )
+    )
+    return bool(others)
+
+
+def is_the_root(user: User) -> bool:
+    """Whether `user` IS its firm (`firm_of`): the purge takes the firm with it; any other
+    account of the firm goes alone."""
+    return firm_scope.firm_of(user) == user.id
+
+
+async def erasure_hold(db: AsyncSession, target: User) -> str | None:
+    """What holds the erasure of `target`'s space, as the shared core names it
+    (`core.self_delete.HOLD_CODES`), or None when nothing does.
+
+    🔴 ONE ANSWER FOR THE THREE DOORS (the owner, 14 Nov 2026): the morning plan says it to
+    Alice, the day's erasure holds on it, the console's deletion is refused by it. For the
+    firm's root (any other account takes nothing of the firm): a link to another firm
+    (`shared_with_another_space`), a platform account filed under it
+    (`platform_accounts_in`); for any account, the last one able to administer
+    (`others_can_administer`)."""
+    from app.core import self_delete
+
+    found: list[str] = []
+    if is_the_root(target):
+        if await shared_with_another_space(db, target.id):
+            found.append(self_delete.SHARED_ROWS)
+        if await platform_accounts_in(db, target.id):
+            found.append(self_delete.PLATFORM_ACCOUNT_INSIDE)
+    if not await others_can_administer(db, target):
+        found.append(self_delete.LAST_ADMINISTRATOR)
+    return self_delete.hold_of(found)
 
 
 async def purge_firm(

@@ -25,7 +25,7 @@ import uuid
 from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, select, text
+from sqlalchemy import delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import email_envelope
@@ -34,7 +34,7 @@ from app.core.fund_time import platform_today, zone_for_country
 from app.core.i18n import pick, use_lang
 from app.models.account_deletion import ENDED, AccountDeletion
 from app.models.audit_log import AuditLog
-from app.models.user import FUND_WIDE_ROLES, User
+from app.models.user import User
 from app.services.licence_state import platform_day
 
 logger = logging.getLogger(__name__)
@@ -47,6 +47,11 @@ ERASURE_PLANNED = "account.erasure_planned"
 ERASURE_WITHDRAWN = "account.erasure_withdrawn"
 ERASURE_HELD = "account.erasure_held"
 ERASURE_EXECUTED = "account.erasure_executed"
+#: The console's deletion of an account (the owner, 14 Nov 2026): run, or held, and why.
+CONSOLE_DELETION_EXECUTED = "account.console_deletion_executed"
+CONSOLE_DELETION_HELD = "account.console_deletion_held"
+#: Who the journal says asked the console's deletion.
+CONSOLE_ACTOR = "console (Alice)"
 
 #: What Alice is told of each kind of erasure (`account-deleted`, `cause`).
 CAUSE_BY_KIND = {ENDED: "subscription_ended"}
@@ -75,7 +80,14 @@ def _iso(value: date | None) -> str | None:
     return value.isoformat() if value else None
 
 
-def _journal(db: AsyncSession, action: str, user_id: uuid.UUID, details: dict) -> None:
+def _journal(
+    db: AsyncSession,
+    action: str,
+    user_id: uuid.UUID,
+    details: dict,
+    *,
+    actor: str = ACTOR,
+) -> None:
     """A named line of the journal, written with the unit of work: the account by its id,
     the days and the numbers, never a name nor an address."""
     db.add(
@@ -83,7 +95,7 @@ def _journal(db: AsyncSession, action: str, user_id: uuid.UUID, details: dict) -
             id=uuid.uuid4(),
             created_at=datetime.now(UTC),
             user_id=None,
-            user_email=ACTOR,
+            user_email=actor,
             action=action,
             entity_type="user",
             entity_id=str(user_id),
@@ -206,23 +218,35 @@ async def plan_ended(db: AsyncSession, done: dict) -> set[uuid.UUID] | None:
         await db.rollback()
         done["failed"] += 1
         logger.exception("ended erasures: planning failed")
+        return set(planned)
+    await say_the_holds(db, list(planned))
     return set(planned)
 
 
-async def _others_can_administer(db: AsyncSession, user: User) -> bool:
-    """Whether an active account outside this firm can still administer the installation
-    once it is gone (the console's own deletion refuses the last one)."""
-    others = await db.scalar(
-        select(func.count())
-        .select_from(User)
-        .where(
-            User.role.in_(FUND_WIDE_ROLES),
-            User.is_active.is_(True),
-            User.id != user.id,
-            func.coalesce(User.firm_id, User.id) != user.id,
-        )
-    )
-    return bool(others)
+async def say_the_holds(db: AsyncSession, listed: list[uuid.UUID]) -> None:
+    """🔴 ALICE HEARS THE HOLD THE MORNING IT IS KNOWN (the owner, 14 Nov 2026), not on the
+    day: for every holder she lists, what holds the erasure here (`firm_purge.erasure_hold`),
+    or that nothing does any more. Her console then says « Retenu par le produit » instead
+    of a day, and rings no bell. Said every morning: an Alice that does not answer (or does
+    not know the route yet) hears it the next one. Never erases nor blocks anything; one
+    account failing leaves the others."""
+    from app.services import alice_client
+    from app.services.firm_purge import erasure_hold
+
+    for uid in listed:
+        try:
+            user = await db.get(User, uid)
+            if user is None or not user.holds_the_licence:
+                continue
+            code = await erasure_hold(db, user)
+        except Exception:  # noqa: BLE001 - a reading failing leaves the others
+            await db.rollback()
+            logger.exception("ended erasures: the hold of %s not read", uid)
+            continue
+        try:
+            await alice_client.say_erasure_hold(uid, code)
+        except Exception:  # noqa: BLE001 - said again the next morning
+            logger.exception("ended erasures: the hold of %s not said", uid)
 
 
 async def why_not_erase(
@@ -231,11 +255,11 @@ async def why_not_erase(
     """Why the space must NOT be erased now, or None when everything agrees: the account is
     the licence holder, Alice answers NOW (no cache) that the licence is not a
     demonstration, that it ended, and schedules a day; this product's own reading of the
-    end gives a day too; the later of the two, like the row's, has come; nothing of the
-    firm is shared with another one, no platform account hangs from it; and the
-    installation keeps an administrator."""
+    end gives a day too; the later of the two, like the row's, has come; and nothing holds
+    it here (`firm_purge.erasure_hold`: a link to another firm, a platform account filed
+    under it, the last administrator; the shared core's codes)."""
     from app.services import alice_client, licence_state
-    from app.services.firm_purge import platform_accounts_in, shared_with_another_space
+    from app.services.firm_purge import erasure_hold
 
     if not user.holds_the_licence:
         return "not_the_subscriber"
@@ -253,13 +277,7 @@ async def why_not_erase(
         core.is_due(today, day) and core.is_due(today, row.erase_on)
     ):
         return "not_due"
-    if await shared_with_another_space(db, user.id):
-        return "shared_with_another_space"
-    if await platform_accounts_in(db, user.id):
-        return "platform_account_in_the_firm"
-    if not await _others_can_administer(db, user):
-        return "last_administrator"
-    return None
+    return await erasure_hold(db, user)
 
 
 async def run_ended(
@@ -270,7 +288,7 @@ async def run_ended(
     when her list did not come) and only when `why_not_erase` finds nothing; then Alice is
     told (`tell_alice`). Seven days before, the notice, once per day planned. Each row in
     its own transaction: one failing leaves the others."""
-    from app.services.firm_purge import purge_firm
+    from app.services.firm_purge import erasure_hold, purge_firm
 
     for row in await _pending_ended(db):
         row_id = row.id  # read before a rollback expires the row
@@ -279,10 +297,9 @@ async def run_ended(
                 continue
             user = await db.get(User, row.user_id)
             if user is None:
-                # 🔴 DELETED FROM ALICE'S CONSOLE IN THE MEANTIME. Here that deletion takes
-                # the ACCOUNT alone and leaves the firm's rows (`firm_purge`): with no holder
-                # left to check, nothing is erased on its behalf. The row is withdrawn and
-                # says why; what becomes of the rows left is the owner's to decide.
+                # 🔴 DELETED FROM ALICE'S CONSOLE IN THE MEANTIME. That deletion runs the
+                # same purge since 14 Nov 2026 (`delete_from_console`): nothing is left to
+                # erase on the holder's behalf. The row is withdrawn and says why.
                 row.cancelled_at = datetime.now(UTC)
                 done["withdrawn"] += 1
                 _journal(
@@ -340,6 +357,10 @@ async def run_ended(
             elif core.reminder_due(
                 today, row.erase_on, already_reminded=row.reminded_at is not None
             ):
+                if await erasure_hold(db, user):
+                    # Held on its day whatever happens: no notice announces an erasure
+                    # that will not take place.
+                    continue
                 if await send_erasure_notice(db, user, row.erase_on):
                     row.reminded_at = datetime.now(UTC)
                     await db.commit()
@@ -483,6 +504,57 @@ async def _tell_alice_what_she_missed(db: AsyncSession, done: dict) -> None:
             await db.rollback()
             done["alice_to_tell"] += 1
             logger.exception("erasure %s: telling Alice failed", row_id)
+
+
+class DeletionHeld(Exception):
+    """The console's deletion is refused, nothing deleted: `code` says why (a code of
+    `core.self_delete.HOLD_CODES`)."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
+async def delete_from_console(db: AsyncSession, user: User) -> dict:
+    """The console's deletion of an account (`DELETE /internal/managers/{id}`): for the
+    firm's root, THE purge of the erasure (`firm_purge.purge_firm`); for any other account,
+    that account alone (its second factor follows by cascade). Held by the same guards
+    (`firm_purge.erasure_hold`), journaled by name with the numbers, like the erasure.
+
+    🔴 IT REMOVED THE ACCOUNT ROW ALONE (measured on 14 Nov 2026): the firm's funds,
+    investors, subscriptions, money and team stayed, with no holder. Raises
+    `DeletionHeld`, nothing deleted, when a guard holds; commits otherwise."""
+    from app.services import alice_client
+    from app.services.firm_purge import erasure_hold, is_the_root, purge_firm
+
+    user_id = user.id
+    hold = await erasure_hold(db, user)
+    if hold is not None:
+        _journal(db, CONSOLE_DELETION_HELD, user_id, {"why": hold}, actor=CONSOLE_ACTOR)
+        await db.commit()
+        raise DeletionHeld(hold)
+    counts: dict = {}
+    if is_the_root(user):
+        await purge_firm(db, user, counts)
+    else:
+        await db.execute(
+            delete(User)
+            .where(User.id == user_id)
+            .execution_options(synchronize_session=False)
+        )
+        if user in db:
+            db.expunge(user)
+        counts["accounts"] = 1
+    _journal(
+        db,
+        CONSOLE_DELETION_EXECUTED,
+        user_id,
+        {"counts": counts},
+        actor=CONSOLE_ACTOR,
+    )
+    await db.commit()
+    alice_client.invalidate_license_cache(user_id)
+    return counts
 
 
 async def run_due(db: AsyncSession) -> dict:

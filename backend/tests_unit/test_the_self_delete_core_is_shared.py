@@ -13,9 +13,11 @@ import hashlib
 import pathlib
 from datetime import date
 
+import pytest
+
 from app.core import self_delete
 
-SHARED_CORE_SHA256 = "974ece397475c28d7d9645726947f7fb18654bc95a163b3b8fa57e2ff4683906"
+SHARED_CORE_SHA256 = "ae351cc578009af8353079d852e6571a067556de26102e189bda02051afa97af"
 
 
 def test_the_core_is_the_shared_one():
@@ -86,3 +88,40 @@ def test_no_ended_space_is_erased_before_thirty_days_after_the_launch():
     assert (
         self_delete.ended_erase_on(date(2026, 10, 30)) == self_delete.FIRST_ERASURE_DAY
     )
+
+
+# ── The hold (the owner, 14 Nov 2026) ───────────────────────────────────────────────────
+
+#: 🔴 THE SAME NUMBER IN ALICE (`tests/test_the_product_says_it_holds_the_erasure.py`): the
+#: hold codes and their sentences, which her console shows.
+HOLD_CONTRACT_SHA256 = (
+    "8efbb7b7145d3af58d7e39dffb0c5f57a7c090d952742bd6f7794647ca81fb28"
+)
+
+
+def test_the_hold_codes_and_sentences_are_alice_s():
+    digest = hashlib.sha256(self_delete.hold_contract().encode("utf-8")).hexdigest()
+    assert digest == HOLD_CONTRACT_SHA256
+
+
+def test_the_first_hold_found_is_the_one_said():
+    found = [self_delete.LAST_ADMINISTRATOR, self_delete.SHARED_ROWS]
+    assert self_delete.hold_of(found) == self_delete.SHARED_ROWS
+
+
+def test_nothing_found_holds_nothing():
+    assert self_delete.hold_of([]) is None
+
+
+def test_a_hold_code_of_one_product_alone_is_refused():
+    with pytest.raises(ValueError):
+        self_delete.hold_of(["shared_with_another_space"])
+
+
+def test_a_hold_is_said_in_the_reader_s_language():
+    assert self_delete.hold_phrase(self_delete.SHARED_ROWS, "es").startswith("Algunos")
+
+
+def test_a_hold_in_another_language_is_said_in_french():
+    french = self_delete.HOLD_REASONS[self_delete.SHARED_ROWS]["fr"]
+    assert self_delete.hold_phrase(self_delete.SHARED_ROWS, "de") == french
