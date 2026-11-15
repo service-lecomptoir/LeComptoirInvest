@@ -144,7 +144,7 @@ valeur du produit **est** l'arithmétique, et une erreur y est invisible.
 |---|---|
 | Domaine | `invest.lecomptoir-services.com`, certificat dédié |
 | Projet compose | **`invest`** — jamais `docker` : le préfixe nomme les volumes, et un mauvais projet monte un volume **vide** |
-| Conteneurs | `invest_backend` (8001), `invest_frontend` (80), `invest_db` |
+| Conteneurs | `invest_backend` (8001), `invest_frontend` (80) ; la base est sur le serveur des bases (voir plus bas) |
 | Réseau | `lecomptoir_net` (partagé), proxy `edge_nginx` |
 | Secrets | `~/LeComptoirInvest/backend/.env.prod` sur le VPS, **hors dépôt** |
 
@@ -308,3 +308,12 @@ remplissent jamais complètement.
 
 La forme juridique du véhicule se décide avec un conseil ; elle change ce que l'outil doit
 enregistrer, et c'est à ce titre qu'elle est un sujet d'ingénierie ici.
+
+## Base de données en production
+
+Décision du propriétaire du 14 nov 2026 : « un besoin, un code », la même chose dans les douze produits.
+
+- La base vit sur le **serveur des bases** depuis le 14 nov 2026 : un seul PostgreSQL 16 (`bases_postgres`) pour les douze produits, joint par un tunnel WireGuard à l'**adresse de service `10.66.0.10`**. Aucun compose de déploiement ne démarre de base.
+- **Une adresse complète** : `DATABASE_URL` (`postgresql+asyncpg://<rôle>:<mot de passe>@10.66.0.10:5432/<base>`), dans `backend/.env.prod` sur le VPS, hors dépôt. Basculer un jour sur un serveur de secours ne demandera que de déplacer l'adresse de service.
+- **`/health` sonde vraiment la base** : une connexion à part, hors réserve, `SELECT 1`, 5 s au plus, verdict réutilisé 5 s ; `503` et `database_unavailable` si elle ne répond pas. Le déploiement, Docker et la supervision de Portail360 le voient.
+- **Même réserve de connexions partout** : `DB_POOL_SIZE` (5 par défaut) et `DB_MAX_OVERFLOW` (10), par processus, soit 315 connexions au pire pour les douze produits sur les 600 du serveur ; `pool_pre_ping` vérifie chaque connexion avant usage, pour qu'une coupure du tunnel ne laisse pas de connexions mortes.

@@ -125,6 +125,29 @@ app.add_middleware(
 
 @app.get("/health")
 async def health():
+    """Alive AND able to reach its database.
+
+    🔴 THE DATABASE IS PROBED, NOT ASSUMED (the owner, 14 Nov 2026). The base lives on the
+    database server, through a WireGuard tunnel: a container answering « ok » over a base it
+    cannot reach is a green light over a closed road. A 503 says so before a user meets a
+    500, to the deployment, to Docker and to Portail360's supervision alike. Through the
+    shared verdict of `app/core/database_probe.py`: five seconds at most, never one
+    connection per call.
+    """
+    from fastapi.responses import JSONResponse
+
+    from app.core.database_probe import database_error
+
+    exc = await database_error()
+    if exc is not None:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "database_unavailable",
+                "app": settings.APP_NAME,
+                "detail": type(exc).__name__,
+            },
+        )
     return {"status": "ok", "app": settings.APP_NAME}
 
 

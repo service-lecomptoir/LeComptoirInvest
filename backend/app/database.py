@@ -10,8 +10,11 @@ settings = get_settings()
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=settings.DB_POOL_SIZE,
+    max_overflow=settings.DB_MAX_OVERFLOW,
+    # 🔴 EVERY CONNECTION IS CHECKED BEFORE USE: the base lives on the database server,
+    # through a WireGuard tunnel, and a cut of the tunnel must not leave dead connections
+    # in the pool for the next requests to stumble on.
     pool_pre_ping=True,
     pool_recycle=3600,
 )

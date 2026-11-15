@@ -24,26 +24,10 @@ x-logging: &default-logging
     max-file: "5"
 
 services:
-  invest-db:
-    image: postgres:16-alpine
-    container_name: invest_db
-    logging: *default-logging
-    restart: always
-    env_file:
-      - ../backend/.env.prod
-    environment:
-      PGDATA: /var/lib/postgresql/data/pgdata
-    volumes:
-      - invest_pgdata:/var/lib/postgresql/data
-    expose:
-      - "5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - shared
+  # The database lives on the database server since 14 Nov 2026: one PostgreSQL 16 for
+  # every product, reached through the WireGuard tunnel at its service address 10.66.0.10
+  # (its full address, DATABASE_URL, is in the product's environment file on the VPS). The
+  # local container that held it was retired once the move was validated.
 
   invest-backend:
     image: "ghcr.io/service-lecomptoir/invest-backend:${IMAGE_TAG:?IMAGE_TAG obligatoire (voir le workflow de deploiement)}"
@@ -68,9 +52,6 @@ services:
     environment:
       ENV: production
       DEBUG: "false"
-    depends_on:
-      invest-db:
-        condition: service_healthy
     expose:
       - "8001"
     networks:
@@ -88,9 +69,6 @@ services:
       - "80"
     networks:
       - shared
-
-volumes:
-  invest_pgdata:
 
 networks:
   shared:

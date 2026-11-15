@@ -21,6 +21,16 @@ class Settings(BaseSettings):
     #: Async URL (asyncpg). Alembic derives its own sync URL from this one.
     DATABASE_URL: str = "postgresql+asyncpg://invest_user:devpassword123@localhost:5432/lecomptoirinvest"
 
+    #: 🔴 THE SAME CONNECTION RESERVE IN EVERY PRODUCT (the owner, 14 Nov 2026). The twelve
+    #: products share one PostgreSQL on the database server, which accepts 600 connections:
+    #: 5 kept open and 10 more at a peak, PER WORKER PROCESS, is 30 for a product of two
+    #: workers and 315 for the twelve at their worst, the rest left to the health probes,
+    #: the migrations, the backups and the administrator. Changed for one product through
+    #: its environment (`DB_POOL_SIZE`, `DB_MAX_OVERFLOW`), never by editing a number in the
+    #: engine. Guard: `test_every_product_keeps_the_same_connection_reserve.py`.
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 10
+
     #: Signs the session tokens. Required. While `DATA_ENCRYPTION_KEYS` is empty it ALSO
     #: derives the key of the bank details, exactly as it always did.
     SECRET_KEY: str = ""
