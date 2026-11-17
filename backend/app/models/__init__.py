@@ -12,7 +12,7 @@ from app.models.base import Base
 # scope, which needs the class.
 from app.models.fund import Fund
 from app.models.investor import Investor, InvestorDocument
-from app.models.project import Deployment, Project, ProjectReturn
+from app.models.project import Deployment, Project, ProjectReturn, ProjectValuation
 from app.models.subscription import (
     Subscription,
     SubscriptionConversion,
@@ -43,6 +43,7 @@ __all__ = [
     "InvestorDocument",
     "Project",
     "ProjectReturn",
+    "ProjectValuation",
     "Subscription",
     "SubscriptionConversion",
     "SubscriptionRequest",
@@ -60,7 +61,22 @@ __all__ = [
 # session unfiltered, and that is the query that fills a screen.
 from app.core.firm_scope import install as _install_firm_scope  # noqa: E402
 
-_install_firm_scope((Fund, Investor, Project, BankMovement))
+_install_firm_scope(
+    (Fund, Investor, Project, BankMovement),
+    # The rows that carry no firm, filtered through their parent (`DERIVED_TABLES`).
+    (
+        InvestorDocument,
+        SubscriptionRequest,
+        Subscription,
+        SubscriptionConversion,
+        CapitalCall,
+        Contribution,
+        Distribution,
+        ProjectValuation,
+        Deployment,
+        ProjectReturn,
+    ),
+)
 
 # The audit journal listens to the unit of work from the same moment, and for the same
 # reason: the first write of a session is a write like the others.

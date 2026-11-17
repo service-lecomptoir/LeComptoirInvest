@@ -295,3 +295,212 @@ async def test_a_new_row_is_stamped_without_being_asked(db, two_firms):
             .one()
         )
     assert found.firm_id == a.manager.id
+
+
+# ── The rows that carry no firm of their own ───────────────────────────────────
+
+
+class Children:
+    """What hangs under one firm's investor: a subscription, a call, a distribution and a
+    request, none of which carries a `firm_id` of its own."""
+
+    def __init__(self, subscription, call, distribution, request):
+        self.subscription = subscription
+        self.call = call
+        self.distribution = distribution
+        self.request = request
+
+
+async def _children(db, firm: Firm, label: str) -> Children:
+    from app.models.subscription import SubscriptionRequest
+    from app.models.treasury import CapitalCall, Distribution
+
+    from sqlalchemy import select
+
+    from app.core import firm_scope
+
+    # Read across firms: the fixture stamped the roots by hand, under no firm in force.
+    with firm_scope.all_firms():
+        subscription = (
+            (
+                await db.execute(
+                    select(Subscription).where(
+                        Subscription.investor_id == firm.investor.id
+                    )
+                )
+            )
+            .scalars()
+            .one()
+        )
+    call = CapitalCall(
+        id=uuid.uuid4(),
+        subscription_id=subscription.id,
+        reference=f"APPEL-{label}",
+        amount=Decimal("5000"),
+        currency=CURRENCY,
+        called_on=date(2026, 2, 1),
+        due_on=date(2026, 3, 1),
+    )
+    distribution = Distribution(
+        id=uuid.uuid4(),
+        subscription_id=subscription.id,
+        capital_amount=Decimal("0"),
+        income_amount=Decimal("700"),
+        currency=CURRENCY,
+        decided_on=date(2026, 4, 1),
+    )
+    request = SubscriptionRequest(
+        id=uuid.uuid4(),
+        investor_id=firm.investor.id,
+        instrument=instruments.EQUITY,
+        amount=Decimal("20000"),
+        currency=CURRENCY,
+        requested_on=date(2026, 1, 2),
+    )
+    db.add_all([call, distribution, request])
+    await db.flush()
+    return Children(subscription, call, distribution, request)
+
+
+@pytest.fixture
+async def two_firms_and_their_children(db, two_firms):
+    """⚠️ THE SESSION IS EMPTIED AFTERWARDS, because a real request opens its own. Rows
+    left in the identity map are handed back by `Session.get()` without any query, so a
+    test that kept them would be testing the fixture's memory, not the scope."""
+    a, b = two_firms
+    children = await _children(db, a, "a"), await _children(db, b, "b")
+    db.expunge_all()
+    return two_firms, children
+
+
+def _ids(payload) -> set[str]:
+    return {item["id"] for item in payload if isinstance(item, dict) and "id" in item}
+
+
+async def test_another_firms_distributions_are_not_listed(
+    client, two_firms_and_their_children
+):
+    """🔴 A DISTRIBUTION CARRIES NO FIRM, ONLY A SUBSCRIPTION. Scoping the four roots
+    scoped nothing that is queried directly below them: the list of distributions was the
+    whole installation's."""
+    (a, _), (mine, theirs) = two_firms_and_their_children
+    response = await client.get("/api/v1/distributions", headers=a.auth)
+    assert response.status_code == 200, response.text
+    seen = _ids(response.json())
+    assert str(mine.distribution.id) in seen
+    assert str(theirs.distribution.id) not in seen, (
+        "another firm's distribution is listed"
+    )
+
+
+async def test_each_firm_reads_its_own_distributions_one_after_the_other(
+    client, two_firms_and_their_children
+):
+    """⚠️ THE FIRM IS A VALUE OF THE FILTER, NOT PART OF ITS CACHED SHAPE: the second
+    caller must not be served the first caller's scope."""
+    (a, b), (of_a, of_b) = two_firms_and_their_children
+    for firm, own, other in ((a, of_a, of_b), (b, of_b, of_a), (a, of_a, of_b)):
+        seen = _ids(
+            (await client.get("/api/v1/distributions", headers=firm.auth)).json()
+        )
+        assert str(own.distribution.id) in seen
+        assert str(other.distribution.id) not in seen
+
+
+async def test_another_firms_calls_are_not_listed(client, two_firms_and_their_children):
+    (a, _), (mine, theirs) = two_firms_and_their_children
+    response = await client.get("/api/v1/treasury/calls", headers=a.auth)
+    assert response.status_code == 200, response.text
+    seen = _ids(response.json())
+    assert str(mine.call.id) in seen
+    assert str(theirs.call.id) not in seen, "another firm's capital call is listed"
+
+
+async def test_another_firms_requests_are_not_listed(
+    client, two_firms_and_their_children
+):
+    (a, _), (mine, theirs) = two_firms_and_their_children
+    response = await client.get("/api/v1/subscription-requests", headers=a.auth)
+    assert response.status_code == 200, response.text
+    seen = _ids(response.json())
+    assert str(mine.request.id) in seen
+    assert str(theirs.request.id) not in seen, (
+        "another firm's subscription request is listed"
+    )
+
+
+async def test_another_firms_call_letter_cannot_be_read(
+    client, two_firms_and_their_children
+):
+    """The letter names the investor, the amount and the account to pay into."""
+    (a, _), (_, theirs) = two_firms_and_their_children
+    response = await client.get(
+        f"/api/v1/treasury/calls/{theirs.call.id}/notice?as_of=2026-03-10",
+        headers=a.auth,
+    )
+    assert response.status_code == 404, response.text
+
+
+async def test_another_firms_distribution_cannot_be_paid(
+    client, two_firms_and_their_children
+):
+    (a, _), (_, theirs) = two_firms_and_their_children
+    response = await client.post(
+        f"/api/v1/distributions/{theirs.distribution.id}/pay",
+        json={"bank_movement_id": str(a.movement.id)},
+        headers=a.auth,
+    )
+    assert response.status_code == 404, response.text
+
+
+async def test_another_firms_request_cannot_be_decided(
+    client, two_firms_and_their_children
+):
+    (a, _), (_, theirs) = two_firms_and_their_children
+    response = await client.post(
+        f"/api/v1/subscription-requests/{theirs.request.id}/decide",
+        json={"accept": False, "reason": "Dossier incomplet"},
+        headers=a.auth,
+    )
+    assert response.status_code == 404, response.text
+
+
+async def test_another_firms_subscription_cannot_be_converted(
+    client, two_firms_and_their_children
+):
+    (a, _), (_, theirs) = two_firms_and_their_children
+    response = await client.post(
+        f"/api/v1/subscriptions/{theirs.subscription.id}/convert",
+        json={"converted_on": "2026-05-01", "principal_converted": "1000"},
+        headers=a.auth,
+    )
+    assert response.status_code == 404, response.text
+
+
+async def test_no_call_is_opened_on_another_firms_subscription(
+    client, two_firms_and_their_children
+):
+    (a, _), (_, theirs) = two_firms_and_their_children
+    response = await client.post(
+        "/api/v1/treasury/calls",
+        json={
+            "subscription_id": str(theirs.subscription.id),
+            "amount": "1000",
+            "called_on": "2026-05-01",
+            "due_on": "2026-06-01",
+        },
+        headers=a.auth,
+    )
+    assert response.status_code == 404, response.text
+
+
+async def test_ones_money_is_never_attributed_to_another_firms_subscription(
+    client, two_firms_and_their_children
+):
+    (a, _), (_, theirs) = two_firms_and_their_children
+    response = await client.post(
+        f"/api/v1/treasury/movements/{a.movement.id}/attribute",
+        json={"subscription_id": str(theirs.subscription.id), "amount": "1000"},
+        headers=a.auth,
+    )
+    assert response.status_code == 404, response.text

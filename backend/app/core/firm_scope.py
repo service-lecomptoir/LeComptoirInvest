@@ -36,13 +36,41 @@ from contextvars import ContextVar
 from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
 
-#: The four tables that CARRY the firm. Everything else derives it by join, so scoping
-#: these four scopes the whole product.
+#: The four tables that CARRY the firm. Everything else reaches one of them through a
+#: foreign key, and is filtered through it (`DERIVED_TABLES`).
 #:
 #: ⚠️ THIS TUPLE IS THE CONTRACT, and a guard compares it to the columns actually present
 #: in the models: a table that gains `firm_id` without joining this list would be filtered
 #: by nobody, and a table listed here without the column would raise on every query.
 SCOPED_TABLES: tuple[str, ...] = ("funds", "investors", "projects", "bank_movements")
+
+#: The tables that carry NO firm, and the foreign key that leads each one to a table that
+#: does (directly, or through another table of this list).
+#:
+#: 🔴 « EVERYTHING ELSE DERIVES IT BY JOIN » WAS TRUE OF NOTHING THAT WAS QUERIED DIRECTLY.
+#: Until 17 Nov 2026 only the four roots were filtered, on the belief that the rest followed
+#: through them. A join follows; a `select(Distribution)` or a `db.get(CapitalCall, id)`
+#: does not name a root at all, so nothing filtered it: a manager listed every firm's
+#: distributions, capital calls and subscription requests, read another firm's call letter
+#: (investor, amount, account) and could pay, decide, convert or call on another firm's
+#: rows by naming them. Each of these tables is now filtered by « its parent belongs to the
+#: firm in force », injected exactly like the roots, so a route that forgets cannot leak.
+#:
+#: ⚠️ THE KEY CHOSEN IS THE ONE THAT CANNOT BE NULL. A subscription reaches its firm through
+#: its INVESTOR, never through its fund: `fund_id` NULL means « the implicit vehicle » and
+#: would leave the row belonging to nobody.
+DERIVED_TABLES: dict[str, tuple[str, str]] = {
+    "investor_documents": ("investor_id", "investors"),
+    "subscription_requests": ("investor_id", "investors"),
+    "subscriptions": ("investor_id", "investors"),
+    "subscription_conversions": ("from_subscription_id", "subscriptions"),
+    "capital_calls": ("subscription_id", "subscriptions"),
+    "contributions": ("subscription_id", "subscriptions"),
+    "distributions": ("subscription_id", "subscriptions"),
+    "project_valuations": ("project_id", "projects"),
+    "deployments": ("project_id", "projects"),
+    "project_returns": ("project_id", "projects"),
+}
 
 #: A scope that matches nothing. Used when no firm has been established, so the default is
 #: « see nothing » rather than « see everything ».
@@ -143,10 +171,43 @@ def _criteria_for(entity, firm: uuid.UUID):
     )
 
 
+def _owned_ids(table, firm: uuid.UUID):
+    """The ids of `table` that belong to `firm`, as a subquery on the bare tables.
+
+    ⚠️ BUILT ON THE TABLES, NOT ON THE MAPPED CLASSES, so the subquery is not itself
+    re-scoped by the listener that is adding it.
+    """
+    from sqlalchemy import select
+
+    if table.name in SCOPED_TABLES:
+        return select(table.c.id).where(table.c.firm_id == firm)
+    column, parent = DERIVED_TABLES[table.name]
+    return select(table.c.id).where(
+        table.c[column].in_(_owned_ids(table.metadata.tables[parent], firm))
+    )
+
+
+def _derived_criteria_for(entity, firm: uuid.UUID):
+    """The filter applied to one entity that carries no firm: its parent must be owned.
+
+    ⚠️ A PLAIN EXPRESSION AND NOT A LAMBDA: the firm is a bound value of the expression,
+    extracted on each execution like any other, so a cached statement never serves the
+    first caller's firm to the next one.
+    """
+    column, parent = DERIVED_TABLES[entity.__tablename__]
+    parent_table = entity.__table__.metadata.tables[parent]
+    return with_loader_criteria(
+        entity,
+        getattr(entity, column).in_(_owned_ids(parent_table, firm)),
+        include_aliases=True,
+    )
+
+
 #: The entities the scope was actually installed on, recorded so a guard can compare them
-#: to `SCOPED_TABLES`. Without this, the tuple above would be a comment: a rule written and
-#: applied nowhere is this repository's other named defect.
+#: to `SCOPED_TABLES` and `DERIVED_TABLES`. Without this, the declarations above would be
+#: comments: a rule written and applied nowhere is this repository's other named defect.
 _installed: tuple = ()
+_installed_derived: tuple = ()
 
 
 def installed_tables() -> tuple[str, ...]:
@@ -154,14 +215,20 @@ def installed_tables() -> tuple[str, ...]:
     return tuple(sorted(entity.__tablename__ for entity in _installed))
 
 
-def install(scoped_entities) -> None:
+def installed_derived_tables() -> tuple[str, ...]:
+    """The tables filtered through their parent, as the listener sees them."""
+    return tuple(sorted(entity.__tablename__ for entity in _installed_derived))
+
+
+def install(scoped_entities, derived_entities=()) -> None:
     """Teach SQLAlchemy to scope every query on the four roots.
 
     ⚠️ CALLED ONCE, AT IMPORT OF THE MODELS. Installing it per session would leave the
     first query of a fresh session unscoped, which is the query that fills a screen.
     """
-    global _installed
+    global _installed, _installed_derived
     _installed = tuple(scoped_entities)
+    _installed_derived = tuple(derived_entities)
 
     @event.listens_for(Session, "do_orm_execute")
     def _scope(orm_execute_state):
@@ -173,6 +240,10 @@ def install(scoped_entities) -> None:
         for entity in scoped_entities:
             orm_execute_state.statement = orm_execute_state.statement.options(
                 _criteria_for(entity, firm)
+            )
+        for entity in _installed_derived:
+            orm_execute_state.statement = orm_execute_state.statement.options(
+                _derived_criteria_for(entity, firm)
             )
 
     stamped = tuple(scoped_entities)
