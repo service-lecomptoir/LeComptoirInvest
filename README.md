@@ -273,14 +273,16 @@ illisibles.** La première chose à faire est donc l'étape « Expliciter » ci-
 elle, `SECRET_KEY` ne signe plus que les sessions et se change sans toucher aux données.
 
 Tout se fait avec **un seul script**, `docs/rotation_cle_donnees.ps1`, lancé depuis
-PowerShell sur le poste qui a l'accès `ssh lecomptoir-vps`. Il n'affiche jamais une clé ni
+PowerShell sur le poste qui a les accès `ssh lecomptoir-vps` (serveur des applications) et
+`ssh lecomptoir-db` (serveur des bases), précédé de la règle d'encodage :
+`$OutputEncoding = New-Object System.Text.UTF8Encoding $false; .\docs\rotation_cle_donnees.ps1 -Produit invest -Apercu`. Il n'affiche jamais une clé ni
 un IBAN : seulement des comptes et des empreintes courtes de 8 caractères qui désignent une
 clé sans la révéler. Il s'arrête à la première erreur.
 
 | Étape | Commande | Ce qu'elle fait |
 |---|---|---|
 | 0. Regarder | `.\docs\rotation_cle_donnees.ps1 -Produit invest -Apercu` | l'état du trousseau (fichier et conteneur), puis combien de valeurs sont sur la clé courante, à rechiffrer, illisibles. **N'écrit rien.** |
-| 1. Expliciter (une fois) | `.\docs\rotation_cle_donnees.ps1 -Produit invest -Expliciter` | sauvegarde de la base, copie datée de `.env.prod`, écrit la clé **dérivée d'aujourd'hui** comme clé explicite (les valeurs n'en changent pas), recrée `invest_backend`, recalcule les empreintes, preuve. Rejouable : la 2e fois dit « DEJA FAIT ». |
+| 1. Expliciter (une fois) | `.\docs\rotation_cle_donnees.ps1 -Produit invest -Expliciter` | sauvegarde de la base (sur le serveur des bases), copie datée de `.env.prod`, écrit la clé **dérivée d'aujourd'hui** comme clé explicite (les valeurs n'en changent pas), recrée `invest_backend`, recalcule les empreintes, preuve. Rejouable : la 2e fois dit « DEJA FAIT ». |
 | 2. Tourner | `.\docs\rotation_cle_donnees.ps1 -Produit invest` | sauvegarde, copie de `.env.prod`, **nouvelle clé en tête**, l'ancienne en second, recrée le conteneur, vérifie qu'il lit ce trousseau, aperçu, rechiffrement, **preuve**. |
 | 3. Retirer l'ancienne | `.\docs\rotation_cle_donnees.ps1 -Produit invest -RetirerAnciennes` | seulement si **tout** s'ouvre avec la clé courante seule ; ne garde qu'elle, recrée, revérifie, et remet l'ancien trousseau si une seule valeur ne s'ouvrait plus. |
 | Reprise | `.\docs\rotation_cle_donnees.ps1 -Produit invest -Rechiffrer` | relance le rechiffrement sans changer de clé (après une coupure, par exemple). |
@@ -296,8 +298,24 @@ tout est déjà sur la clé courante seule. Une valeur qu'aucune clé n'ouvre ar
 
 ⚠️ **Les sauvegardes faites avant une rotation ne s'ouvrent qu'avec l'ancienne clé.** Elle
 reste dans la copie datée `backend/.env.prod.avant-cle-AAAAMMJJ-HHMMSS` (chmod 600) : la
-garder tant que ces sauvegardes existent. Les sauvegardes du script vont dans
-`~/backups/rotation-cle/`.
+garder tant que ces sauvegardes existent.
+
+**La sauvegarde de la base, avant toute écriture.** Le script travaille en trois temps et
+s'arrête à la première erreur :
+
+1. **serveur des applications** : les vérifications (trousseau du fichier et du conteneur,
+   aperçu, base visée par `DATABASE_URL`) ; **rien n'est écrit**, et `-Apercu` s'arrête là ;
+2. **serveur des bases** : `pg_dump -Fc` de la base du produit (`lecomptoirinvest`) **dans le conteneur
+   `bases_postgres`**, vérifié par `pg_restore -l`, rangé sur ce serveur dans
+   `~/backups/rotation-cle/invest_AAAAMMJJ-HHMMSS.dump` (chmod 600) ;
+3. **serveur des applications** : les vérifications refaites, puis la copie de `.env.prod`
+   (même horodatage que la sauvegarde), le trousseau, la recréation du conteneur, le
+   rechiffrement et la preuve.
+
+Depuis le 14 nov 2026 la base ne vit plus dans un conteneur du serveur des applications :
+le script ne s'adresse qu'à `bases_postgres`, et une garde
+(`backend/tests_unit/test_no_file_names_a_retired_database_container.py`)
+refuse tout fichier du dépôt qui nommerait encore un conteneur de base retiré.
 
 ## ⚠️ Le cadre réglementaire décide de colonnes, pas seulement de droit
 
