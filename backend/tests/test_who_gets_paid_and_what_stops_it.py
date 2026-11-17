@@ -333,6 +333,50 @@ class TestDecidingIsNotPaying:
         with pytest.raises(ValueError, match="déjà payée"):
             await distribution_service.pay(db, distribution=created, movement=outgoing)
 
+    async def test_one_transfer_pays_two_distributions_net_of_what_was_withheld(
+        self, db
+    ):
+        """🔴 WHAT A TRANSFER ALREADY PAID IS WHAT LEFT THE ACCOUNT: THE NET.
+
+        A transfer of 1 800 EUR paying two distributions of 1 000 EUR, 100 EUR withheld at
+        source on each, is exactly enough. The room left on the transfer was measured with
+        the GROSS of what it had already paid and the NET of the one being paid: the second
+        distribution was refused for 100 EUR the investors never received."""
+        from app.models.treasury import Distribution
+
+        first_member = await _investor(db, "Premier")
+        second_member = await _investor(db, "Second")
+        decided = []
+        for member in (first_member, second_member):
+            subscription = await _funded(
+                db, member, instrument=instruments.EQUITY, amount="100000"
+            )
+            distribution = Distribution(
+                subscription_id=subscription.id,
+                capital_amount=Decimal("0"),
+                income_amount=Decimal("1000"),
+                withholding_amount=Decimal("100"),
+                currency="EUR",
+                decided_on=date(2027, 1, 5),
+            )
+            db.add(distribution)
+            decided.append(distribution)
+        outgoing = BankMovement(
+            account_iban="FR7630006000011234567890189",
+            direction=OUT,
+            amount=Decimal("1800"),
+            currency="EUR",
+            value_date=date(2027, 1, 8),
+        )
+        db.add(outgoing)
+        await db.flush()
+
+        for distribution in decided:
+            await distribution_service.pay(
+                db, distribution=distribution, movement=outgoing
+            )
+        assert all(d.paid_on == date(2027, 1, 8) for d in decided)
+
 
 class TestADecidedDistributionIsNotProposedTwice:
     async def test_the_second_proposal_knows_the_first_was_already_allocated(self, db):

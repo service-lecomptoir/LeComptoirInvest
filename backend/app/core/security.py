@@ -1,5 +1,6 @@
 """Passwords and tokens."""
 
+import hmac
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -24,6 +25,18 @@ _ALGORITHM = "HS256"
 #: another `type` is refused; a token issued before the field existed carries none and
 #: lives out its own expiry (twelve hours at most).
 ACCESS_TOKEN_TYPE = "access"
+
+
+def same_secret(given: str | None, expected: str | None) -> bool:
+    """Do two secrets match, in constant time? Never with an empty one.
+
+    ⚠️ COMPARED AS BYTES. `hmac.compare_digest` RAISES on two `str` holding a non-ASCII
+    character: a key presented as « clé » answered 500 instead of 401 (measured on Le
+    Comptoir BTP and here, 17 Nov 2026).
+    """
+    if not given or not expected:
+        return False
+    return hmac.compare_digest(given.encode("utf-8"), expected.encode("utf-8"))
 
 
 def hash_password(raw: str) -> str:

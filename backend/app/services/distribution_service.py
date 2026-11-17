@@ -632,14 +632,24 @@ async def pay(
             )
         )
 
+    # 🔴 LOCKED, like every write that spends the room left on a transfer: two payments
+    # clicked at once would each see the room the other was about to take.
+    from app.services.treasury_service import lock_movement
+
+    await lock_movement(db, movement)
+    # 🔴 WHAT LEFT THE ACCOUNT IS THE NET. The room was measured with the GROSS of what the
+    # transfer had already paid and the NET of the one being paid: a transfer of exactly
+    # two net amounts refused the second for the tax withheld on the first.
     already = (
         await db.execute(
-            select(Distribution.capital_amount, Distribution.income_amount).where(
-                Distribution.bank_movement_id == movement.id
-            )
+            select(
+                Distribution.capital_amount,
+                Distribution.income_amount,
+                Distribution.withholding_amount,
+            ).where(Distribution.bank_movement_id == movement.id)
         )
     ).all()
-    used = sum((c + i for c, i in already), Decimal("0"))
+    used = sum((c + i - (w or Decimal("0")) for c, i, w in already), Decimal("0"))
     if distribution.net_paid > movement.amount - used:
         raise ValueError(
             matching.too_little_left(

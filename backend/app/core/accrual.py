@@ -263,7 +263,10 @@ def allocate(amount: Decimal, weights: list[Decimal], currency: str) -> list[Dec
     ]
     leftover = amount - sum(floored, Decimal("0"))
 
-    units = int((leftover / step).to_integral_value())
+    # ⚠️ FLOORED TOO. An amount finer than the currency's unit (100.005 EUR) leaves a
+    # leftover of one and a half units: rounded, it handed out two, and the parts summed
+    # to more than the whole. What cannot be paid in whole units stays undistributed.
+    units = int((leftover / step).to_integral_value(rounding="ROUND_FLOOR"))
     if units > 0:
         order = sorted(range(len(weights)), key=lambda i: (-(exact[i] - floored[i]), i))
         for i in order[:units]:

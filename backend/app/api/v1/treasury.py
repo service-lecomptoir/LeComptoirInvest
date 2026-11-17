@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import current_manager, investor_scope
-from app.core import camt, display
+from app.core import camt
 from app.core import fund_time
 from app.database import SESSION
 from app.models.fund import Fund
@@ -69,27 +69,11 @@ async def import_movements(
     """Record statement lines, and say what each one probably is.
 
     ⚠️ RE-IMPORTING A STATEMENT IS NORMAL — an operator reruns yesterday's file — so a line
-    already known by (account, external id) is SKIPPED rather than duplicated. Duplicating a
+    already known is SKIPPED rather than duplicated (`treasury_service.record_lines`). Duplicating a
     200 000 € transfer would make the treasury fail in the direction that looks like good
     news, and it would look reconciled on this side.
     """
-    created: list[BankMovement] = []
-    for line in lines:
-        if line.external_id:
-            already = (
-                await db.execute(
-                    select(BankMovement.id).where(
-                        BankMovement.account_iban == line.account_iban,
-                        BankMovement.external_id == line.external_id,
-                    )
-                )
-            ).first()
-            if already:
-                continue
-        movement = BankMovement(**line.model_dump())
-        db.add(movement)
-        created.append(movement)
-    await db.flush()
+    created, _known = await treasury_service.record_lines(db, lines)
 
     out = []
     for movement in created:
@@ -119,6 +103,10 @@ class CamtImportOut(BaseModel):
     already_known: int = 0
 
 
+#: A month of a busy account's CAMT.053 weighs well under a megabyte.
+MAX_STATEMENT_BYTES = 20_000_000
+
+
 @router.post(
     "/movements/camt", response_model=CamtImportOut, status_code=status.HTTP_201_CREATED
 )
@@ -134,12 +122,22 @@ async def import_camt(
     feed it was somebody retyping a statement. Retyped money carries a typo, and the typo
     lands on the reference — the single field the whole matching rests on.
 
-    ⚠️ RE-IMPORTING THE SAME FILE IS NORMAL and must change nothing: a line already known by
-    (account, external id) is skipped, exactly as in the manual import. Duplicating a
+    ⚠️ RE-IMPORTING THE SAME FILE IS NORMAL and must change nothing: a line already known
+    is skipped, by the same code as the manual import (`treasury_service.record_lines`). Duplicating a
     200 000 € transfer would make the treasury wrong in the direction that looks like good
     news.
     """
-    raw = await file.read()
+    # ⚠️ READ UP TO THE CEILING AND NO FURTHER: a file read whole before its size is known
+    # is memory spent on whatever was sent.
+    raw = await file.read(MAX_STATEMENT_BYTES + 1)
+    if len(raw) > MAX_STATEMENT_BYTES:
+        raise HTTPException(
+            status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            pick(
+                f"Relevé trop volumineux : {MAX_STATEMENT_BYTES // 1_000_000} Mo au plus.",
+                f"Statement too large: {MAX_STATEMENT_BYTES // 1_000_000} MB at most.",
+            ),
+        )
     if not raw:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY, pick("Fichier vide.", "Empty file.")
@@ -152,35 +150,7 @@ async def import_camt(
             + " | ".join(parsed.refused[:5]),
         )
 
-    created: list[BankMovement] = []
-    already = 0
-    for line in parsed.lines:
-        if line.external_id:
-            known = (
-                await db.execute(
-                    select(BankMovement.id).where(
-                        BankMovement.account_iban == line.account_iban,
-                        BankMovement.external_id == line.external_id,
-                    )
-                )
-            ).first()
-            if known:
-                already += 1
-                continue
-        movement = BankMovement(
-            account_iban=line.account_iban,
-            external_id=line.external_id,
-            direction=line.direction,
-            amount=line.amount,
-            currency=line.currency,
-            value_date=line.value_date,
-            label=line.label,
-            counterparty_name=line.counterparty_name,
-            counterparty_iban=line.counterparty_iban,
-        )
-        db.add(movement)
-        created.append(movement)
-    await db.flush()
+    created, already = await treasury_service.record_lines(db, parsed.lines)
 
     imported = []
     for movement in created:
@@ -338,42 +308,16 @@ async def open_call(
             ),
         )
 
-    already = sum(
-        (
-            row
-            for row in (
-                await db.execute(
-                    select(CapitalCall.amount).where(
-                        CapitalCall.subscription_id == subscription.id
-                    )
-                )
-            )
-            .scalars()
-            .all()
-        ),
-        Decimal("0"),
-    )
-    if already + data.amount > subscription.amount:
-        cur = subscription.currency
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            pick(
-                f"L'engagement est de {display.amount(subscription.amount, cur)} et "
-                f"{display.amount(already, cur)} ont déjà été appelés : il ne reste que "
-                f"{display.amount(subscription.amount - already, cur)} à appeler.",
-                f"The commitment is {display.amount(subscription.amount, cur)} and "
-                f"{display.amount(already, cur)} has already been called: only "
-                f"{display.amount(subscription.amount - already, cur)} is left to call.",
-            ),
+    try:
+        call = await treasury_service.open_call(
+            db,
+            subscription=subscription,
+            amount=data.amount,
+            due_on=data.due_on,
+            called_on=data.called_on,
         )
-
-    call = await treasury_service.open_call(
-        db,
-        subscription=subscription,
-        amount=data.amount,
-        due_on=data.due_on,
-        called_on=data.called_on,
-    )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
     return _call_out(call, await _iban_for(db, call))
 
 

@@ -14,7 +14,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import kyc, matching
+from app.core import display, kyc, matching
 from app.core.matching import Candidate, Proposal, propose
 from app.models.investor import Investor
 from app.models.subscription import Subscription
@@ -145,6 +145,11 @@ async def attribute(
             )
         )
 
+    # 🔴 THE TRANSFER IS LOCKED BEFORE ITS ROOM IS MEASURED. Two attributions of one
+    # transfer clicked at the same moment each read the room left before the other
+    # wrote, and both passed: 1 000 EUR received, 1 400 EUR attributed. The second now
+    # waits for the first and measures what it left.
+    await lock_movement(db, movement)
     already = (
         (
             await db.execute(
@@ -198,6 +203,101 @@ async def treasury_by_currency(db: AsyncSession) -> dict[str, Decimal]:
     return out
 
 
+def _qualified(line, rank: int) -> str:
+    """A reference made specific to ONE line: its own, plus its day, amount and rank."""
+    tail = f"#{line.value_date:%Y%m%d}#{line.amount}#{rank}"
+    return f"{line.external_id[: 120 - len(tail)]}{tail}"
+
+
+def _same_line(movement: BankMovement, line) -> bool:
+    return (
+        movement.value_date == line.value_date
+        and movement.amount == line.amount
+        and movement.direction == line.direction
+    )
+
+
+async def record_lines(db: AsyncSession, lines) -> tuple[list[BankMovement], int]:
+    """Record statement lines, skipping the ones already known. Returns (created, known).
+
+    ONE CODE FOR BOTH WAYS IN, the lines typed and the bank's own file.
+
+    🔴 A REFERENCE IS NOT AN IDENTITY. A bank with no reference to give writes
+    `NOTPROVIDED` (ISO 20022), and an `EndToEndId` is whatever the payer typed, often the
+    same each month. Read as an identity, the second transfer carrying it was counted
+    « already known » and never reached the treasury (17 Nov 2026, the pattern measured on
+    Le Comptoir Compta and Syndic). A reference already carried by a movement of another
+    day, amount or direction, or by an earlier line of the same file, is made specific to
+    its line: day, amount and rank in the file. A line already imported is recognised as
+    before, so re-importing a file still creates nothing.
+    """
+    created: list[BankMovement] = []
+    known = 0
+    seen_in_file: set[str] = set()
+    for rank, line in enumerate(lines, 1):
+        reference = line.external_id
+        if reference:
+            existing = (
+                (
+                    await db.execute(
+                        select(BankMovement).where(
+                            BankMovement.account_iban == line.account_iban,
+                            BankMovement.external_id == reference,
+                        )
+                    )
+                )
+                .scalars()
+                .first()
+            )
+            if reference in seen_in_file or (
+                existing is not None and not _same_line(existing, line)
+            ):
+                reference = _qualified(line, rank)
+                existing = (
+                    (
+                        await db.execute(
+                            select(BankMovement).where(
+                                BankMovement.account_iban == line.account_iban,
+                                BankMovement.external_id == reference,
+                            )
+                        )
+                    )
+                    .scalars()
+                    .first()
+                )
+            seen_in_file.add(line.external_id)
+            if existing is not None:
+                known += 1
+                continue
+        movement = BankMovement(
+            account_iban=line.account_iban,
+            external_id=reference,
+            direction=line.direction,
+            amount=line.amount,
+            currency=line.currency,
+            value_date=line.value_date,
+            label=line.label,
+            counterparty_name=line.counterparty_name,
+            counterparty_iban=line.counterparty_iban,
+        )
+        db.add(movement)
+        created.append(movement)
+        # Flushed at once, so the next line of the same file finds it.
+        await db.flush()
+    return created, known
+
+
+async def lock_movement(db: AsyncSession, movement: BankMovement) -> None:
+    """Hold this transfer's row until the transaction ends.
+
+    Every write that spends the room left on a transfer (an attribution, a distribution
+    paid out of it) takes this lock first, so two of them never measure the same room.
+    """
+    await db.execute(
+        select(BankMovement.id).where(BankMovement.id == movement.id).with_for_update()
+    )
+
+
 async def next_call_reference(db: AsyncSession) -> str:
     """A reference no open call already carries.
 
@@ -230,7 +330,41 @@ async def open_call(
 
     ⚠️ A CALL IS NOT MONEY, and this function creates no contribution. It creates a demand
     with a reference on it; the money arrives later, on a statement, and is attributed then.
+
+    🔴 NEVER CALLS MORE THAN WHAT REMAINS COMMITTED, AND THE CEILING LIVES HERE. It was
+    measured in the route, without a lock: two calls opened at the same moment each read
+    what had been called before the other wrote, and together asked an investor for more
+    than they committed. The subscription is now locked before the ceiling is read.
     """
+    await db.execute(
+        select(Subscription.id)
+        .where(Subscription.id == subscription.id)
+        .with_for_update()
+    )
+    already = sum(
+        (
+            await db.execute(
+                select(CapitalCall.amount).where(
+                    CapitalCall.subscription_id == subscription.id
+                )
+            )
+        )
+        .scalars()
+        .all(),
+        Decimal("0"),
+    )
+    if already + amount > subscription.amount:
+        cur = subscription.currency
+        raise ValueError(
+            pick(
+                f"L'engagement est de {display.amount(subscription.amount, cur)} et "
+                f"{display.amount(already, cur)} ont déjà été appelés : il ne reste que "
+                f"{display.amount(subscription.amount - already, cur)} à appeler.",
+                f"The commitment is {display.amount(subscription.amount, cur)} and "
+                f"{display.amount(already, cur)} has already been called: only "
+                f"{display.amount(subscription.amount - already, cur)} is left to call.",
+            )
+        )
     call = CapitalCall(
         subscription_id=subscription.id,
         reference=await next_call_reference(db),

@@ -16,7 +16,6 @@ then its content, one byte at a time, to anybody who can measure a response.
 
 from __future__ import annotations
 
-import hmac
 import uuid
 from datetime import UTC, datetime
 
@@ -32,6 +31,7 @@ from app.core.security import (
     create_access_token,
     create_two_factor_pending_token,
     hash_password,
+    same_secret,
 )
 from app.database import SESSION
 from app.services import password_link_service, two_factor_service
@@ -85,11 +85,7 @@ async def require_internal_key(
     installation held two.
     """
     cfg = get_settings()
-    if (
-        not x_internal_key
-        or not cfg.ALICE_INTERNAL_KEY
-        or not hmac.compare_digest(x_internal_key, cfg.ALICE_INTERNAL_KEY)
-    ):
+    if not same_secret(x_internal_key, cfg.ALICE_INTERNAL_KEY):
         raise HTTPException(
             status_code=401,
             detail=pick("Clé interne invalide.", "Invalid internal key."),

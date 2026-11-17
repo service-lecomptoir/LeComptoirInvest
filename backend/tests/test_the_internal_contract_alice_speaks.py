@@ -75,6 +75,14 @@ class TestTheDoorIsClosed:
         r = await client.get("/internal/managers", headers={"X-Internal-Key": "faux"})
         assert r.status_code == 401
 
+    async def test_a_key_with_an_accent_is_refused_not_a_crash(self, client):
+        """`hmac.compare_digest` raises on two `str` holding a non-ASCII character: a
+        key typed « clé » answered 500. Compared as bytes, it is a wrong key like another."""
+        r = await client.get(
+            "/internal/managers", headers={"X-Internal-Key": "clé".encode("latin-1")}
+        )
+        assert r.status_code == 401
+
     async def test_the_right_key_opens(self, client):
         assert (
             await client.get("/internal/managers", headers=auth())

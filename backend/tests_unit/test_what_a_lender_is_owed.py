@@ -11,7 +11,7 @@ from decimal import Decimal
 
 import pytest
 
-from app.core import accrual
+from app.core import accrual, money
 from app.core.instruments import LoanTerms
 
 
@@ -118,6 +118,27 @@ class TestASplitLosesNothing:
         """The few cents a naive split keeps are the fund's, and they reconcile to nothing."""
         shares = accrual.allocate(Decimal(amount), [Decimal(1)] * parts, currency)
         assert sum(shares) == Decimal(amount)
+
+    @pytest.mark.parametrize(
+        "amount,parts,currency",
+        [
+            ("100.005", 3, "EUR"),
+            ("10.015", 2, "EUR"),
+            ("100.5", 3, "XOF"),
+        ],
+    )
+    def test_an_amount_finer_than_the_currency_never_splits_into_more(
+        self, amount, parts, currency
+    ):
+        """🔴 THE PARTS NEVER EXCEED THE WHOLE. An amount typed finer than the currency's
+        smallest unit left a leftover of one and a half units, rounded to TWO: three shares
+        of 100.005 EUR summed to 100.01, a cent paid out that the fund did not have. What
+        cannot be paid in whole units stays undistributed."""
+        shares = accrual.allocate(Decimal(amount), [Decimal(1)] * parts, currency)
+        assert sum(shares) <= Decimal(amount)
+        assert Decimal(amount) - sum(shares) < Decimal(1).scaleb(
+            -money.minor_units(currency)
+        )
 
     def test_a_currency_without_decimals_is_split_in_whole_units(self):
         shares = accrual.allocate(Decimal("1000"), [Decimal(1)] * 3, "XOF")
