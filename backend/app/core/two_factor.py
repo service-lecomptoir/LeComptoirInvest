@@ -89,7 +89,10 @@ def match_step(
     step as the new `last_step`, so the same code, or an older one, never works twice.
     """
     typed = normalize_code(code)
-    if len(typed) != DIGITS or not typed.isdigit():
+    # ASCII digits only: `str.isdigit()` alone also accepts Arabic-Indic, full-width or
+    # superscript digits, which `hmac.compare_digest` then refuses with a TypeError (an
+    # error 500 instead of a wrong code, seen on 17 Nov 2026).
+    if len(typed) != DIGITS or not (typed.isascii() and typed.isdigit()):
         return None
     step = current_step(now)
     for candidate in range(step - WINDOW_STEPS, step + WINDOW_STEPS + 1):

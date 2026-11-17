@@ -35,7 +35,7 @@ from app.services import mailer, password_link_service
 
 #: 🔴 THE SAME FILE IN EVERY PRODUCT (`docs/TWO_FACTOR.md` of Le Comptoir Alice lists the
 #: copies): a copy changed here fails until all are changed.
-SHARED_CORE_SHA256 = "1c4ace9b3cb1ff735d3e3cde99da5d0e2e08c4034b1bce4f642e54ae96301637"
+SHARED_CORE_SHA256 = "22fdf6324064a07add383fe71cd46a24ff5efd17703e7979ef42a8f9f51b2b6f"
 
 KEY = "cle-interne-de-test"
 PASSWORD = "mot-de-passe-du-gerant"
@@ -163,6 +163,27 @@ def test_the_two_factor_core_is_the_shared_one():
     )
     content = path.read_bytes().replace(b"\r\n", b"\n")
     assert hashlib.sha256(content).hexdigest() == SHARED_CORE_SHA256
+
+
+def test_a_code_typed_in_other_digits_is_a_wrong_code_not_an_error():
+    """`str.isdigit()` also accepts Arabic-Indic, full-width or superscript digits, which
+    `hmac.compare_digest` then refused with a TypeError: an error 500 instead of a wrong
+    code (17 Nov 2026). They are refused like any wrong code; ASCII digits still work."""
+    secret = two_factor.generate_secret()
+    for typed in (
+        "١٢٣٤٥٦",  # Arabic-Indic
+        "۱۲۳۴۵۶",  # extended Arabic-Indic
+        "１２３４５６",  # full-width
+        "¹²³⁴⁵⁶",  # superscript
+        "12345６",
+    ):
+        assert two_factor.match_step(secret, typed, None) is None
+    stored = two_factor.hash_backup_codes(["abcde-23456"], "pepper")
+    other_digits = "abcde-٢٣٤٥٦"
+    assert two_factor.consume_backup_code(stored, other_digits, ["pepper"]) is None
+    assert two_factor.consume_backup_code(stored, "ABCDE 23456", ["pepper"]) == []
+    code = two_factor.code_at(secret, two_factor.current_step())
+    assert two_factor.match_step(secret, f" {code[:3]} {code[3:]} ", None) is not None
 
 
 def test_the_codes_are_those_of_rfc_6238():
