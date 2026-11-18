@@ -14,7 +14,8 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: deploy-invest
+  # Per branch: a manual check run on another branch never cancels a deployment of main.
+  group: deploy-invest-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -74,8 +75,31 @@ jobs:
           npm run lint -- --max-warnings=0
           npx vitest run
 
+  # 🔴 NOTHING GOES ONLINE UNLESS THE CHECKS ARE GREEN, AND ONLY FROM MAIN (owner, 18 Nov
+  # 2026). The gate fails when a check failed or was cancelled; it runs even then (that is
+  # its job: to say so in red). `needs.*.result` reads EVERY job listed in `needs`: a check
+  # added there is gated without touching the script.
+  checks:
+    needs: [tests]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every check is green or skipped on purpose
+        env:
+          RESULTS: tests=${{ needs.tests.result }}
+          BLOCKED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: |
+          echo "$RESULTS"
+          if [ "$BLOCKED" != "false" ]; then
+            echo "A check failed or was cancelled: nothing is built nor deployed."
+            exit 1
+          fi
+
   build-push:
-    needs: tests
+    needs: checks
+    # Only main goes online: a manual run (workflow_dispatch) on another branch checks,
+    # and stops here. `!cancelled()` and the gate's result, not the implicit success().
+    if: ${{ !cancelled() && needs.checks.result == 'success' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -118,7 +142,10 @@ jobs:
     needs: build-push
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+    # Only main goes online, as for build-push.
+    if: >-
+      ${{ !cancelled() && needs.build-push.result == 'success'
+      && vars.DEPLOY_ENABLED == 'true' && github.ref == 'refs/heads/main' }}
     permissions:
       contents: read
       packages: read
