@@ -92,31 +92,40 @@ HOLD_CODES: tuple[str, ...] = (
 #: The language a sentence falls back to.
 HOLD_DEFAULT_LANG = "fr"
 
-#: Each hold's sentence, in the four languages of the platform.
+#: Each hold's sentence, in the six languages of the platform (German and Italian since
+#: 22 Nov 2026, Immo's F9: a German or Italian reader read the French).
 HOLD_REASONS: dict[str, dict[str, str]] = {
     SHARED_ROWS: {
         "fr": "Des données de cet espace sont liées à un autre espace.",
         "en": "Some data of this space is linked to another space.",
         "es": "Algunos datos de este espacio están vinculados a otro espacio.",
         "pt-BR": "Alguns dados deste espaço estão vinculados a outro espaço.",
+        "de": "Einige Daten dieses Bereichs sind mit einem anderen Bereich verknüpft.",
+        "it": "Alcuni dati di questo spazio sono collegati a un altro spazio.",
     },
     PLATFORM_ACCOUNT_INSIDE: {
         "fr": "Un compte de la plateforme est rattaché à cet espace.",
         "en": "An account of the platform is attached to this space.",
         "es": "Una cuenta de la plataforma está vinculada a este espacio.",
         "pt-BR": "Uma conta da plataforma está vinculada a este espaço.",
+        "de": "Ein Konto der Plattform ist diesem Bereich zugeordnet.",
+        "it": "Un account della piattaforma è collegato a questo spazio.",
     },
     LEGAL_RETENTION: {
         "fr": "L'espace garde des documents que la loi ou un tiers impose de conserver.",
         "en": "The space holds records that the law or a third party requires to keep.",
         "es": "El espacio guarda documentos que la ley o un tercero obligan a conservar.",
         "pt-BR": "O espaço guarda documentos que a lei ou um terceiro obriga a conservar.",
+        "de": "Der Bereich enthält Unterlagen, deren Aufbewahrung das Gesetz oder ein Dritter vorschreibt.",
+        "it": "Lo spazio conserva documenti che la legge o un terzo impongono di conservare.",
     },
     LAST_ADMINISTRATOR: {
         "fr": "C'est le dernier compte administrateur actif de la plateforme.",
         "en": "It is the last active administrator account of the platform.",
         "es": "Es la última cuenta de administrador activa de la plataforma.",
         "pt-BR": "É a última conta de administrador ativa da plataforma.",
+        "de": "Es ist das letzte aktive Administratorkonto der Plattform.",
+        "it": "È l'ultimo account amministratore attivo della piattaforma.",
     },
 }
 
@@ -180,7 +189,7 @@ def hold_of(found: Iterable[str]) -> str | None:
 
 
 def hold_phrase(code: str, lang: str | None = None) -> str:
-    """The sentence of a hold in `lang`, French when the language is not one of the four."""
+    """The sentence of a hold in `lang`, French when the language is not one of the six."""
     sentences = HOLD_REASONS[code]
     return sentences.get(lang or HOLD_DEFAULT_LANG) or sentences[HOLD_DEFAULT_LANG]
 

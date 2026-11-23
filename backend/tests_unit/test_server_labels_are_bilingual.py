@@ -87,9 +87,10 @@ PROGRAMMING_ERRORS: dict[str, str] = {
 #: next to its translations is not a remainder.
 CATALOGUES: dict[str, str] = {
     # The shared core of an account's erasure (14 Nov 2026): the sentence of each hold in
-    # fr, en, es and pt-BR, picked by `hold_phrase(code, lang)`, the same bytes in every
-    # product and the same text as Alice's console.
-    "self_delete.py": "the holds' sentences in the four languages, shared core",
+    # fr, en, es, pt-BR, de and it (German and Italian since 22 Nov 2026), picked by
+    # `hold_phrase(code, lang)`, the same bytes in every product and the same text as
+    # Alice's console.
+    "self_delete.py": "the holds' sentences in the six languages, shared core",
 }
 
 _ACCENTS = "àâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ«»"

@@ -17,7 +17,7 @@ import pytest
 
 from app.core import self_delete
 
-SHARED_CORE_SHA256 = "036984c7e4ae043be553926132b92a0235ac96db36d6bdabbbd04556d5ea6dff"
+SHARED_CORE_SHA256 = "4aa1baf0f0f190c72824bf6c60813088f2f56b854c5befa44aa44eba0fdd4cb8"
 
 
 def test_the_core_is_the_shared_one():
@@ -95,7 +95,7 @@ def test_no_ended_space_is_erased_before_thirty_days_after_the_launch():
 #: 🔴 THE SAME NUMBER IN ALICE (`tests/test_the_product_says_it_holds_the_erasure.py`): the
 #: hold codes and their sentences, which her console shows.
 HOLD_CONTRACT_SHA256 = (
-    "8efbb7b7145d3af58d7e39dffb0c5f57a7c090d952742bd6f7794647ca81fb28"
+    "02a5d71e1d97d01d83dde7de5dfad42457dbf0540732b2d88b6ecc1910c30c3a"
 )
 
 
@@ -122,6 +122,24 @@ def test_a_hold_is_said_in_the_reader_s_language():
     assert self_delete.hold_phrase(self_delete.SHARED_ROWS, "es").startswith("Algunos")
 
 
+def test_a_german_or_italian_reader_reads_the_hold_in_their_language():
+    # Until 22 Nov 2026 they read the French (Immo's F9 added German and Italian).
+    assert self_delete.hold_phrase(self_delete.SHARED_ROWS, "de").startswith(
+        "Einige Daten"
+    )
+    assert self_delete.hold_phrase(self_delete.SHARED_ROWS, "it").startswith(
+        "Alcuni dati"
+    )
+
+
+def test_every_hold_says_its_reason_in_the_six_languages_of_the_platform():
+    assert all(
+        set(sentences) == {"fr", "en", "es", "pt-BR", "de", "it"}
+        and all(sentences.values())
+        for sentences in self_delete.HOLD_REASONS.values()
+    )
+
+
 def test_a_hold_in_another_language_is_said_in_french():
     french = self_delete.HOLD_REASONS[self_delete.SHARED_ROWS]["fr"]
-    assert self_delete.hold_phrase(self_delete.SHARED_ROWS, "de") == french
+    assert self_delete.hold_phrase(self_delete.SHARED_ROWS, "nl") == french
