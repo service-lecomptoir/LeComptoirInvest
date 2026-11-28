@@ -167,6 +167,7 @@ Décision du propriétaire du 28 nov 2026 (« oui pour les 11 »), même remède
 - pour lire un run : un run vert dont `deploy` ou l'étape « Pull & up sur le VPS » est
   sauté n'a RIEN déployé ;
 - garde : `test_a_deployment_is_never_cancelled_and_checks_follow_the_last_deployment.py`.
+- les actions de GitHub (`actions/checkout`, `setup-node`, `setup-python`, `docker/*`, `dorny/paths-filter`...) tournent en Node 24, chacune à une version précise, jamais `@main` (« oui pour les trois », 28 nov 2026).
 
 ## 🔴 L'avis d'appel de fonds, et la seule phrase écrite pour quelqu'un d'autre
 
