@@ -151,6 +151,23 @@ valeur du produit **est** l'arithmétique, et une erreur y est invisible.
 Les migrations tournent dans le `CMD` de l'image, **avant** uvicorn : un échec arrête le
 conteneur, qui boucle à la vue de tous plutôt que de servir un ancien schéma.
 
+### Un déploiement commencé n'est jamais annulé (28 nov 2026)
+
+Décision du propriétaire du 28 nov 2026 (« oui pour les 11 »), même remède qu'Immo
+(7b30d3c5, dont le déploiement avait été coupé en plein vol le 27 nov : 502) :
+
+- plus de groupe de concurrence au niveau du workflow : le contrôle et `build-push` ont
+  chacun leur groupe, annulable par un push plus récent ; `deploy` a un groupe unique pour
+  la production, sans annulation : un déploiement commencé va au bout, le suivant attend ;
+- un contrôle annulé par un push plus récent ne rougit pas la porte : le commit dépassé
+  n'est ni construit ni déployé (run vert) ; le contrôle tourne à chaque push (pas de
+  filtre de chemins), le run plus récent revérifie donc tout ;
+- la première étape de `deploy`, « Pas derriere un deploiement plus recent », arrête en
+  vert un run dépassé quand un run plus récent a déjà déployé ;
+- pour lire un run : un run vert dont `deploy` ou l'étape « Pull & up sur le VPS » est
+  sauté n'a RIEN déployé ;
+- garde : `test_a_deployment_is_never_cancelled_and_checks_follow_the_last_deployment.py`.
+
 ## 🔴 L'avis d'appel de fonds, et la seule phrase écrite pour quelqu'un d'autre
 
 Partout ailleurs, celui qui lit **est** celui qui appelle : `Accept-Language` suffit. Un avis

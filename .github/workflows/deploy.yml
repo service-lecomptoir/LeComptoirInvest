@@ -13,10 +13,19 @@ on:
       - '.github/workflows/deploy.yml'
   workflow_dispatch: {}
 
-concurrency:
-  # Per branch: a manual check run on another branch never cancels a deployment of main.
-  group: deploy-invest-${{ github.ref }}
-  cancel-in-progress: true
+# 🔴 NO WORKFLOW-LEVEL `concurrency` ANY MORE (owner, 28 Nov 2026, "oui pour les 11", the
+# remedy of Immo 7b30d3c5). It used to cancel the whole run of an outdated push, `deploy`
+# job included: on 27 Nov the same group cut Immo's deployment in the middle (run
+# 46049637071) and Immo answered 502. Cancelling a run cancels EVERY job of it whose `if`
+# is not still true, so no job-level setting could have protected the deployment while
+# that group existed. Each job now carries its own group:
+#   - the checks (`tests`) and build-push: one group per job and per branch,
+#     `cancel-in-progress: true`. A newer push cancels the outdated run's copy when its
+#     own starts; nothing is lost, the newer run checks everything (no paths filter here:
+#     `tests` runs on every push);
+#   - deploy: one group for production, `cancel-in-progress: false`. A deployment that
+#     has started is never cancelled; a newer one waits for it (at most one pending: an
+#     older pending deployment is replaced by the newer one, never started).
 
 env:
   BACKEND_IMAGE: ghcr.io/service-lecomptoir/invest-backend
@@ -28,6 +37,10 @@ jobs:
   # preteur est du, ce qui revient a chaque souscripteur, ce qui figure sur un releve
   # fiscal. Une erreur y est invisible : personne ne recalcule son coupon a la main.
   tests:
+    # A newer push cancels this check of an outdated run (see the note on top).
+    concurrency:
+      group: invest-tests-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -83,23 +96,52 @@ jobs:
     needs: [tests]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      go: ${{ steps.gate.outputs.go }}
     steps:
+      # A check CANCELLED BY A NEWER PUSH (its job-level group, see the note on top) is not
+      # a red: the branch has moved on, the newer run checks it all again, and this outdated
+      # commit is neither built nor deployed (`go` false, the run ends green with build-push
+      # and deploy skipped). A check cancelled while the commit is still the head of the
+      # branch (a time limit) stays red.
       - name: Every check is green or skipped on purpose
+        id: gate
         env:
+          GH_TOKEN: ${{ github.token }}
           RESULTS: tests=${{ needs.tests.result }}
-          BLOCKED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+          FAILED: ${{ contains(needs.*.result, 'failure') }}
+          CANCELLED: ${{ contains(needs.*.result, 'cancelled') }}
         run: |
           echo "$RESULTS"
-          if [ "$BLOCKED" != "false" ]; then
-            echo "A check failed or was cancelled: nothing is built nor deployed."
+          if [ "$FAILED" != "false" ]; then
+            echo "A check failed: nothing is built nor deployed."
             exit 1
           fi
+          if [ "$CANCELLED" != "false" ]; then
+            head=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_REF" --jq .sha 2>/dev/null) || head=""
+            if printf '%s' "$head" | grep -Eq '^[0-9a-f]{40}$' && [ "$head" != "$GITHUB_SHA" ]; then
+              echo "A check was cancelled by a newer push ($head): this outdated commit is neither built nor deployed, the newer run checks it."
+              echo "go=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "A check was cancelled while this commit is still the head of $GITHUB_REF (time limit?): nothing is built nor deployed."
+            exit 1
+          fi
+          echo "go=true" >> "$GITHUB_OUTPUT"
 
   build-push:
     needs: checks
     # Only main goes online: a manual run (workflow_dispatch) on another branch checks,
     # and stops here. `!cancelled()` and the gate's result, not the implicit success().
-    if: ${{ !cancelled() && needs.checks.result == 'success' && github.ref == 'refs/heads/main' }}
+    if: >-
+      ${{ !cancelled() && needs.checks.result == 'success' && needs.checks.outputs.go == 'true'
+      && github.ref == 'refs/heads/main' }}
+    # A newer push's build cancels this one: nothing of an outdated commit is online yet.
+    concurrency:
+      group: invest-build-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -146,19 +188,59 @@ jobs:
     if: >-
       ${{ !cancelled() && needs.build-push.result == 'success'
       && vars.DEPLOY_ENABLED == 'true' && github.ref == 'refs/heads/main' }}
+    # 🔴 NEVER CANCELLED ONCE STARTED (owner, 28 Nov 2026; Immo's run 46049637071 was
+    # cancelled in the middle of its deployment on 27 Nov and Immo answered 502). One group
+    # for production, whatever the run: a newer deployment waits for this one to end.
+    # `cancel-in-progress: false` only lets GitHub replace an older deployment still
+    # PENDING (never started) by the newer one.
+    concurrency:
+      group: invest-deploy-production
+      cancel-in-progress: false
     permissions:
       contents: read
       packages: read
+      actions: read         # « Pas derriere un deploiement plus recent » lit les runs
     steps:
+      # Runs are no longer cancelled as a whole, so an outdated run whose checks ended
+      # late could reach this job AFTER a newer run has deployed, and put the older
+      # version back online. The group above orders deployments, not commits: this step
+      # does. It reads the latest run of main whose deployment went through; when that run
+      # is newer than this one, this deployment stops here, green, without touching the
+      # server. If the API is silent, the deployment goes on (this commit passed every
+      # check; the group keeps it alone).
+      - name: Pas derriere un deploiement plus recent
+        id: order
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          last=""
+          runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/deploy.yml/runs?branch=main&status=success&per_page=30" \
+            --jq '.workflow_runs[] | .id' 2>/dev/null) || runs=""
+          for id in $runs; do
+            step=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs?filter=latest&per_page=100" \
+              --jq '.jobs[] | select(.name == "deploy") | .steps[]? | select(.name == "Pull & up sur le VPS") | .conclusion' 2>/dev/null) || step=""
+            if [ "$step" = "success" ]; then last="$id"; break; fi
+          done
+          if [ -n "$last" ] && [ "$last" -gt "$GITHUB_RUN_ID" ]; then
+            echo "Run $last, newer than this one, has already deployed: this outdated commit is not deployed."
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Last deployment: run ${last:-unknown}. This run ($GITHUB_RUN_ID) deploys."
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: ${{ steps.order.outputs.go == 'true' }}
       # Preuve que le compose du VPS est bien celui du depot. Un televersement peut
       # « reussir » sans que le fichier attendu soit arrive : on compare les empreintes
       # des deux cotes plutot que de le supposer.
       - name: Empreinte des composes du depot
+        if: ${{ steps.order.outputs.go == 'true' }}
         id: composes
         run: echo "sha=$(sha256sum docker/docker-compose.deploy.yml docker/docker-compose.prod.yml | sha256sum | cut -d' ' -f1)" >> $GITHUB_OUTPUT
 
       - name: Copier les composes
+        if: ${{ steps.order.outputs.go == 'true' }}
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -170,7 +252,10 @@ jobs:
           source: "docker/docker-compose.deploy.yml,docker/docker-compose.prod.yml"
           target: ~/LeComptoirInvest
 
+      # ⚠️ This step's name is read by « Pas derriere un deploiement plus recent »
+      # (the API marks the last deployment by it): rename both together.
       - name: Pull & up sur le VPS
+        if: ${{ steps.order.outputs.go == 'true' }}
         uses: appleboy/ssh-action@v1.2.0
         env:
           COMPOSE_SHA: ${{ steps.composes.outputs.sha }}

@@ -5,7 +5,7 @@ deploy.yml waited for its single check job (ruff, pytest, i18n, tsc, ESLint, vit
 but nothing tied build-push and deploy to main: a manual run (workflow_dispatch) on
 another branch put that branch online once its tests were green. The jobs that build and
 deploy now go through a gate that fails when a check failed or was cancelled, and only
-from main; the concurrency group is per branch.
+from main; the groups that cancel are per branch.
 
 Read from the workflow files: no test run can see what GitHub starts after it.
 """
@@ -188,10 +188,16 @@ def test_building_and_deploying_run_only_on_a_green_gate_and_only_from_main():
 
 
 def test_a_run_on_another_branch_never_cancels_a_deployment_of_main():
-    match = re.search(
-        r"^concurrency:\n(?:\s*#.*\n)*  group:\s*(.+)$",
+    # The groups are per job since 28 Nov 2026 (a workflow-level group cancelled a started
+    # deployment, see test_a_deployment_is_never_cancelled_and_checks_follow_the_last_
+    # deployment): every group that cancels is per branch, and the production group,
+    # which only main reaches, cancels nothing.
+    groups = re.findall(
+        r"^    concurrency:\n      group:\s*(.+)\n      cancel-in-progress:\s*(\w+)\s*$",
         _text(DEPLOY),
         flags=re.MULTILINE,
     )
-    assert match, f"{DEPLOY} has no concurrency group"
-    assert "${{ github.ref }}" in match.group(1), "one group for every branch"
+    assert groups, f"{DEPLOY} has no concurrency group"
+    for group, cancels in groups:
+        if cancels != "false":
+            assert "${{ github.ref }}" in group, f"{group}: one group for every branch"
