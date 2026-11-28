@@ -747,7 +747,7 @@
       "accountMenuFund": "The account menu, top right, opens My profile, Subscription and this guide.",
       "accountMenuInvestor": "The account menu, top right, opens My profile and this guide.",
       "signOut": "Log out, at the bottom of the same menu, closes your session once you confirm, on the server and not only in the browser: a copy of your session stops working at once, and your other open tabs go back to the sign-in page. Your other devices stay signed in.",
-      "language": "The flags at the top of the screen switch the application between French and English; the choice is remembered on this device.",
+      "language": "The language button at the top of the screen (flag and code) opens the list and switches the application between French and English; the choice is remembered on this device.",
       "update": "When a new version goes live, a banner at the bottom of the screen says so: Reload shows it, without signing you out.",
       "password": "Forgot your password? on the sign-in page sends a link to choose a new one, valid for two hours.",
       "privacy": "Privacy and legal notice, at the very foot of the left menu, opens the text the console publishes, with the list of sub-processors: it can also be read without signing in, from the sign-in page."
@@ -967,7 +967,7 @@
         },
         "languages": {
           "q": "In which languages?",
-          "a": "The application is in French and English: the flags at the top of every screen switch the language. Capital call notices and reminders are written in each investor's own language."
+          "a": "The application is in French and English: the language button at the top of every screen opens the list and switches the language. Capital call notices and reminders are written in each investor's own language."
         }
       }
     }

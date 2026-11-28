@@ -7,7 +7,7 @@ import {
   AlarmClock, Layers, PieChart, Receipt, TrendingUp, Users, Wallet, X,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
-import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
+import { LanguageMenu } from '@/components/common/LanguageSwitcher'
 import { LogoMark } from '@/components/common/Logo'
 import { ProfileMenu } from '@/components/layout/ProfileMenu'
 import { UpdateBanner } from '@/components/layout/UpdateBanner'
@@ -272,7 +272,9 @@ export function Shell() {
 
           {/* Pushes the rest to the right: that is the only thing this bar has to say. */}
           <div className="ml-auto flex items-center gap-2">
-            <LanguageSwitcher />
+            {/* One button, the flag and the code, the list on a click (the owner, 28 Nov
+                2026): the two buttons side by side ran the page 19 px past a 320 px screen. */}
+            <LanguageMenu withCode align="right" />
             <ProfileMenu />
           </div>
         </header>

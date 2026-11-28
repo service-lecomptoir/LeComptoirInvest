@@ -747,7 +747,7 @@
       "accountMenuFund": "Le menu du compte, en haut à droite, ouvre Mon profil, Abonnement et ce guide.",
       "accountMenuInvestor": "Le menu du compte, en haut à droite, ouvre Mon profil et ce guide.",
       "signOut": "Déconnexion, en bas du même menu, ferme votre session après confirmation, sur le serveur et pas seulement dans le navigateur : une copie de votre session cesse aussitôt de fonctionner, et vos autres onglets ouverts reviennent à la page de connexion. Vos autres appareils restent connectés.",
-      "language": "Les drapeaux en haut de l'écran passent l'application en français ou en anglais ; le choix est retenu sur cet appareil.",
+      "language": "Le bouton de langue en haut de l'écran (drapeau et code) ouvre la liste et passe l'application en français ou en anglais ; le choix est retenu sur cet appareil.",
       "update": "Quand une nouvelle version est mise en ligne, un bandeau en bas de l'écran le signale : Recharger l'affiche, sans vous déconnecter.",
       "password": "Mot de passe oublié ? sur la page de connexion envoie un lien pour en choisir un nouveau, valable deux heures.",
       "privacy": "Confidentialité et mentions légales, tout en bas du menu de gauche, ouvre le texte publié par la console, avec la liste des sous-traitants ultérieurs : il se lit aussi sans être connecté, depuis la page de connexion."
@@ -967,7 +967,7 @@
         },
         "languages": {
           "q": "Dans quelles langues ?",
-          "a": "L'application est en français et en anglais : les drapeaux en haut de chaque écran changent de langue. Les avis d'appel de fonds et les relances sont écrits dans la langue de chaque investisseur."
+          "a": "L'application est en français et en anglais : le bouton de langue en haut de chaque écran ouvre la liste et change de langue. Les avis d'appel de fonds et les relances sont écrits dans la langue de chaque investisseur."
         }
       }
     }

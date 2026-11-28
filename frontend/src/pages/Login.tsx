@@ -5,7 +5,7 @@ import type { TFunction } from 'i18next'
 import { ChevronRight, Lock } from 'lucide-react'
 import { Button, Input } from '@/components/ui'
 import { Notice } from '@/components/common/Primitives'
-import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
+import { LanguageMenu } from '@/components/common/LanguageSwitcher'
 import { authApi } from '@/api'
 import { TOKEN_KEY, errorMessage } from '@/api/client'
 import { useAuthStore } from '@/store/authStore'
@@ -158,7 +158,7 @@ export default function Login() {
             {/* The picker is on the sign-in page on purpose: somebody who cannot read the
                 form is exactly the person who needs to change the language. */}
             <div className="ml-auto">
-              <LanguageSwitcher />
+              <LanguageMenu withCode align="right" />
             </div>
           </div>
 

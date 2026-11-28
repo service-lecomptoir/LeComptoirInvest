@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ArrowLeft, LogIn } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { LogoMark } from '@/components/common/Logo'
-import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
+import { LanguageMenu } from '@/components/common/LanguageSwitcher'
 import { Card, Loading, Notice } from '@/components/common/Primitives'
 import { Subprocessors } from '@/components/terms/Subprocessors'
 import { TermsBody } from '@/components/terms/TermsReader'
@@ -44,7 +44,7 @@ export default function Privacy() {
             </span>
           </Link>
           <span className="flex-1" />
-          <LanguageSwitcher dark />
+          <LanguageMenu withCode align="right" />
           {!signedIn && (
             <Link
               to="/login"

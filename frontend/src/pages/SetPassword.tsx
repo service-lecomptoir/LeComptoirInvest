@@ -6,7 +6,7 @@ import { KeyRound } from 'lucide-react'
 import { authApi } from '@/api'
 import { errorMessage } from '@/api/client'
 import { useFieldCheck } from '@/lib/formCheck'
-import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
+import { LanguageMenu } from '@/components/common/LanguageSwitcher'
 import { LogoMark } from '@/components/common/Logo'
 import { Notice } from '@/components/common/Primitives'
 import { Button, Input, Spinner } from '@/components/ui'
@@ -91,7 +91,7 @@ export default function SetPassword() {
               {t('brand.name')}
             </span>
           </div>
-          <LanguageSwitcher />
+          <LanguageMenu withCode align="right" />
         </div>
 
         {dead ? (

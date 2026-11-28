@@ -148,7 +148,7 @@ describe('aucun mot en capitales à l’écran', () => {
    * 🔴 THE HOUSE RULE: no word in capitals in the interface. A `uppercase` class turned
    * « Offre en cours », the table headers and the side bar's sections into shouting
    * (customer recipe, 30 Sept 2026, twelve places). The one exception is a CODE that is
-   * written in capitals anyway: a language code (`FR`, `EN`) on the same line.
+   * written in capitals anyway: a notice's language code (`FR`, `EN`) on the same line.
    */
   it('pas de classe uppercase, sauf pour un code de langue', () => {
     const fautifs: string[] = []
@@ -157,7 +157,7 @@ describe('aucun mot en capitales à l’écran', () => {
         .split(EOL)
         .forEach((line, i) => {
           if (!/\buppercase\b/.test(line)) return
-          if (/\{(l\.code|notice\.language)\}/.test(line)) return
+          if (/\{notice\.language\}/.test(line)) return
           fautifs.push(`${file.slice(SRC.length + 1)}:${i + 1} ${line.trim()}`)
         })
     }

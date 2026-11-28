@@ -1,4 +1,5 @@
-import { useId } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { SUPPORTED_LANGS } from '@/i18n'
@@ -43,49 +44,94 @@ function Flag({ code, className = '' }: { code: string; className?: string }) {
 }
 
 /**
- * A segmented control: one button per language, flag plus code, the active one filled in
- * the brand navy. Adding a language to `SUPPORTED_LANGS` adds it here with no code at all.
+ * The interface language picker, ONE button (the owner, 28 Nov 2026, after Le Comptoir Immo's:
+ * the flags as a list, in every Le Comptoir tool). It shows the current flag and the
+ * language's code; the menu lists every language by its own name, and a language added to
+ * `SUPPORTED_LANGS` comes in with no code at all. A navigation menu, not a modal: a click
+ * outside or Escape closes it, nothing is lost.
  *
- * `dark` renders it for the navy rail, where the light version would disappear.
+ * It replaced a segmented control, one button per language side by side, which took a
+ * phone's bar for itself (the same component as Immo's `LanguageMenu`).
+ *
+ * `withCode` writes the current language's code after its flag (« fr »). `align` says on
+ * which side of the button the list opens: `right` anchors it on the button's right edge, for
+ * a button at the right end of a bar, where a list opened to the right would run off the
+ * screen.
  */
-export function LanguageSwitcher({ dark = false }: { dark?: boolean }) {
+export function LanguageMenu({ withCode = false, align = 'left' }: {
+  withCode?: boolean
+  align?: 'left' | 'right'
+} = {}) {
   const { i18n, t } = useTranslation()
+  // Two languages, both two-letter codes: the cut is the code itself.
   const current = (i18n.resolvedLanguage || i18n.language || 'fr').slice(0, 2)
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
 
   return (
-    <div
-      role="group"
-      aria-label={t('common.language')}
-      className={clsx(
-        'inline-flex items-center gap-0.5 rounded-lg p-0.5 border',
-        dark ? 'border-white/15 bg-white/5' : 'border-gray-200 bg-gray-50',
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={t('common.language')}
+        title={SUPPORTED_LANGS.find((l) => l.code === current)?.label}
+        className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-white"
+      >
+        <Flag code={current} className="w-4 h-auto rounded-[2px] ring-1 ring-black/10" />
+        {withCode && <span>{current.slice(0, 2)}</span>}
+        <ChevronDown size={12} className={clsx('text-gray-400 transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className={clsx(
+            'absolute z-50 mt-2 w-48 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg',
+            align === 'right' ? 'right-0' : 'left-0',
+          )}
+        >
+          {SUPPORTED_LANGS.map((l) => {
+            const active = current === l.code
+            return (
+              <button
+                key={l.code}
+                type="button"
+                role="menuitemradio"
+                aria-checked={active}
+                lang={l.code}
+                onClick={() => {
+                  setOpen(false)
+                  void i18n.changeLanguage(l.code)
+                }}
+                className={clsx(
+                  'flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm transition-colors',
+                  active ? 'bg-gray-50 font-semibold text-brand-navy' : 'text-gray-700 hover:bg-gray-50',
+                )}
+              >
+                <Flag code={l.code} className="w-4 h-auto rounded-[2px] ring-1 ring-black/10" />
+                {l.label}
+              </button>
+            )
+          })}
+        </div>
       )}
-    >
-      {SUPPORTED_LANGS.map((l) => {
-        const active = current === l.code
-        return (
-          <button
-            key={l.code}
-            type="button"
-            onClick={() => i18n.changeLanguage(l.code)}
-            aria-pressed={active}
-            title={l.label}
-            className={clsx(
-              'flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors',
-              // ⚠️ ONE CLASS PER STATE, never two stacked: the active dark button carried
-              // both `text-white` and `text-brand-navy`, the stylesheet's order picked white,
-              // and the code vanished on its white pill (seen on the pricing page's header).
-              active && dark && 'bg-white text-brand-navy shadow-sm',
-              active && !dark && 'bg-brand-navy text-white shadow-sm',
-              !active && dark && 'text-white/60 hover:text-white hover:bg-white/10',
-              !active && !dark && 'text-gray-500 hover:text-gray-800 hover:bg-white',
-            )}
-          >
-            <Flag code={l.code} className="w-4 h-auto rounded-[2px] ring-1 ring-black/10" />
-            <span className="uppercase">{l.code}</span>
-          </button>
-        )
-      })}
     </div>
   )
 }

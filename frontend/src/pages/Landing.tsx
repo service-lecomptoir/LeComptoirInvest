@@ -6,7 +6,7 @@ import i18n from '@/i18n'
 import { useContactEmail } from '@/lib/contact'
 import { GUIDE_SECTIONS, type GuideCard } from '@/lib/guide'
 import { LogoMark } from '@/components/common/Logo'
-import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
+import { LanguageMenu } from '@/components/common/LanguageSwitcher'
 import { PlanOffer } from '@/pages/Pricing'
 
 /**
@@ -88,7 +88,7 @@ function Header({ onSignup }: { onSignup: () => void }) {
         </nav>
 
         <div className="hidden items-center gap-2.5 whitespace-nowrap lg:flex">
-          <LanguageSwitcher />
+          <LanguageMenu withCode />
           <Link to="/login" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
             {t('pricing.signIn')}
           </Link>
@@ -126,7 +126,7 @@ function Header({ onSignup }: { onSignup: () => void }) {
               </a>
             ))}
             <div className="px-3 py-2.5">
-              <LanguageSwitcher />
+              <LanguageMenu withCode />
             </div>
             <Link
               to="/login"

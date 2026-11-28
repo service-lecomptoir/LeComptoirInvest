@@ -9,7 +9,7 @@ import { usePlanPrice } from '@/lib/planPrice'
 import { chargesVat } from '@/components/billing/planOffer'
 import { useAuthStore } from '@/store/authStore'
 import { LogoMark } from '@/components/common/Logo'
-import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
+import { LanguageMenu } from '@/components/common/LanguageSwitcher'
 import { Card, Loading } from '@/components/common/Primitives'
 import { SignupForm } from '@/components/signup/SignupForm'
 import { planGridClass } from '@/lib/planGrid'
@@ -56,7 +56,7 @@ export default function Pricing() {
             </span>
           </Link>
           <span className="flex-1" />
-          <LanguageSwitcher dark />
+          <LanguageMenu withCode align="right" />
           {!signedIn && (
             <Link
               to="/login"

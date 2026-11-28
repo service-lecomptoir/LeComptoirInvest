@@ -19,7 +19,7 @@ describe('the sign-in page', () => {
   })
 
   it('offers the language picker', () => {
-    expect(login).toContain('<LanguageSwitcher')
+    expect(login).toContain('<LanguageMenu withCode align="right" />')
   })
 
   it('writes no word in capitals', () => {
